@@ -171,7 +171,5 @@ const ProviderDashboard = () => {
   );
 };
 
-// Need Calendar import for schedule tab
-import { Calendar } from "lucide-react";
 
 export default ProviderDashboard;

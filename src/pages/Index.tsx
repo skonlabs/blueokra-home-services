@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, Bell, User, Menu, Home, Briefcase, History, Settings } from "lucide-react";
+import { ArrowLeft, Search, Bell, User, Home, Briefcase, History, Settings } from "lucide-react";
 import ServiceGrid from "@/components/ServiceGrid";
 import AIIntakeChat from "@/components/AIIntakeChat";
 import QuoteView from "@/components/QuoteView";
