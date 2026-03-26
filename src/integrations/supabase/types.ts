@@ -545,6 +545,128 @@ export type Database = {
           },
         ]
       }
+      disputes: {
+        Row: {
+          appointment_id: string | null
+          created_at: string
+          description: string | null
+          dispute_status: string
+          dispute_type: string
+          evidence_urls: Json | null
+          filed_against: string | null
+          filed_by: string
+          id: string
+          refund_amount: number | null
+          resolution_notes: string | null
+          resolution_type: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          service_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string
+          description?: string | null
+          dispute_status?: string
+          dispute_type: string
+          evidence_urls?: Json | null
+          filed_against?: string | null
+          filed_by: string
+          id?: string
+          refund_amount?: number | null
+          resolution_notes?: string | null
+          resolution_type?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          service_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string
+          description?: string | null
+          dispute_status?: string
+          dispute_type?: string
+          evidence_urls?: Json | null
+          filed_against?: string | null
+          filed_by?: string
+          id?: string
+          refund_amount?: number | null
+          resolution_notes?: string | null
+          resolution_type?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          service_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "booking_appointment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_point_transactions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          points: number
+          service_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          points: number
+          service_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          points?: number
+          service_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loyalty_points: {
+        Row: {
+          created_at: string
+          id: string
+          lifetime_points: number
+          points_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lifetime_points?: number
+          points_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lifetime_points?: number
+          points_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payment_transaction: {
         Row: {
           admin_amount: number | null
@@ -885,6 +1007,125 @@ export type Database = {
         }
         Relationships: []
       }
+      property_appliances: {
+        Row: {
+          appliance_name: string
+          brand: string | null
+          created_at: string
+          home_id: string
+          id: string
+          installed_date: string | null
+          model: string | null
+          next_service_date: string | null
+          notes: string | null
+          serial_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          appliance_name: string
+          brand?: string | null
+          created_at?: string
+          home_id: string
+          id?: string
+          installed_date?: string | null
+          model?: string | null
+          next_service_date?: string | null
+          notes?: string | null
+          serial_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          appliance_name?: string
+          brand?: string | null
+          created_at?: string
+          home_id?: string
+          id?: string
+          installed_date?: string | null
+          model?: string | null
+          next_service_date?: string | null
+          notes?: string | null
+          serial_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_appliances_home_id_fkey"
+            columns: ["home_id"]
+            isOneToOne: false
+            referencedRelation: "user_homes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_warranties: {
+        Row: {
+          appliance_id: string | null
+          coverage_type: string | null
+          created_at: string
+          document_url: string | null
+          expiry_date: string | null
+          home_id: string
+          id: string
+          item_name: string
+          notes: string | null
+          start_date: string | null
+          updated_at: string
+          user_id: string
+          warranty_provider: string | null
+          warranty_status: string
+        }
+        Insert: {
+          appliance_id?: string | null
+          coverage_type?: string | null
+          created_at?: string
+          document_url?: string | null
+          expiry_date?: string | null
+          home_id: string
+          id?: string
+          item_name: string
+          notes?: string | null
+          start_date?: string | null
+          updated_at?: string
+          user_id: string
+          warranty_provider?: string | null
+          warranty_status?: string
+        }
+        Update: {
+          appliance_id?: string | null
+          coverage_type?: string | null
+          created_at?: string
+          document_url?: string | null
+          expiry_date?: string | null
+          home_id?: string
+          id?: string
+          item_name?: string
+          notes?: string | null
+          start_date?: string | null
+          updated_at?: string
+          user_id?: string
+          warranty_provider?: string | null
+          warranty_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_warranties_appliance_id_fkey"
+            columns: ["appliance_id"]
+            isOneToOne: false
+            referencedRelation: "property_appliances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_warranties_home_id_fkey"
+            columns: ["home_id"]
+            isOneToOne: false
+            referencedRelation: "user_homes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           appointment_id: string | null
@@ -996,39 +1237,6 @@ export type Database = {
           package_name?: string
           price?: number
           pricing_key?: string | null
-          service_type?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      service_extras: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          extra_name: string
-          id: string
-          is_active: boolean | null
-          price: number
-          service_type: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          extra_name: string
-          id?: string
-          is_active?: boolean | null
-          price: number
-          service_type: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          extra_name?: string
-          id?: string
-          is_active?: boolean | null
-          price?: number
           service_type?: string
           updated_at?: string | null
         }
@@ -1154,57 +1362,6 @@ export type Database = {
           reason?: string | null
           unsubscribed_at?: string | null
           user_agent?: string | null
-        }
-        Relationships: []
-      }
-      user_audit_logs: {
-        Row: {
-          context: string | null
-          created_at: string
-          duration_ms: number | null
-          error_message: string | null
-          id: string
-          ip_address: string | null
-          operation_type: string
-          request: Json | null
-          response: Json | null
-          stage: string
-          status: string | null
-          table_name: string | null
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          context?: string | null
-          created_at?: string
-          duration_ms?: number | null
-          error_message?: string | null
-          id?: string
-          ip_address?: string | null
-          operation_type: string
-          request?: Json | null
-          response?: Json | null
-          stage: string
-          status?: string | null
-          table_name?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          context?: string | null
-          created_at?: string
-          duration_ms?: number | null
-          error_message?: string | null
-          id?: string
-          ip_address?: string | null
-          operation_type?: string
-          request?: Json | null
-          response?: Json | null
-          stage?: string
-          status?: string | null
-          table_name?: string | null
-          user_agent?: string | null
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -1369,42 +1526,6 @@ export type Database = {
         Args: { _appointment_id: string; _user_id: string; _user_type?: string }
         Returns: Json
       }
-      create_scheduling_proposal: {
-        Args: {
-          _appointment_id: string
-          _notes?: string
-          _proposed_date: string
-        }
-        Returns: {
-          appointment_id: string
-          created_at: string | null
-          id: string
-          proposed_by: string
-          proposed_date: string
-          response_notes: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "booking_appointment_proposal"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      create_service_booking: {
-        Args: {
-          _additional_notes?: string
-          _customization_options?: Json
-          _payment_method?: string
-          _service_address: string
-          _service_city: string
-          _service_id: string
-          _service_state: string
-          _service_zip: string
-          _uploaded_images?: string[]
-          _user_id: string
-        }
-        Returns: Json
-      }
       delete_user_home: {
         Args: { _home_id: string; _user_id: string }
         Returns: boolean
@@ -1428,10 +1549,6 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
-      is_appointment_participant: {
-        Args: { _appointment_id: string; _user_id: string }
-        Returns: boolean
-      }
       is_service_assigned_to_provider: {
         Args: { p_provider_id: string; p_service_id: string }
         Returns: boolean
@@ -1471,15 +1588,6 @@ export type Database = {
           _proposed_date?: string
           _response_type: string
           _service_id: string
-          _user_id: string
-        }
-        Returns: Json
-      }
-      rpc_admin_manage_user: {
-        Args: {
-          _action: string
-          _admin_id: string
-          _updates?: Json
           _user_id: string
         }
         Returns: Json
@@ -1570,26 +1678,13 @@ export type Database = {
         Args: { p_service_id: string }
         Returns: boolean
       }
-      service_is_unassigned: { Args: { _service_id: string }; Returns: boolean }
-      test_save_profile: {
-        Args: {
-          _address: string
-          _city: string
-          _phone: string
-          _state: string
-          _user_id: string
-          _zip: string
-        }
-        Returns: boolean
-      }
       update_appointment_status: {
         Args: {
+          _appointment_date?: string
           _appointment_id: string
           _cancellation_reason?: string
-          _homeowner_status?: string
+          _customer_status?: string
           _provider_status?: string
-          _reschedule_reason?: string
-          _scheduled_date?: string
           _status?: string
           _user_id: string
         }
@@ -1600,20 +1695,8 @@ export type Database = {
         Returns: Json
       }
       urlencode: { Args: { in_str: string }; Returns: string }
-      user_assigned_to_service: {
-        Args: { _service_id: string; _user_id: string }
-        Returns: boolean
-      }
       user_has_appointment_for_service: {
         Args: { p_service_id: string; p_user_id: string }
-        Returns: boolean
-      }
-      user_in_service_appointment: {
-        Args: { _service_id: string; _user_id: string }
-        Returns: boolean
-      }
-      user_owns_service: {
-        Args: { _service_id: string; _user_id: string }
         Returns: boolean
       }
       verify_otp: { Args: { _otp_code: string; _phone: string }; Returns: Json }
