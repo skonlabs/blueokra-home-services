@@ -161,9 +161,7 @@ const Index = () => {
       </AnimatePresence>
 
       {/* Bottom nav */}
-      {screen !== "provider" && (
-        <BottomNav active="home" onNavigate={(s) => setScreen(s as Screen)} />
-      )}
+      <BottomNav active="home" onNavigate={(s) => setScreen(s as Screen)} />
     </div>
   );
 };
