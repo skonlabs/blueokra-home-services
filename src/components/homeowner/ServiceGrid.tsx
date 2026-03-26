@@ -10,6 +10,9 @@ const services = [
   { id: "handyman", name: "Handyman", icon: "🛠️", description: "Repairs, assembly, odd jobs", color: "bg-okra-50 border-okra-100" },
 ];
 
+export const getServiceById = (id: string) => services.find((s) => s.id === id);
+export const getAllServices = () => services;
+
 interface ServiceGridProps {
   onSelect: (serviceId: string) => void;
 }
