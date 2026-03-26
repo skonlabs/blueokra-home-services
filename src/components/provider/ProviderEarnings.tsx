@@ -1,7 +1,18 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { DollarSign, TrendingUp, Calendar, Star, Clock, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { DollarSign, TrendingUp, Calendar, ArrowUpRight } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { useToast } from "@/hooks/use-toast";
+
+const THIS_WEEK_GROSS = 2610;
+const NET_EARNINGS = 2221;
+const PAYOUT_AMOUNT = "$2,221";
+const BANK_LAST4 = "4832";
 
 const ProviderEarnings = () => {
+  const { toast } = useToast();
+  const [showPayoutModal, setShowPayoutModal] = useState(false);
+
   const weeklyData = [
     { day: "Mon", amount: 320 },
     { day: "Tue", amount: 485 },
@@ -11,7 +22,9 @@ const ProviderEarnings = () => {
     { day: "Sat", amount: 680 },
     { day: "Sun", amount: 0 },
   ];
-  const maxAmount = Math.max(...weeklyData.map((d) => d.amount));
+
+  const lastWeekTotal = 2330; // This week ($2,610) > last week → show Top Provider badge
+  const isTopProvider = THIS_WEEK_GROSS > lastWeekTotal;
 
   const recentPayouts = [
     { date: "Mar 22", amount: "$1,680", status: "Deposited" },
@@ -19,8 +32,33 @@ const ProviderEarnings = () => {
     { date: "Mar 8", amount: "$1,920", status: "Deposited" },
   ];
 
+  const performanceMetrics = [
+    { label: "Response rate", value: 94 },
+    { label: "Completion rate", value: 98 },
+    { label: "Repeat customer rate", value: 67 },
+  ];
+
+  const handleConfirmPayout = () => {
+    setShowPayoutModal(false);
+    toast({
+      title: `Payout of ${PAYOUT_AMOUNT} requested. Arrives in 1-2 business days.`,
+    });
+  };
+
   return (
     <div className="px-4 py-4 pb-24 space-y-4">
+      {/* Top Provider badge */}
+      {isTopProvider && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 flex items-center gap-2"
+        >
+          <span className="text-lg">🏆</span>
+          <p className="text-sm font-semibold text-amber-700 font-display">Top Provider This Week</p>
+        </motion.div>
+      )}
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card rounded-2xl border border-border p-4">
@@ -63,23 +101,31 @@ const ProviderEarnings = () => {
         </div>
       </div>
 
-      {/* Weekly chart */}
+      {/* Weekly chart — recharts */}
       <div className="bg-card rounded-2xl border border-border p-4">
         <h3 className="font-semibold text-sm text-foreground mb-4">Weekly Earnings</h3>
-        <div className="flex items-end gap-2 h-32">
-          {weeklyData.map((d, i) => (
-            <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: `${(d.amount / maxAmount) * 100}%` }}
-                transition={{ delay: i * 0.1, duration: 0.5 }}
-                className={`w-full rounded-lg ${d.amount > 0 ? "bg-primary" : "bg-muted"}`}
-                style={{ minHeight: d.amount > 0 ? "8px" : "4px" }}
-              />
-              <span className="text-[10px] text-muted-foreground">{d.day}</span>
-            </div>
-          ))}
-        </div>
+        <ResponsiveContainer width="100%" height={128}>
+          <BarChart data={weeklyData} barCategoryGap="30%">
+            <XAxis
+              dataKey="day"
+              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis hide />
+            <Tooltip
+              cursor={{ fill: "hsl(var(--muted))" }}
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "8px",
+                fontSize: 12,
+              }}
+              formatter={(value: number) => [`$${value}`, "Earnings"]}
+            />
+            <Bar dataKey="amount" fill="hsl(195, 72%, 37%)" radius={[6, 6, 0, 0]} minPointSize={4} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Recent payouts */}
@@ -117,7 +163,79 @@ const ProviderEarnings = () => {
             <span>$2,221</span>
           </div>
         </div>
+
+        {/* Request Payout button */}
+        <div className="mt-4">
+          {NET_EARNINGS >= 100 ? (
+            <button
+              onClick={() => setShowPayoutModal(true)}
+              className="bg-primary text-primary-foreground rounded-2xl py-3 w-full font-medium text-sm active:scale-[0.98] transition-transform"
+            >
+              Request Payout
+            </button>
+          ) : (
+            <button
+              disabled
+              className="bg-muted text-muted-foreground rounded-2xl py-3 w-full font-medium text-sm cursor-not-allowed"
+            >
+              Minimum $100 required
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Performance section */}
+      <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
+        <h3 className="font-display font-semibold text-sm text-foreground">Your Performance</h3>
+        <div className="space-y-3">
+          {performanceMetrics.map((m) => (
+            <div key={m.label} className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{m.label}</span>
+                <span className="text-xs font-semibold text-foreground">{m.value}%</span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${m.value}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="h-full rounded-full bg-primary"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Payout confirmation modal */}
+      {showPayoutModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl border border-border p-6 w-full max-w-sm space-y-4"
+          >
+            <h3 className="font-display font-semibold text-base text-foreground">Confirm Payout</h3>
+            <p className="text-sm text-muted-foreground">
+              Payout {PAYOUT_AMOUNT} to Bank ••{BANK_LAST4}?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPayoutModal(false)}
+                className="flex-1 bg-muted text-foreground rounded-xl py-2.5 text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmPayout}
+                className="flex-1 bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-medium"
+              >
+                Confirm
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,31 +1,59 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, DollarSign, Shield, Star } from "lucide-react";
+import { Check, Shield, Star } from "lucide-react";
 
 interface PaymentFlowProps {
   onComplete: () => void;
+  booking?: {
+    id: string;
+    service: string;
+    provider: string;
+    amount: number;
+    quoteRange: { low: number; high: number };
+    breakdown: { label: string; amount: number }[];
+  };
 }
 
-const PaymentFlow = ({ onComplete }: PaymentFlowProps) => {
+const DEFAULT_BOOKING = {
+  id: "bk-default",
+  service: "Lawn Mowing",
+  provider: "Mike's Lawn Care",
+  amount: 195,
+  quoteRange: { low: 185, high: 240 },
+  breakdown: [
+    { label: "Base mowing", amount: 120 },
+    { label: "Edge trimming", amount: 35 },
+    { label: "Clippings cleanup", amount: 15 },
+    { label: "Complexity adjustment", amount: 25 },
+  ],
+};
+
+const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
   const [step, setStep] = useState<"scan" | "confirm" | "done">("scan");
   const [rating, setRating] = useState(0);
+
+  const b = booking ?? DEFAULT_BOOKING;
+  const bookingId = b.id;
+  const aboveRange = b.amount > b.quoteRange.high;
 
   if (step === "scan") {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 py-8 text-center space-y-6 pb-24">
-        <div className="w-48 h-48 bg-muted rounded-3xl mx-auto flex items-center justify-center border-2 border-dashed border-border">
-          <div className="text-center">
-            <div className="text-4xl mb-2">📱</div>
-            <p className="text-sm text-muted-foreground">Scan provider's QR code</p>
-            <p className="text-xs text-muted-foreground mt-1">or tap below to confirm manually</p>
-          </div>
+        <div className="flex flex-col items-center gap-3">
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=blueokra-payment-${bookingId}&bgcolor=FFFFFF`}
+            className="w-48 h-48 rounded-2xl"
+            alt="Payment QR code"
+          />
+          <p className="text-sm font-medium text-foreground">Scan provider's QR code</p>
+          <p className="text-xs text-muted-foreground">Point your camera at the provider's screen</p>
         </div>
 
         <button
           onClick={() => setStep("confirm")}
-          className="w-full bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm active:scale-[0.98] transition-transform"
+          className="w-full bg-muted text-foreground font-medium py-3 rounded-2xl text-sm active:scale-[0.98] transition-transform border border-border"
         >
-          Confirm Manually
+          Skip — Confirm Manually
         </button>
       </motion.div>
     );
@@ -36,35 +64,39 @@ const PaymentFlow = ({ onComplete }: PaymentFlowProps) => {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 py-6 space-y-5 pb-24">
         <div className="text-center">
           <h2 className="font-display text-xl font-bold text-foreground">Confirm Payment</h2>
-          <p className="text-sm text-muted-foreground mt-1">Service completed by Mike's Lawn Care</p>
+          <p className="text-sm text-muted-foreground mt-1">Service completed by {b.provider}</p>
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-5 text-center">
           <p className="text-xs text-muted-foreground mb-1">Final Amount</p>
-          <p className="font-display text-3xl font-bold text-foreground">$195</p>
-          <p className="text-xs text-muted-foreground mt-1">Within quoted range ($185–$240)</p>
+          <p className="font-display text-3xl font-bold text-foreground">${b.amount.toFixed(2)}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Quoted range: ${b.quoteRange.low}–${b.quoteRange.high}
+          </p>
         </div>
 
+        {aboveRange ? (
+          <div className="flex items-center gap-2 bg-orange-50 rounded-xl p-3 border border-orange-200">
+            <span className="text-orange-500 text-base shrink-0">⚠️</span>
+            <p className="text-xs text-orange-700 font-medium">Above quoted range — requires your approval</p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 bg-green-50 rounded-xl p-3 border border-green-200">
+            <span className="text-green-600 text-base shrink-0">✓</span>
+            <p className="text-xs text-green-700 font-medium">Within quoted range</p>
+          </div>
+        )}
+
         <div className="bg-card rounded-2xl border border-border p-4 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Base mowing</span>
-            <span className="font-medium">$120</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Edge trimming</span>
-            <span className="font-medium">$35</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Clippings cleanup</span>
-            <span className="font-medium">$15</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Complexity adjustment</span>
-            <span className="font-medium">$25</span>
-          </div>
+          {b.breakdown.map((line) => (
+            <div key={line.label} className="flex justify-between">
+              <span className="text-muted-foreground">{line.label}</span>
+              <span className="font-medium">${line.amount.toFixed(2)}</span>
+            </div>
+          ))}
           <div className="border-t border-border pt-2 flex justify-between font-semibold">
             <span>Total</span>
-            <span>$195</span>
+            <span>${b.amount.toFixed(2)}</span>
           </div>
         </div>
 
@@ -75,7 +107,9 @@ const PaymentFlow = ({ onComplete }: PaymentFlowProps) => {
 
         {/* Quick rating */}
         <div className="text-center space-y-2">
-          <p className="text-sm font-medium text-foreground">Rate your experience</p>
+          <p className="text-sm font-medium text-foreground">
+            Rate your experience <span className="text-accent">*</span>
+          </p>
           <div className="flex justify-center gap-2">
             {[1, 2, 3, 4, 5].map((s) => (
               <button key={s} onClick={() => setRating(s)} className="p-1">
@@ -83,13 +117,17 @@ const PaymentFlow = ({ onComplete }: PaymentFlowProps) => {
               </button>
             ))}
           </div>
+          {rating === 0 && (
+            <p className="text-xs text-muted-foreground">Please rate before confirming</p>
+          )}
         </div>
 
         <button
           onClick={() => setStep("done")}
-          className="w-full bg-success text-success-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+          disabled={rating === 0}
+          className="w-full bg-success text-success-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <Check className="w-4 h-4" /> Confirm & Pay $195
+          <Check className="w-4 h-4" /> Confirm &amp; Pay ${b.amount.toFixed(2)}
         </button>
       </motion.div>
     );
@@ -107,12 +145,21 @@ const PaymentFlow = ({ onComplete }: PaymentFlowProps) => {
       </motion.div>
       <div>
         <h2 className="font-display text-2xl font-bold text-foreground">Payment Complete!</h2>
-        <p className="text-sm text-muted-foreground mt-1">$195 paid to Mike's Lawn Care</p>
+        <p className="text-sm text-muted-foreground mt-1">${b.amount.toFixed(2)} paid to {b.provider}</p>
       </div>
-      <div className="bg-card rounded-2xl border border-border p-4 text-left space-y-2 text-sm">
-        <p className="text-muted-foreground">Receipt saved to your account</p>
-        <p className="text-muted-foreground">Service warranty: 7 days</p>
-        <p className="text-muted-foreground">Loyalty points: +195 pts earned</p>
+      <div className="bg-card rounded-2xl border border-border p-4 text-left space-y-3 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-green-600">✓</span>
+          <span className="text-foreground font-medium">Receipt saved</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-primary">★</span>
+          <span className="text-muted-foreground">Loyalty points earned: <span className="text-foreground font-semibold">+{Math.round(b.amount)} pts</span></span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Shield className="w-4 h-4 text-secondary shrink-0" />
+          <span className="text-muted-foreground">7-day service warranty starts now</span>
+        </div>
       </div>
       <button
         onClick={onComplete}

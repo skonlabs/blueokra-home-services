@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, ChevronRight, Camera, Phone, MessageSquare } from "lucide-react";
+import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, MessageSquare, Inbox } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Job {
   id: string;
@@ -25,7 +26,7 @@ const mockJobs: Job[] = [
 ];
 
 interface ProviderJobsProps {
-  onCompleteJob: (jobId: string) => void;
+  onCompleteJob: (job: Job) => void;
 }
 
 const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
@@ -43,8 +44,23 @@ const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
   const activeJobs = jobs.filter((j) => j.status === "accepted" || j.status === "in_progress");
   const completedJobs = jobs.filter((j) => j.status === "completed");
 
+  const noJobs = pendingJobs.length + activeJobs.length === 0;
+
   return (
     <div className="px-4 py-4 pb-24 space-y-5">
+      {/* Empty state */}
+      {noJobs && completedJobs.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+            <Inbox className="w-7 h-7 text-muted-foreground" />
+          </div>
+          <p className="font-display font-semibold text-foreground text-base">No new requests</p>
+          <p className="text-xs text-muted-foreground max-w-[240px]">
+            New jobs will appear here when customers book services in your area
+          </p>
+        </div>
+      )}
+
       {/* Pending */}
       {pendingJobs.length > 0 && (
         <div>
@@ -66,7 +82,7 @@ const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
           <h3 className="font-display text-sm font-semibold text-foreground mb-2">Today's Jobs</h3>
           <div className="space-y-3">
             {activeJobs.map((job, i) => (
-              <JobCard key={job.id} job={job} index={i} onComplete={() => onCompleteJob(job.id)} />
+              <JobCard key={job.id} job={job} index={i} onComplete={() => onCompleteJob(job)} />
             ))}
           </div>
         </div>
@@ -96,6 +112,12 @@ interface JobCardProps {
 }
 
 const JobCard = ({ job, index, onAccept, onDecline, onComplete }: JobCardProps) => {
+  const { toast } = useToast();
+
+  const estimatedNet = job.status === "pending"
+    ? `(~$${(parseFloat(job.price.replace("$", "")) * 0.88).toFixed(0)} after fees)`
+    : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -124,6 +146,20 @@ const JobCard = ({ job, index, onAccept, onDecline, onComplete }: JobCardProps) 
         <p className="text-xs text-muted-foreground bg-muted rounded-lg p-2">{job.description}</p>
       )}
 
+      {/* Pending extras: photo badge + estimated net */}
+      {job.status === "pending" && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {job.images != null && job.images > 0 && (
+            <span className="text-[11px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+              📸 {job.images} photo{job.images !== 1 ? "s" : ""}
+            </span>
+          )}
+          {estimatedNet && (
+            <span className="text-[11px] text-muted-foreground">{estimatedNet}</span>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
         <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{job.time}</span>
         <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.distance || job.address}</span>
@@ -150,8 +186,18 @@ const JobCard = ({ job, index, onAccept, onDecline, onComplete }: JobCardProps) 
       )}
       {(job.status === "accepted" || job.status === "in_progress") && (
         <div className="flex gap-2">
-          <button className="flex-1 bg-muted text-foreground text-sm font-medium py-2.5 rounded-xl flex items-center justify-center gap-1.5">
+          <button
+            onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(job.address)}`, '_blank')}
+            className="flex-1 bg-muted text-foreground text-sm font-medium py-2.5 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
+          >
             <Navigation className="w-4 h-4" /> Navigate
+          </button>
+          <button
+            onClick={() => toast({ title: "Messaging coming soon" })}
+            className="w-11 bg-muted text-muted-foreground rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform"
+            aria-label="Message customer"
+          >
+            <MessageSquare className="w-4 h-4" />
           </button>
           <button
             onClick={onComplete}

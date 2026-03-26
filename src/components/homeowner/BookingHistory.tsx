@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
-import { Star, ChevronRight, Clock, DollarSign, MapPin, RotateCcw, AlertTriangle, QrCode } from "lucide-react";
+import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Download } from "lucide-react";
 import { useState } from "react";
 
 interface BookingHistoryProps {
   onPaymentFlow: () => void;
-  onReview: () => void;
+  onReview: (booking: Booking) => void;
   onDispute: () => void;
+  onRebook: (serviceId: string) => void;
 }
 
 type BookingStatus = "upcoming" | "in_progress" | "completed" | "disputed";
@@ -43,12 +44,29 @@ const statusLabels: Record<BookingStatus, string> = {
   disputed: "Disputed",
 };
 
-const BookingHistory = ({ onPaymentFlow, onReview, onDispute }: BookingHistoryProps) => {
+const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: BookingHistoryProps) => {
   const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "completed">("all");
+  const [activeBooking, setActiveBooking] = useState<string | null>(null);
 
   const filtered = activeTab === "all" ? mockBookings :
     activeTab === "upcoming" ? mockBookings.filter(b => b.status === "upcoming" || b.status === "in_progress") :
     mockBookings.filter(b => b.status === "completed");
+
+  const handleDownloadReceipt = (booking: Booking) => {
+    console.log(`Downloading receipt for booking ${booking.id}: ${booking.service}`);
+    // Show a simple inline toast via state or just log for now
+    alert("Receipt saved to device");
+  };
+
+  const handleReview = (booking: Booking) => {
+    setActiveBooking(booking.id);
+    onReview(booking);
+  };
+
+  const handleDispute = (booking: Booking) => {
+    setActiveBooking(booking.id);
+    onDispute();
+  };
 
   return (
     <div className="px-4 py-4 pb-24 space-y-4">
@@ -111,12 +129,12 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute }: BookingHistoryPr
                   onClick={onPaymentFlow}
                   className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
                 >
-                  <QrCode className="w-3.5 h-3.5" /> Confirm & Pay
+                  <QrCode className="w-3.5 h-3.5" /> Confirm &amp; Pay
                 </button>
               )}
               {booking.status === "completed" && !booking.rating && (
                 <button
-                  onClick={onReview}
+                  onClick={() => handleReview(booking)}
                   className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
                 >
                   <Star className="w-3.5 h-3.5" /> Leave Review
@@ -124,18 +142,32 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute }: BookingHistoryPr
               )}
               {booking.status === "completed" && (
                 <>
-                  <button className="flex-1 bg-muted text-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5">
+                  <button
+                    onClick={() => onRebook(booking.id)}
+                    className="flex-1 bg-muted text-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
+                  >
                     <RotateCcw className="w-3.5 h-3.5" /> Rebook
                   </button>
                   <button
-                    onClick={onDispute}
-                    className="w-10 bg-muted text-muted-foreground rounded-xl flex items-center justify-center"
+                    onClick={() => handleDispute(booking)}
+                    className="w-10 bg-muted text-muted-foreground rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform"
                   >
                     <AlertTriangle className="w-3.5 h-3.5" />
                   </button>
                 </>
               )}
             </div>
+
+            {/* Download Receipt (completed bookings only) */}
+            {booking.status === "completed" && (
+              <button
+                onClick={() => handleDownloadReceipt(booking)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Download className="w-3 h-3" />
+                Download Receipt
+              </button>
+            )}
           </motion.div>
         ))}
       </div>

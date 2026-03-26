@@ -1,15 +1,90 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, Check, QrCode, DollarSign, ChevronRight } from "lucide-react";
+import { Camera, Check, ChevronRight, X } from "lucide-react";
 
 interface ProviderCompletionProps {
   onDone: () => void;
 }
 
+const CHECKLIST_ITEMS = [
+  { label: "Mowing completed", required: true },
+  { label: "Edges trimmed", required: true },
+  { label: "Clippings cleaned up", required: true },
+  { label: "Area inspected", required: false },
+];
+
+const REASONS = [
+  "Standard completion",
+  "Larger area than estimated",
+  "Extra complexity",
+  "Less work than estimated",
+];
+
+const QUOTE_LOW = 185;
+const QUOTE_HIGH = 240;
+
 const ProviderCompletion = ({ onDone }: ProviderCompletionProps) => {
   const [step, setStep] = useState<"photos" | "adjust" | "qr" | "done">("photos");
   const [photos, setPhotos] = useState<string[]>([]);
   const [adjustedPrice, setAdjustedPrice] = useState("195");
+  const [checkedItems, setCheckedItems] = useState<boolean[]>(CHECKLIST_ITEMS.map(() => false));
+  const [selectedReason, setSelectedReason] = useState<string | null>(null);
+  const [priceError, setPriceError] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const result = ev.target?.result as string;
+        if (result) setPhotos((prev) => [...prev, result]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleCheck = (index: number) => {
+    setCheckedItems((prev) => {
+      const next = [...prev];
+      next[index] = !next[index];
+      return next;
+    });
+  };
+
+  const allRequiredChecked = CHECKLIST_ITEMS.every((item, i) => !item.required || checkedItems[i]);
+
+  const parsedPrice = parseFloat(adjustedPrice);
+  const priceValid = !isNaN(parsedPrice) && parsedPrice >= 0;
+
+  // Auto-select "Standard completion" when price is in range
+  const handlePriceChange = (val: string) => {
+    setAdjustedPrice(val);
+    const p = parseFloat(val);
+    if (!isNaN(p) && p >= QUOTE_LOW && p <= QUOTE_HIGH) {
+      setSelectedReason("Standard completion");
+    }
+    if (!isNaN(p) && p >= 0) {
+      setPriceError(null);
+    }
+  };
+
+  const handlePriceBlur = () => {
+    const p = parseFloat(adjustedPrice);
+    if (isNaN(p) || p < 0) {
+      setPriceError("Please enter a valid price ($0 or above)");
+    } else {
+      setPriceError(null);
+    }
+  };
+
+  const canProceedToQr = priceValid && selectedReason !== null;
 
   if (step === "done") {
     return (
@@ -55,12 +130,14 @@ const ProviderCompletion = ({ onDone }: ProviderCompletionProps) => {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 py-8 text-center space-y-6 pb-24">
         <h2 className="font-display text-xl font-bold text-foreground">Show QR to Customer</h2>
-        <p className="text-sm text-muted-foreground">Customer scans to confirm & pay</p>
+        <p className="text-sm text-muted-foreground">Customer scans to confirm &amp; pay</p>
 
-        <div className="w-56 h-56 bg-foreground rounded-3xl mx-auto flex items-center justify-center">
-          <div className="w-48 h-48 bg-background rounded-2xl flex items-center justify-center">
-            <QrCode className="w-24 h-24 text-foreground" />
-          </div>
+        <div className="w-64 h-64 bg-foreground rounded-3xl mx-auto flex items-center justify-center">
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=blueokra-confirm-job123&bgcolor=FFFFFF"
+            className="w-56 h-56 rounded-2xl mx-auto"
+            alt="Payment QR code"
+          />
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4">
@@ -84,7 +161,7 @@ const ProviderCompletion = ({ onDone }: ProviderCompletionProps) => {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 py-6 space-y-5 pb-24">
         <div>
           <h2 className="font-display text-lg font-bold text-foreground">Adjust Final Price</h2>
-          <p className="text-sm text-muted-foreground">Quoted range: $185–$240</p>
+          <p className="text-sm text-muted-foreground">Quoted range: ${QUOTE_LOW}–${QUOTE_HIGH}</p>
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-5 text-center">
@@ -94,30 +171,51 @@ const ProviderCompletion = ({ onDone }: ProviderCompletionProps) => {
             <input
               type="number"
               value={adjustedPrice}
-              onChange={(e) => setAdjustedPrice(e.target.value)}
+              onChange={(e) => handlePriceChange(e.target.value)}
+              onBlur={handlePriceBlur}
               className="text-3xl font-bold font-display text-foreground bg-transparent outline-none w-24 text-center"
             />
           </div>
-          {parseFloat(adjustedPrice) > 240 && (
+          {priceError && (
+            <p className="text-xs text-destructive mt-2">{priceError}</p>
+          )}
+          {!priceError && priceValid && parsedPrice > QUOTE_HIGH && (
             <p className="text-xs text-accent mt-2">⚠️ Above quoted range — customer approval required</p>
           )}
-          {parseFloat(adjustedPrice) <= 240 && parseFloat(adjustedPrice) >= 185 && (
+          {!priceError && priceValid && parsedPrice <= QUOTE_HIGH && parsedPrice >= QUOTE_LOW && (
             <p className="text-xs text-secondary mt-2">✓ Within quoted range — auto-approved</p>
+          )}
+          {!priceError && priceValid && parsedPrice < QUOTE_LOW && parsedPrice >= 0 && (
+            <p className="text-xs text-blue-500 mt-2">Below quoted range</p>
           )}
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-2 text-sm">
-          <h3 className="font-semibold text-sm mb-2">Reason for adjustment</h3>
-          {["Standard completion", "Larger area than estimated", "Extra complexity", "Less work than estimated"].map((reason) => (
-            <button key={reason} className="w-full text-left bg-muted rounded-xl px-3 py-2.5 text-sm text-foreground hover:bg-muted/80 transition-colors">
+          <h3 className="font-semibold text-sm mb-2">
+            Reason for adjustment <span className="text-accent">*</span>
+          </h3>
+          {REASONS.map((reason) => (
+            <button
+              key={reason}
+              onClick={() => setSelectedReason(reason)}
+              className={`w-full text-left rounded-xl px-3 py-2.5 text-sm transition-colors ${
+                selectedReason === reason
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "bg-muted text-foreground hover:bg-muted/80"
+              }`}
+            >
               {reason}
             </button>
           ))}
+          {selectedReason === null && (
+            <p className="text-xs text-muted-foreground pt-1">Select a reason to continue</p>
+          )}
         </div>
 
         <button
           onClick={() => setStep("qr")}
-          className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+          disabled={!canProceedToQr}
+          className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Show QR Code <ChevronRight className="w-4 h-4" />
         </button>
@@ -136,28 +234,62 @@ const ProviderCompletion = ({ onDone }: ProviderCompletionProps) => {
       {/* Checklist */}
       <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
         <h3 className="font-semibold text-sm text-foreground">Completion Checklist</h3>
-        {["Mowing completed", "Edges trimmed", "Clippings cleaned up", "Area inspected"].map((item, i) => (
-          <label key={item} className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" defaultChecked={i < 2} className="w-4 h-4 rounded border-border accent-primary" />
-            <span className="text-sm text-foreground">{item}</span>
+        {CHECKLIST_ITEMS.map((item, i) => (
+          <label key={item.label} className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={checkedItems[i]}
+              onChange={() => toggleCheck(i)}
+              className="w-4 h-4 rounded border-border accent-primary"
+            />
+            <span className="text-sm text-foreground">
+              {item.label}
+              {item.required && <span className="text-accent ml-1">*</span>}
+            </span>
           </label>
         ))}
+        {!allRequiredChecked && (
+          <p className="text-xs text-muted-foreground pt-1">Complete all required items (*) to proceed</p>
+        )}
       </div>
 
       {/* Photo upload */}
-      <div>
-        <h3 className="font-semibold text-sm text-foreground mb-2">Upload completion photos (optional)</h3>
-        <div className="flex gap-2">
-          <button className="w-20 h-20 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground">
+      <div className="space-y-3">
+        <h3 className="font-semibold text-sm text-foreground">Upload completion photos (optional)</h3>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          ref={fileInputRef}
+          hidden
+          onChange={handleFileChange}
+        />
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-20 h-20 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:bg-muted/80 transition-colors active:scale-[0.98]"
+          >
             <Camera className="w-5 h-5" />
             <span className="text-[10px]">Add</span>
           </button>
+          {photos.map((src, i) => (
+            <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-border">
+              <img src={src} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+              <button
+                onClick={() => removePhoto(i)}
+                className="absolute top-0.5 right-0.5 w-5 h-5 bg-foreground/70 text-background rounded-full flex items-center justify-center"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
       <button
         onClick={() => setStep("adjust")}
-        className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+        disabled={!allRequiredChecked}
+        className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         Next: Adjust Price <ChevronRight className="w-4 h-4" />
       </button>

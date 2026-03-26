@@ -1,9 +1,8 @@
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { Clock, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useMemo } from "react";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const dates = [24, 25, 26, 27, 28, 29, 30];
 
 interface ScheduleJob {
   time: string;
@@ -15,41 +14,98 @@ interface ScheduleJob {
   icon: string;
 }
 
-const scheduleData: Record<number, ScheduleJob[]> = {
-  26: [
-    { time: "9:00 AM", service: "HVAC Tune-up", customer: "Amy R.", address: "789 Pine Rd", price: "$150", duration: "1 hr", icon: "❄️" },
-    { time: "11:00 AM", service: "Lawn Mowing", customer: "Sarah M.", address: "123 Main St", price: "$185", duration: "1.5 hrs", icon: "🌿" },
-    { time: "2:00 PM", service: "Pressure Wash", customer: "James L.", address: "456 Oak Ave", price: "$320", duration: "2 hrs", icon: "💧" },
-  ],
-  27: [
-    { time: "8:00 AM", service: "Roof Cleaning", customer: "Tom B.", address: "555 Cedar Ln", price: "$450", duration: "3 hrs", icon: "🏠" },
-    { time: "1:00 PM", service: "Lawn Mowing", customer: "David K.", address: "321 Elm St", price: "$165", duration: "1 hr", icon: "🌿" },
-  ],
-  28: [
-    { time: "10:00 AM", service: "Electrical", customer: "Lisa W.", address: "890 Birch Dr", price: "$200", duration: "1.5 hrs", icon: "⚡" },
-  ],
-  29: [
-    { time: "9:00 AM", service: "Lawn Mowing", customer: "Sarah M.", address: "123 Main St", price: "$185", duration: "1.5 hrs", icon: "🌿" },
-    { time: "12:00 PM", service: "Handyman", customer: "Mike P.", address: "234 Maple Ave", price: "$175", duration: "2 hrs", icon: "🛠️" },
-    { time: "3:00 PM", service: "Pressure Wash", customer: "Ana S.", address: "678 Walnut St", price: "$280", duration: "1.5 hrs", icon: "💧" },
-  ],
+const today = new Date();
+
+const getWeekDates = (weekOffset: number): Date[] => {
+  const d = new Date(today);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1) + weekOffset * 7;
+  d.setDate(diff);
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(d);
+    date.setDate(d.getDate() + i);
+    return date;
+  });
 };
 
+// Build schedule data keyed by "YYYY-MM-DD" using real current week dates
+const buildScheduleData = (): Record<string, ScheduleJob[]> => {
+  const baseWeek = getWeekDates(0);
+  // Use the actual date numbers of this week to map to the existing mock slots
+  // We'll attach jobs to specific weekday indices (0=Mon … 6=Sun)
+  const byWeekday: Record<number, ScheduleJob[]> = {
+    2: [ // Wed (index 2)
+      { time: "9:00 AM", service: "HVAC Tune-up", customer: "Amy R.", address: "789 Pine Rd", price: "$150", duration: "1 hr", icon: "❄️" },
+      { time: "11:00 AM", service: "Lawn Mowing", customer: "Sarah M.", address: "123 Main St", price: "$185", duration: "1.5 hrs", icon: "🌿" },
+      { time: "2:00 PM", service: "Pressure Wash", customer: "James L.", address: "456 Oak Ave", price: "$320", duration: "2 hrs", icon: "💧" },
+    ],
+    3: [ // Thu (index 3)
+      { time: "8:00 AM", service: "Roof Cleaning", customer: "Tom B.", address: "555 Cedar Ln", price: "$450", duration: "3 hrs", icon: "🏠" },
+      { time: "1:00 PM", service: "Lawn Mowing", customer: "David K.", address: "321 Elm St", price: "$165", duration: "1 hr", icon: "🌿" },
+    ],
+    4: [ // Fri (index 4)
+      { time: "10:00 AM", service: "Electrical", customer: "Lisa W.", address: "890 Birch Dr", price: "$200", duration: "1.5 hrs", icon: "⚡" },
+    ],
+    5: [ // Sat (index 5)
+      { time: "9:00 AM", service: "Lawn Mowing", customer: "Sarah M.", address: "123 Main St", price: "$185", duration: "1.5 hrs", icon: "🌿" },
+      { time: "12:00 PM", service: "Handyman", customer: "Mike P.", address: "234 Maple Ave", price: "$175", duration: "2 hrs", icon: "🛠️" },
+      { time: "3:00 PM", service: "Pressure Wash", customer: "Ana S.", address: "678 Walnut St", price: "$280", duration: "1.5 hrs", icon: "💧" },
+    ],
+  };
+
+  const result: Record<string, ScheduleJob[]> = {};
+  baseWeek.forEach((date, i) => {
+    const key = date.toISOString().split("T")[0];
+    if (byWeekday[i]) {
+      result[key] = byWeekday[i];
+    }
+  });
+  return result;
+};
+
+const scheduleData = buildScheduleData();
+
+const toDateKey = (d: Date) => d.toISOString().split("T")[0];
+const todayKey = toDateKey(today);
+
 const ProviderSchedule = () => {
-  const [selectedDate, setSelectedDate] = useState(26);
-  const jobs = scheduleData[selectedDate] || [];
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedKey, setSelectedKey] = useState(todayKey);
+
+  const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
+
+  const monthLabel = useMemo(() => {
+    // If the week spans two months, show the month of the first day
+    const first = weekDates[0];
+    const last = weekDates[6];
+    const firstLabel = first.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    const lastLabel = last.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    return firstLabel === lastLabel ? firstLabel : `${first.toLocaleDateString("en-US", { month: "short" })} – ${last.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
+  }, [weekDates]);
+
+  const jobs = scheduleData[selectedKey] || [];
   const dayEarnings = jobs.reduce((sum, j) => sum + parseInt(j.price.replace("$", "")), 0);
+
+  const selectedDateObj = weekDates.find((d) => toDateKey(d) === selectedKey) || new Date(selectedKey);
+  const fullDateLabel = selectedDateObj.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   return (
     <div className="px-4 py-4 pb-24 space-y-4">
       {/* Month header */}
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold text-foreground">March 2024</h3>
+        <h3 className="font-display text-lg font-semibold text-foreground">{monthLabel}</h3>
         <div className="flex gap-1">
-          <button className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+          <button
+            onClick={() => setWeekOffset((prev) => prev - 1)}
+            disabled={weekOffset === 0}
+            className="w-7 h-7 rounded-full bg-muted flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+          >
             <ChevronLeft className="w-4 h-4 text-foreground" />
           </button>
-          <button className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+          <button
+            onClick={() => setWeekOffset((prev) => prev + 1)}
+            className="w-7 h-7 rounded-full bg-muted flex items-center justify-center"
+          >
             <ChevronRight className="w-4 h-4 text-foreground" />
           </button>
         </div>
@@ -57,22 +113,32 @@ const ProviderSchedule = () => {
 
       {/* Day selector */}
       <div className="flex gap-1">
-        {days.map((day, i) => {
-          const date = dates[i];
-          const hasJobs = scheduleData[date] && scheduleData[date].length > 0;
-          const isSelected = date === selectedDate;
+        {weekDates.map((date, i) => {
+          const key = toDateKey(date);
+          const hasJobs = !!(scheduleData[key] && scheduleData[key].length > 0);
+          const isSelected = key === selectedKey;
+          const isToday = key === todayKey;
           return (
             <button
-              key={day}
-              onClick={() => setSelectedDate(date)}
-              className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl transition-all ${
+              key={key}
+              onClick={() => setSelectedKey(key)}
+              className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl transition-all relative ${
                 isSelected ? "bg-primary text-primary-foreground" : "bg-card border border-border"
               }`}
             >
-              <span className="text-[10px] font-medium opacity-70">{day}</span>
-              <span className="text-sm font-semibold">{date}</span>
-              {hasJobs && !isSelected && (
+              <span className="text-[10px] font-medium opacity-70">{days[i]}</span>
+              <span className="text-sm font-semibold">{date.getDate()}</span>
+              {isToday && !isSelected && (
+                <span className="text-[9px] font-bold text-primary leading-none">TODAY</span>
+              )}
+              {isToday && isSelected && (
+                <span className="text-[9px] font-bold text-primary-foreground leading-none opacity-80">TODAY</span>
+              )}
+              {hasJobs && !isSelected && !isToday && (
                 <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              )}
+              {hasJobs && isSelected && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground opacity-70" />
               )}
             </button>
           );
@@ -81,7 +147,7 @@ const ProviderSchedule = () => {
 
       {/* Day summary */}
       <div className="flex items-center justify-between bg-muted rounded-xl px-4 py-2.5">
-        <span className="text-xs text-muted-foreground">{jobs.length} job{jobs.length !== 1 ? "s" : ""} scheduled</span>
+        <span className="text-xs text-muted-foreground">{fullDateLabel} · {jobs.length} job{jobs.length !== 1 ? "s" : ""}</span>
         <span className="text-xs font-medium text-foreground">${dayEarnings} estimated</span>
       </div>
 
