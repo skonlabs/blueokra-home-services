@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, Camera } from "lucide-react";
+import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, Calendar } from "lucide-react";
 import { useState } from "react";
 
 interface Job {

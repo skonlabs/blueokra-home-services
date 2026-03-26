@@ -7,7 +7,7 @@ import QuoteView from "@/components/QuoteView";
 import BookingConfirmation from "@/components/BookingConfirmation";
 import ProviderDashboard from "@/components/ProviderDashboard";
 
-type Screen = "home" | "intake" | "quote" | "booked" | "provider";
+type Screen = "home" | "intake" | "quote" | "booked" | "provider" | "history" | "settings";
 
 const Index = () => {
   const [screen, setScreen] = useState<Screen>("home");
