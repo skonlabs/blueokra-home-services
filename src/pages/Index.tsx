@@ -21,6 +21,7 @@ import ProviderEarnings from "@/components/provider/ProviderEarnings";
 import ProviderSchedule from "@/components/provider/ProviderSchedule";
 import ProfileScreen from "@/components/shared/ProfileScreen";
 import type { QuoteData } from "@/components/homeowner/AIIntakeChat";
+import { SERVICE_NAMES } from "@/components/homeowner/AIIntakeChat";
 import type { IntakeFormData } from "@/lib/quoteCalculator";
 import type { Job } from "@/components/provider/ProviderJobs";
 
@@ -94,8 +95,7 @@ const Index = () => {
     switch (screen) {
       case "intake":
         return {
-          title: selectedService ? `${selectedService.charAt(0).toUpperCase() + selectedService.slice(1)} Service` : "Describe Your Need",
-          subtitle: "AI-powered intake",
+          title: selectedService ? (SERVICE_NAMES[selectedService] ?? selectedService) : "Describe Your Need",
           onBack: goHome,
         };
       case "quote":
@@ -195,7 +195,12 @@ const Index = () => {
 
           {screen === "booked" && currentQuote && (
             <motion.div key="booked" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-              <BookingConfirmation quote={currentQuote} onViewBookings={() => navigate("bookings")} onHome={goHome} />
+              <BookingConfirmation
+                quote={currentQuote}
+                serviceAddress={lastIntakeData?.serviceAddress}
+                onViewBookings={() => navigate("bookings")}
+                onHome={goHome}
+              />
             </motion.div>
           )}
 
@@ -299,13 +304,14 @@ const Index = () => {
 // ─── Provider Onboarding ───────────────────────────────────────────────────────
 
 const ALL_SERVICES = [
-  "Lawn Mowing",
-  "HVAC Maintenance",
-  "Plumbing",
-  "Electrical",
-  "Pressure Washing",
+  "Lawn Care",
+  "House Cleaning",
   "Gutter Cleaning",
-  "Painting",
+  "Roof Cleaning",
+  "Pressure Washing",
+  "Duct Cleaning",
+  "Backwater Testing",
+  "Fence Installation",
 ];
 
 const ProviderOnboarding = ({ onComplete }: { onComplete: () => void }) => {
