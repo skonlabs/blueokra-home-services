@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
+import blueokraLogo from "@/assets/blueokra-logo.svg";
 
 interface RightAction {
   icon: ReactNode;
@@ -32,10 +33,9 @@ const BlueOkraLogo = () => (
     className="flex items-center gap-1.5 select-none"
     aria-label="BlueOkra"
   >
-    {/* Okra pod mark */}
-    <span className="text-base leading-none" role="img" aria-hidden="true">🫛</span>
+    <img src={blueokraLogo} alt="" className="w-6 h-6" aria-hidden="true" />
     <span className="font-display text-sm font-semibold tracking-tight text-primary">
-      BlueOkra
+      BlueOkra<sup className="text-[8px]">®</sup>
     </span>
   </motion.div>
 );
