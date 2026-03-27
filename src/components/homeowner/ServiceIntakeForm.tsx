@@ -5,6 +5,7 @@ import type { IntakeFormData } from "@/lib/quoteCalculator";
 interface ServiceIntakeFormProps {
   serviceId: string;
   onSubmit: (data: IntakeFormData) => void;
+  initialValues?: Partial<IntakeFormData>;
 }
 
 // ---------------------------------------------------------------------------
@@ -156,14 +157,23 @@ function CheckList({
 }
 
 // ---------------------------------------------------------------------------
-// Service-specific form sections
+// Pricing tables for add-on display (mirrors quoteCalculator.ts)
 // ---------------------------------------------------------------------------
 
-const PACKAGE_OPTIONS = [
-  { value: "standard" as const, label: "Standard" },
-  { value: "premium" as const,  label: "Premium" },
-  { value: "ultimate" as const, label: "Ultimate" },
-];
+const LAWN_ADD_ON_PRICES: Record<string, { aeration: number; overseeding: number; fertilization: number }> = {
+  lt1000:   { aeration: 100, overseeding: 75,  fertilization: 50  },
+  lt1500:   { aeration: 125, overseeding: 100, fertilization: 75  },
+  lt2000:   { aeration: 150, overseeding: 125, fertilization: 100 },
+  lt3000:   { aeration: 200, overseeding: 150, fertilization: 125 },
+  lt4000:   { aeration: 250, overseeding: 200, fertilization: 150 },
+  lt5000:   { aeration: 300, overseeding: 250, fertilization: 175 },
+  lt10000:  { aeration: 400, overseeding: 300, fertilization: 200 },
+  gte10000: { aeration: 500, overseeding: 600, fertilization: 400 },
+};
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
 const URGENCY_OPTIONS = [
   { value: "emergency" as const, label: "🚨 Same day" },
@@ -172,11 +182,11 @@ const URGENCY_OPTIONS = [
 ];
 
 const FREQUENCY_OPTIONS = [
-  { value: "one-time" as const, label: "One-time" },
-  { value: "weekly" as const,   label: "Weekly" },
-  { value: "biweekly" as const, label: "Bi-weekly" },
-  { value: "monthly" as const,  label: "Monthly" },
-  { value: "quarterly" as const,label: "Quarterly" },
+  { value: "one-time" as const,  label: "One-time" },
+  { value: "weekly" as const,    label: "Weekly" },
+  { value: "biweekly" as const,  label: "Bi-weekly" },
+  { value: "monthly" as const,   label: "Monthly" },
+  { value: "quarterly" as const, label: "Quarterly" },
 ];
 
 // Services that don't benefit from recurring bulk discounts
@@ -186,56 +196,57 @@ const NO_FREQUENCY = new Set(["gutter", "roof", "fence", "backwater"]);
 // Main component
 // ---------------------------------------------------------------------------
 
-const ServiceIntakeForm = ({ serviceId, onSubmit }: ServiceIntakeFormProps) => {
-  const [pkg, setPkg] = useState<"standard" | "premium" | "ultimate">("standard");
-  const [urgency, setUrgency] = useState<"emergency" | "soon" | "flexible">("flexible");
-  const [frequency, setFrequency] = useState<"one-time" | "weekly" | "biweekly" | "monthly" | "quarterly">("one-time");
-  const [isFirstTime, setIsFirstTime] = useState(false);
-  const [addOns, setAddOns] = useState<string[]>([]);
+const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntakeFormProps) => {
+  const iv = initialValues ?? {};
+
+  const [urgency,   setUrgency]   = useState<"emergency" | "soon" | "flexible">(iv.urgency   ?? "flexible");
+  const [frequency, setFrequency] = useState<"one-time" | "weekly" | "biweekly" | "monthly" | "quarterly">(iv.frequency ?? "one-time");
+  const [addOns,    setAddOns]    = useState<string[]>(iv.addOns ?? []);
 
   // Lawn
-  const [yardSize, setYardSize] = useState<IntakeFormData["yardSize"]>("lt3000");
-  const [grassHeight, setGrassHeight] = useState<"normal" | "medium" | "tall">("normal");
-  const [weedLevel, setWeedLevel] = useState<"none" | "few" | "moderate" | "lots">("none");
-  const [bushCount, setBushCount] = useState(0);
+  const [yardSize,    setYardSize]    = useState<IntakeFormData["yardSize"]>(iv.yardSize    ?? "lt3000");
+  const [grassHeight, setGrassHeight] = useState<"normal" | "medium" | "tall">(iv.grassHeight ?? "normal");
+  const [weedLevel,   setWeedLevel]   = useState<"none" | "few" | "moderate" | "lots">(iv.weedLevel ?? "none");
+  const [bushCount,   setBushCount]   = useState(iv.bushCount ?? 0);
 
   // House Cleaning
-  const [bedrooms, setBedrooms] = useState(3);
-  const [bathrooms, setBathrooms] = useState(2);
-  const [bonusRooms, setBonusRooms] = useState(0);
+  const [bedrooms,   setBedrooms]   = useState(iv.bedrooms   ?? 3);
+  const [bathrooms,  setBathrooms]  = useState(iv.bathrooms  ?? 2);
+  const [bonusRooms, setBonusRooms] = useState(iv.bonusRooms ?? 0);
 
   // Gutter
-  const [stories, setStories] = useState<1 | 2 | 3>(1);
-  const [gutterCondition, setGutterCondition] = useState<"clear" | "moderate" | "heavy" | "repair">("clear");
+  const [stories,        setStories]        = useState<1 | 2 | 3>(iv.stories        ?? 1);
+  const [gutterCondition,setGutterCondition] = useState<"clear" | "moderate" | "heavy" | "repair">(iv.gutterCondition ?? "clear");
 
   // Roof
-  const [roofSize, setRoofSize] = useState<IntakeFormData["roofSize"]>("s2000_2500");
-  const [roofStories, setRoofStories] = useState<1 | 2 | 3>(1);
-  const [mossLevel, setMossLevel] = useState<"none" | "light" | "moderate" | "heavy">("none");
-  const [algaeProtection, setAlgaeProtection] = useState(false);
+  const [roofSize,        setRoofSize]        = useState<IntakeFormData["roofSize"]>(iv.roofSize        ?? "s2000_2500");
+  const [roofStories,     setRoofStories]     = useState<1 | 2 | 3>(iv.roofStories     ?? 1);
+  const [mossLevel,       setMossLevel]       = useState<"none" | "light" | "moderate" | "heavy">(iv.mossLevel ?? "none");
+  const [algaeProtection, setAlgaeProtection] = useState(iv.algaeProtection ?? false);
 
   // Pressure / Electrical
-  const [homeSize, setHomeSize] = useState<IntakeFormData["homeSize"]>("s1000_2000");
+  const [homeSize, setHomeSize] = useState<IntakeFormData["homeSize"]>(iv.homeSize ?? "s1000_2000");
 
   // Duct
-  const [ventCount, setVentCount] = useState(10);
-  const [dryerVent, setDryerVent] = useState(false);
+  const [ventCount, setVentCount] = useState(iv.ventCount ?? 10);
+  const [dryerVent, setDryerVent] = useState(iv.dryerVent ?? false);
 
   // Backwater
-  const [deviceCount, setDeviceCount] = useState(1);
-  const [deviceRepair, setDeviceRepair] = useState(false);
-  const [certFiling, setCertFiling] = useState(false);
+  const [deviceCount,  setDeviceCount]  = useState(iv.deviceCount  ?? 1);
+  const [deviceRepair, setDeviceRepair] = useState(iv.deviceRepair ?? false);
+  const [certFiling,   setCertFiling]   = useState(iv.certFiling   ?? false);
 
   // Fence
-  const [linearFeet, setLinearFeet] = useState(50);
-  const [fenceHeight, setFenceHeight] = useState<"standard" | "eight_ft">("standard");
-  const [terrain, setTerrain] = useState<"flat" | "steep" | "rocky">("flat");
-  const [doorCount, setDoorCount] = useState(0);
-  const [isRepair, setIsRepair] = useState(false);
-  const [weatherproofCoating, setWeatherproofCoating] = useState(false);
+  const [linearFeet,         setLinearFeet]         = useState(iv.linearFeet         ?? 50);
+  const [fenceHeight,        setFenceHeight]        = useState<"standard" | "eight_ft">(iv.fenceHeight ?? "standard");
+  const [terrain,            setTerrain]            = useState<"flat" | "steep" | "rocky">(iv.terrain ?? "flat");
+  const [doorCount,          setDoorCount]          = useState(iv.doorCount          ?? 0);
+  const [isRepair,           setIsRepair]           = useState(iv.isRepair           ?? false);
+  const [weatherproofCoating,setWeatherproofCoating]= useState(iv.weatherproofCoating ?? false);
 
   const handleSubmit = () => {
-    const base: IntakeFormData = { serviceId, package: pkg, urgency, frequency, isFirstTime, addOns };
+    // package always "standard" — package selector removed (Fix 6)
+    const base: IntakeFormData = { serviceId, package: "standard", urgency, frequency, addOns };
     switch (serviceId) {
       case "lawn":
         onSubmit({ ...base, yardSize, grassHeight, weedLevel, bushCount: addOns.includes("bush_trimming") ? bushCount : 0 });
@@ -269,7 +280,9 @@ const ServiceIntakeForm = ({ serviceId, onSubmit }: ServiceIntakeFormProps) => {
 
   const renderServiceFields = () => {
     switch (serviceId) {
-      case "lawn":
+      case "lawn": {
+        // Dynamic add-on prices based on selected yard size (Fix 5)
+        const addOnP = LAWN_ADD_ON_PRICES[yardSize ?? "lt3000"];
         return (
           <>
             <ChipRow label="Yard size" value={yardSize} onChange={setYardSize} options={[
@@ -294,17 +307,23 @@ const ServiceIntakeForm = ({ serviceId, onSubmit }: ServiceIntakeFormProps) => {
               { value: "lots",     label: "Lots (+$100)" },
             ]} />
             <CheckList label="Add-ons (optional)" values={addOns} onChange={setAddOns} options={[
-              { value: "aeration",      label: "Aeration",      price: "from $100" },
-              { value: "overseeding",   label: "Overseeding",   price: "from $75" },
-              { value: "fertilization", label: "Fertilization", price: "from $50" },
-              { value: "bush_trimming", label: "Bush trimming", price: "$15/bush" },
+              { value: "aeration",      label: "Aeration",      price: `$${addOnP.aeration}` },
+              { value: "overseeding",   label: "Overseeding",   price: `$${addOnP.overseeding}` },
+              { value: "fertilization", label: "Fertilization", price: `$${addOnP.fertilization}` },
+              { value: "bush_trimming", label: "Bush trimming",
+                price: addOns.includes("bush_trimming") && bushCount > 0
+                  ? `$${bushCount * 15}`
+                  : "$15/bush" },
             ]} />
             {addOns.includes("bush_trimming") && (
               <Stepper label="Number of bushes" value={bushCount} min={1} max={50} onChange={setBushCount} />
             )}
-            <Toggle label="First-time customer?" sublabel="+50% surcharge on base" value={isFirstTime} onChange={setIsFirstTime} />
+            <p className="text-[11px] text-muted-foreground">
+              A first-time setup fee (+50% of base) is included automatically.
+            </p>
           </>
         );
+      }
 
       case "house_cleaning":
         return (
@@ -313,12 +332,14 @@ const ServiceIntakeForm = ({ serviceId, onSubmit }: ServiceIntakeFormProps) => {
             <Stepper label="Bathrooms" value={bathrooms} min={1} max={8} onChange={setBathrooms} />
             <Stepper label="Bonus rooms (office, den…)" value={bonusRooms} min={0} max={6} onChange={setBonusRooms} />
             <CheckList label="Add-ons (optional)" values={addOns} onChange={setAddOns} options={[
-              { value: "oven",         label: "Inside oven cleaning",    price: "$20" },
-              { value: "fridge",       label: "Inside fridge cleaning",  price: "$25" },
-              { value: "garage",       label: "Garage cleaning",         price: "$75" },
-              { value: "carpet_stain", label: "Carpet stain removal",    price: "$50" },
+              { value: "oven",         label: "Inside oven cleaning",   price: "$20" },
+              { value: "fridge",       label: "Inside fridge cleaning", price: "$25" },
+              { value: "garage",       label: "Garage cleaning",        price: "$75" },
+              { value: "carpet_stain", label: "Carpet stain removal",   price: "$50" },
             ]} />
-            <Toggle label="First-time customer?" sublabel="+50% surcharge on base" value={isFirstTime} onChange={setIsFirstTime} />
+            <p className="text-[11px] text-muted-foreground">
+              A first-time setup fee (+50% of base) is included automatically.
+            </p>
           </>
         );
 
@@ -337,9 +358,9 @@ const ServiceIntakeForm = ({ serviceId, onSubmit }: ServiceIntakeFormProps) => {
               { value: "repair",   label: "Needs repair (+$100)" },
             ]} />
             <CheckList label="Add-ons (optional)" values={addOns} onChange={setAddOns} options={[
-              { value: "downspout",    label: "Downspout cleaning", price: "+$25" },
-              { value: "gutter_guard", label: "Gutter guard install", price: "$100" },
-              { value: "minor_repairs",label: "Minor repairs",      price: "+$75" },
+              { value: "downspout",    label: "Downspout cleaning",      price: "$25" },
+              { value: "gutter_guard", label: "Gutter guard installation", price: "$100" },
+              { value: "minor_repairs",label: "Minor repairs",           price: "$75" },
             ]} />
           </>
         );
@@ -355,7 +376,7 @@ const ServiceIntakeForm = ({ serviceId, onSubmit }: ServiceIntakeFormProps) => {
               { value: "s4000_5000", label: "4,000–5,000" },
               { value: "gte5000",    label: "5,000+ sq ft" },
             ]} />
-            <ChipRow label="Home stories (for premium gutter add-on)" value={String(roofStories) as "1" | "2" | "3"} onChange={(v) => setRoofStories(Number(v) as 1 | 2 | 3)} options={[
+            <ChipRow label="Home stories" value={String(roofStories) as "1" | "2" | "3"} onChange={(v) => setRoofStories(Number(v) as 1 | 2 | 3)} options={[
               { value: "1", label: "1 story" },
               { value: "2", label: "2 stories" },
               { value: "3", label: "3 stories" },
@@ -374,22 +395,24 @@ const ServiceIntakeForm = ({ serviceId, onSubmit }: ServiceIntakeFormProps) => {
         return (
           <>
             <ChipRow label="Home size" value={homeSize} onChange={setHomeSize} options={[
-              { value: "lt1000",    label: "< 1,000 sq ft" },
-              { value: "s1000_2000",label: "1,000–2,000" },
-              { value: "s2000_3000",label: "2,000–3,000" },
-              { value: "gte3000",   label: "3,000+ sq ft" },
+              { value: "lt1000",     label: "< 1,000 sq ft" },
+              { value: "s1000_2000", label: "1,000–2,000" },
+              { value: "s2000_3000", label: "2,000–3,000" },
+              { value: "gte3000",    label: "3,000+ sq ft" },
             ]} />
-            <Toggle label="First-time customer?" sublabel="+50% surcharge" value={isFirstTime} onChange={setIsFirstTime} />
+            <p className="text-[11px] text-muted-foreground">
+              A first-time setup fee (+50%) is included automatically.
+            </p>
           </>
         );
 
       case "electrical":
         return (
           <ChipRow label="Home size" value={homeSize} onChange={setHomeSize} options={[
-            { value: "lt1000",    label: "< 1,000 sq ft" },
-            { value: "s1000_2000",label: "1,000–2,000" },
-            { value: "s2000_3000",label: "2,000–3,000" },
-            { value: "gte3000",   label: "3,000+ sq ft" },
+            { value: "lt1000",     label: "< 1,000 sq ft" },
+            { value: "s1000_2000", label: "1,000–2,000" },
+            { value: "s2000_3000", label: "2,000–3,000" },
+            { value: "gte3000",    label: "3,000+ sq ft" },
           ]} />
         );
 
@@ -407,8 +430,8 @@ const ServiceIntakeForm = ({ serviceId, onSubmit }: ServiceIntakeFormProps) => {
           <>
             <Stepper label="Number of backwater devices" value={deviceCount} min={1} max={5} onChange={setDeviceCount} />
             <p className="text-[11px] text-muted-foreground -mt-1">First device $100, each additional +$50.</p>
-            <Toggle label="Any devices need repair?" sublabel="+$150 per device" value={deviceRepair} onChange={setDeviceRepair} />
-            <Toggle label="Need certification filing?" sublabel="+$25" value={certFiling} onChange={setCertFiling} />
+            <Toggle label="Any devices need repair?" sublabel="+$150" value={deviceRepair} onChange={setDeviceRepair} />
+            <Toggle label="Need certification filing?" sublabel="+$25"  value={certFiling}   onChange={setCertFiling} />
           </>
         );
 
@@ -430,13 +453,13 @@ const ServiceIntakeForm = ({ serviceId, onSubmit }: ServiceIntakeFormProps) => {
               </div>
             </div>
             <ChipRow label="Fence height" value={fenceHeight} onChange={setFenceHeight} options={[
-              { value: "standard",  label: "Standard (6 ft)" },
-              { value: "eight_ft",  label: "8 ft (+$10/ft)" },
+              { value: "standard", label: "Standard (6 ft)" },
+              { value: "eight_ft", label: "8 ft (+$10/ft)" },
             ]} />
             <ChipRow label="Terrain" value={terrain} onChange={setTerrain} options={[
-              { value: "flat",   label: "Flat" },
-              { value: "steep",  label: "Steep (+$10/ft)" },
-              { value: "rocky",  label: "Rocky (+$20/ft)" },
+              { value: "flat",  label: "Flat" },
+              { value: "steep", label: "Steep (+$10/ft)" },
+              { value: "rocky", label: "Rocky (+$20/ft)" },
             ]} />
             <Stepper label="Number of gates / doors" value={doorCount} min={0} max={10} onChange={setDoorCount} />
             <p className="text-[11px] text-muted-foreground -mt-1">+$50 per gate</p>
@@ -452,9 +475,6 @@ const ServiceIntakeForm = ({ serviceId, onSubmit }: ServiceIntakeFormProps) => {
 
   return (
     <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
-      {/* Package */}
-      <ChipRow label="Package" value={pkg} onChange={setPkg} options={PACKAGE_OPTIONS} />
-
       {/* Service-specific fields */}
       {renderServiceFields()}
 

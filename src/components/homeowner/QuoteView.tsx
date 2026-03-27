@@ -47,9 +47,24 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
           <Shield className="w-3 h-3" />
           {quote.confidence}% — {confidenceLabel}
         </div>
-        <h2 className="font-display text-3xl font-bold text-foreground">
-          ${quote.low}{quote.type !== "fixed" && ` – $${quote.high}`}
-        </h2>
+        {quote.recurringPerVisit ? (
+          <>
+            <p className="text-xs text-muted-foreground mb-0.5">1st service</p>
+            <h2 className="font-display text-3xl font-bold text-foreground">
+              ${quote.low}{quote.type !== "fixed" && ` – $${quote.high}`}
+            </h2>
+            <p className="text-sm text-primary font-semibold mt-1">
+              ${quote.recurringPerVisit}/visit after that
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 capitalize">
+              {quote.frequency} · recurring discount applied
+            </p>
+          </>
+        ) : (
+          <h2 className="font-display text-3xl font-bold text-foreground">
+            ${quote.low}{quote.type !== "fixed" && ` – $${quote.high}`}
+          </h2>
+        )}
         <p className="text-sm text-muted-foreground mt-1">{quote.serviceName}</p>
       </div>
 
@@ -65,9 +80,17 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
               <span className="text-foreground font-medium">{item.amount}</span>
             </div>
           ))}
-          <div className="border-t border-border pt-2 flex justify-between font-semibold">
-            <span>Estimated total</span>
-            <span>${quote.low}{quote.type !== "fixed" && `–$${quote.high}`}</span>
+          <div className="border-t border-border pt-2 space-y-1">
+            <div className="flex justify-between font-semibold">
+              <span>{quote.recurringPerVisit ? "1st service total" : "Estimated total"}</span>
+              <span>${quote.low}{quote.type !== "fixed" && `–$${quote.high}`}</span>
+            </div>
+            {quote.recurringPerVisit && (
+              <div className="flex justify-between text-primary font-medium">
+                <span>Per visit (2nd+)</span>
+                <span>${quote.recurringPerVisit}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

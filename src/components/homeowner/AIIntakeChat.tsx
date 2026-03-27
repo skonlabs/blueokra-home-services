@@ -21,6 +21,8 @@ interface Message {
 interface AIIntakeProps {
   serviceId?: string;
   onQuoteReady: (quoteData: QuoteData) => void;
+  initialFormData?: IntakeFormData;
+  onIntakeDataSaved?: (data: IntakeFormData) => void;
 }
 
 export interface QuoteData {
@@ -33,6 +35,8 @@ export interface QuoteData {
   breakdown: { label: string; amount: string }[];
   factors: string[];
   slots: string[];
+  recurringPerVisit?: number; // per-visit price for 2nd+ bookings
+  frequency?: string;         // "weekly" | "biweekly" | etc. (undefined = one-time)
 }
 
 // ---------------------------------------------------------------------------
@@ -62,7 +66,7 @@ function getIntroMessage(serviceId: string): string {
 
 type Phase = "describe" | "form" | "done";
 
-const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakeProps) => {
+const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady, initialFormData, onIntakeDataSaved }: AIIntakeProps) => {
   const resolvedService = initialServiceId ? getServiceById(initialServiceId) : null;
 
   const [phase, setPhase] = useState<Phase>(initialServiceId ? "form" : "describe");
@@ -166,6 +170,7 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
   };
 
   const handleFormSubmit = (formData: IntakeFormData) => {
+    onIntakeDataSaved?.(formData);
     const quote = calculateQuote(formData);
     setPhase("done");
     addAIMessage("Your quote is ready!", {}, 300).then(() => {
@@ -228,6 +233,7 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
                   <ServiceIntakeForm
                     serviceId={detectedServiceId ?? "lawn"}
                     onSubmit={handleFormSubmit}
+                    initialValues={initialFormData}
                   />
                 )}
               </div>
@@ -274,6 +280,13 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
       {/* Input bar — only shown during describe phase */}
       {phase === "describe" && (
         <div className="px-4 pb-4 pt-2 border-t border-border bg-background">
+          <div className="flex gap-2 flex-wrap pb-2">
+            {["Mention size or area", "Photos help accuracy", "Describe the issue"].map((tip) => (
+              <span key={tip} className="text-[11px] bg-muted text-muted-foreground px-2.5 py-1 rounded-full">
+                {tip}
+              </span>
+            ))}
+          </div>
           <div className="flex items-end gap-2">
             <button
               onClick={() => fileRef.current?.click()}

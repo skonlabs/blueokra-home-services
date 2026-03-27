@@ -21,6 +21,7 @@ import ProviderEarnings from "@/components/provider/ProviderEarnings";
 import ProviderSchedule from "@/components/provider/ProviderSchedule";
 import ProfileScreen from "@/components/shared/ProfileScreen";
 import type { QuoteData } from "@/components/homeowner/AIIntakeChat";
+import type { IntakeFormData } from "@/lib/quoteCalculator";
 import type { Job } from "@/components/provider/ProviderJobs";
 
 type Screen =
@@ -38,6 +39,7 @@ const Index = () => {
   const [prevScreen, setPrevScreen] = useState<Screen>("home");
   const [selectedService, setSelectedService] = useState<string | undefined>();
   const [currentQuote, setCurrentQuote] = useState<QuoteData | null>(null);
+  const [lastIntakeData, setLastIntakeData] = useState<IntakeFormData | null>(null);
   const [mode, setMode] = useState<"homeowner" | "provider">("homeowner");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [reviewBooking, setReviewBooking] = useState<any>(null);
@@ -65,6 +67,7 @@ const Index = () => {
   const goHome = () => {
     setSelectedService(undefined);
     setCurrentQuote(null);
+    setLastIntakeData(null);
     navigate(mode === "provider" ? "provider-home" : "home");
   };
 
@@ -175,7 +178,12 @@ const Index = () => {
 
           {screen === "intake" && (
             <motion.div key="intake" initial={{ x: "50%", opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: "50%", opacity: 0 }} transition={{ duration: 0.2 }} className="flex-1 h-full flex flex-col" style={{ minHeight: "calc(100vh - 120px)" }}>
-              <AIIntakeChat serviceId={selectedService} onQuoteReady={handleQuoteReady} />
+              <AIIntakeChat
+                serviceId={selectedService}
+                onQuoteReady={handleQuoteReady}
+                initialFormData={lastIntakeData ?? undefined}
+                onIntakeDataSaved={setLastIntakeData}
+              />
             </motion.div>
           )}
 
