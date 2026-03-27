@@ -2,14 +2,15 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Camera, X, Video } from "lucide-react";
 import { getServiceById } from "./ServiceGrid";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
   role: "user" | "ai";
   text: string;
   images?: string[];
-  options?: { label: string; value: string }[];
   type?: "text" | "urgency" | "recurring" | "photos-request" | "video-consult" | "followup";
+  consumed?: boolean;
 }
 
 interface AIIntakeProps {
@@ -29,216 +30,31 @@ export interface QuoteData {
   slots: string[];
 }
 
-const serviceQuotes: Record<string, QuoteData> = {
-  lawn: {
-    serviceId: "lawn", serviceName: "Lawn Care",
-    type: "range", low: 75, high: 500, confidence: 92,
-    breakdown: [
-      { label: "Base mowing (varies by yard size)", amount: "$75–$400" },
-      { label: "Possible surcharges (grass height/weeds)", amount: "$25–$100" },
-    ],
-    factors: ["Yard size (sq ft)", "Grass height", "Weed level", "First-time visit"],
-    slots: ["Today 2pm", "Tomorrow 9am", "Tomorrow 1pm", "Sat 10am", "Sat 2pm", "Sun 11am"],
-  },
-  house_cleaning: {
-    serviceId: "house_cleaning", serviceName: "House Cleaning",
-    type: "range", low: 120, high: 350, confidence: 88,
-    breakdown: [
-      { label: "Per bedroom ($15–$22.50)", amount: "Varies" },
-      { label: "Per bathroom ($25–$37.50)", amount: "Varies" },
-      { label: "Kitchen ($60–$90)", amount: "Varies" },
-      { label: "Bonus rooms ($15–$22.50 each)", amount: "Varies" },
-    ],
-    factors: ["Number of rooms", "Package tier", "First-time surcharge (50%)", "Add-ons selected"],
-    slots: ["Tomorrow 9am", "Tomorrow 1pm", "Wed 9am", "Thu 10am", "Fri 9am"],
-  },
-  gutter: {
-    serviceId: "gutter", serviceName: "Gutter Cleaning",
-    type: "range", low: 125, high: 500, confidence: 85,
-    breakdown: [
-      { label: "Base cleaning (by stories)", amount: "$125–$500" },
-      { label: "Condition surcharge", amount: "$0–$100" },
-    ],
-    factors: ["Number of stories", "Clog severity", "Repairs needed"],
-    slots: ["Mon 8am", "Tue 9am", "Wed 8am", "Thu 9am"],
-  },
-  roof: {
-    serviceId: "roof", serviceName: "Roof Cleaning",
-    type: "range", low: 150, high: 500, confidence: 80,
-    breakdown: [
-      { label: "Base cleaning (by roof size)", amount: "$150–$500" },
-      { label: "Moss/algae treatment", amount: "$50–$250" },
-    ],
-    factors: ["Roof size (sq ft)", "Moss severity", "Roof material", "Access difficulty"],
-    slots: ["Mon 8am", "Tue 8am", "Wed 8am", "Thu 8am"],
-  },
-  pressure: {
-    serviceId: "pressure", serviceName: "Pressure Washing",
-    type: "range", low: 144, high: 640, confidence: 85,
-    breakdown: [
-      { label: "Base service", amount: "$180–$400" },
-      { label: "Size multiplier (0.8×–1.6×)", amount: "Applied" },
-    ],
-    factors: ["Home size (sq ft)", "Surface area", "Stain severity", "First-time surcharge"],
-    slots: ["Sat 9am", "Sat 1pm", "Sun 10am", "Mon 9am"],
-  },
-  electrical: {
-    serviceId: "electrical", serviceName: "Electrical Service",
-    type: "range", low: 120, high: 640, confidence: 70,
-    breakdown: [
-      { label: "Base service", amount: "$150–$400" },
-      { label: "Size multiplier (0.8×–1.6×)", amount: "Applied" },
-    ],
-    factors: ["Issue complexity", "Home size", "Code compliance", "Permit requirements"],
-    slots: ["Tomorrow 10am", "Wed 1pm", "Thu 9am", "Fri 10am"],
-  },
-  duct: {
-    serviceId: "duct", serviceName: "Duct Cleaning",
-    type: "range", low: 200, high: 400, confidence: 90,
-    breakdown: [
-      { label: "Base (up to 10 vents)", amount: "$200" },
-      { label: "Additional vents ($25 each)", amount: "Varies" },
-    ],
-    factors: ["Number of vents", "Dryer vent add-on"],
-    slots: ["Tomorrow 9am", "Wed 10am", "Thu 9am", "Fri 10am"],
-  },
-  backwater: {
-    serviceId: "backwater", serviceName: "Backwater Testing",
-    type: "range", low: 100, high: 350, confidence: 92,
-    breakdown: [
-      { label: "Base device test", amount: "$100" },
-      { label: "Additional devices ($50 each)", amount: "Varies" },
-    ],
-    factors: ["Number of devices", "Repairs needed", "Certification filing"],
-    slots: ["Today 3pm", "Tomorrow 9am", "Tomorrow 2pm", "Wed 10am"],
-  },
-  fence: {
-    serviceId: "fence", serviceName: "Fence Installation",
-    type: "range", low: 500, high: 5000, confidence: 75,
-    breakdown: [
-      { label: "Per linear ft ($50–$100)", amount: "Varies" },
-      { label: "Door surcharge ($50 each)", amount: "Varies" },
-      { label: "Terrain/height surcharges", amount: "Varies" },
-    ],
-    factors: ["Linear footage", "Package tier", "Fence height", "Terrain type", "Repair vs new"],
-    slots: ["Mon 8am", "Tue 8am", "Wed 8am", "Thu 8am"],
-  },
-};
-
-const serviceNames: Record<string, string> = {
-  lawn: "Lawn & Garden",
-  house_cleaning: "House Cleaning",
-  gutter: "Gutter Cleaning",
-  roof: "Roof Cleaning",
-  pressure: "Pressure Washing",
-  electrical: "Electrical",
-  duct: "Duct Cleaning",
-  backwater: "Backwater Testing",
-  fence: "Fence Installation",
-};
-
-const detectServiceFromText = (text: string): string | null => {
-  const lower = text.toLowerCase();
-  if (/lawn|grass|mow|yard|garden/.test(lower)) return "lawn";
-  if (/clean.*house|house.*clean|maid|deep clean|move.?out/.test(lower)) return "house_cleaning";
-  if (/gutter/.test(lower)) return "gutter";
-  if (/roof|moss|shingle/.test(lower)) return "roof";
-  if (/pressure|wash|driveway|patio|siding/.test(lower)) return "pressure";
-  if (/electric|outlet|breaker|wiring/.test(lower)) return "electrical";
-  if (/duct|vent|air quality|hvac|ac\b|heat|furnace/.test(lower)) return "duct";
-  if (/backwater|backflow|sewer|test.*device/.test(lower)) return "backwater";
-  if (/fence|fenc/.test(lower)) return "fence";
-  return null;
-};
-
-const photoObservations: Record<string, string> = {
-  lawn: "I can see the lawn area clearly. The grass appears overgrown in sections with some uneven edges along the borders.",
-  house_cleaning: "I can see the space. Looks like it needs a thorough cleaning — I'll factor in the rooms and any extras.",
-  gutter: "I can see the gutters. There's visible debris buildup that needs clearing.",
-  pressure: "I can see the surface clearly. There's significant buildup of grime, algae staining, and weathering across the area.",
-  roof: "I can see the roof surface. There's notable moss growth concentrated near the ridge and debris accumulation in the valleys.",
-  electrical: "I can see the panel/outlet area. There are signs of wear and the wiring configuration will need a closer look by a technician.",
-  duct: "I can see the vent area. There's visible dust buildup that suggests the ducts need cleaning.",
-  backwater: "I can see the backwater device area. I'll need to assess the condition for testing.",
-  fence: "I can see the area for the fence. The terrain and layout look workable.",
-};
-
-const followUpQuestions: Record<string, string> = {
-  lawn: "How large is the yard approximately? (under 1000, 1000-3000, 3000-5000, or over 5000 sq ft)",
-  house_cleaning: "How many bedrooms, bathrooms, and bonus rooms? And would you like Standard, Premium, or Ultimate cleaning?",
-  gutter: "How many stories is your home? And are the gutters moderately or heavily clogged?",
-  pressure: "What's the approximate size of your home? (under 1000, 1000-2000, 2000-3000, or over 3000 sq ft)",
-  roof: "What's the approximate roof size in sq ft? And do you see any moss or algae?",
-  electrical: "What's the approximate size of your home? And is this an emergency?",
-  duct: "How many vents do you have? (approximately) And would you like dryer vent cleaning too?",
-  backwater: "How many backwater devices do you have? And do any need repair?",
-  fence: "How many linear feet of fencing do you need? And would you like Standard, Premium, or Ultimate materials?",
-};
-
-const quoteReasonByService: Record<string, string> = {
-  lawn: "yard size, grass height, and weed conditions vary until we're on-site",
-  house_cleaning: "the number of rooms and condition affect the final price",
-  gutter: "clog severity and repair needs are assessed on arrival",
-  pressure: "surface area and stain severity are assessed on arrival",
-  roof: "roof size, moss coverage, and access complexity affect the final price",
-  electrical: "the full scope of work can only be determined after assessment",
-  duct: "the number of vents and system condition affect the final price",
-  backwater: "device condition and repair needs are assessed on-site",
-  fence: "terrain, height, and material choices affect the final price",
-};
-
 const getInitialMessage = (serviceId?: string): Message => {
   const service = serviceId ? getServiceById(serviceId) : null;
   return {
-    id: "1", role: "ai",
+    id: "1",
+    role: "ai",
     text: service
-      ? `I'll help you with ${service.name.toLowerCase()}. Tell me about the issue — you can type, upload photos, or both.`
-      : "What do you need help with? Describe the issue and I'll identify the right service for you.",
+      ? `I'll help you with ${service.name.toLowerCase()}. Tell me about your situation — you can type, upload photos, or both.`
+      : "What do you need help with today? Describe the issue and I'll find the right service for you.",
   };
 };
-
-// Steps:
-// 0 = initial description (text or photos)
-// 1 = photos request (if no photos at step 0)
-// 2 = follow-up question (service-specific)
-// 3 = urgency
-// 4 = recurring
 
 const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakeProps) => {
   const [messages, setMessages] = useState<Message[]>([getInitialMessage(initialServiceId)]);
   const [input, setInput] = useState("");
-  const [step, setStep] = useState(0);
   const [images, setImages] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [urgency, setUrgency] = useState<string | null>(null);
-  const [resolvedServiceId, setResolvedServiceId] = useState<string | null>(initialServiceId ?? null);
-  const [urgencySelected, setUrgencySelected] = useState(false);
-  const [recurringSelected, setRecurringSelected] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<
+    { role: "user" | "assistant"; content: string }[]
+  >([]);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-  };
-
-  const addAIMessage = (
-    text: string,
-    extra?: Partial<Message>,
-    delay: number = 800 + Math.random() * 600,
-  ) => {
-    setIsTyping(true);
-    scrollToBottom();
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        setIsTyping(false);
-        setMessages((prev) => [
-          ...prev,
-          { id: Date.now().toString(), role: "ai", text, ...extra },
-        ]);
-        scrollToBottom();
-        resolve();
-      }, delay);
-    });
   };
 
   const addUserMessage = (text: string, imgs?: string[]) => {
@@ -253,182 +69,118 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
     ]);
   };
 
-  const sendMessage = () => {
-    if (!input.trim() && images.length === 0) return;
+  const callChatAI = async (userText: string, hadImages: boolean) => {
+    const contextSuffix = hadImages ? " [User has shared photos]" : "";
+    const fullContent = (userText || "(no text, photos shared)") + contextSuffix;
 
-    const sentImages = [...images];
-    const sentText = input;
-    addUserMessage(sentText, sentImages);
-    setInput("");
-    setImages([]);
+    const updatedHistory: { role: "user" | "assistant"; content: string }[] = [
+      ...conversationHistory,
+      { role: "user", content: fullContent },
+    ];
+    setConversationHistory(updatedHistory);
+    setIsTyping(true);
+    scrollToBottom();
 
-    const currentStep = step;
-    setStep((s) => s + 1);
+    try {
+      const { data, error } = await supabase.functions.invoke("chat-ai", {
+        body: {
+          messages: updatedHistory,
+          serviceId: initialServiceId ?? undefined,
+          hasImages: hadImages,
+        },
+      });
 
-    // Step 0: initial description
-    if (currentStep === 0) {
-      let sid = resolvedServiceId;
+      if (error) throw error;
 
-      // Detect service from text if not provided
-      if (!sid && sentText) {
-        const detected = detectServiceFromText(sentText);
-        if (detected) {
-          sid = detected;
-          setResolvedServiceId(detected);
-          const name = serviceNames[detected];
-          // Show detection message, then continue
-          addAIMessage(
-            `I can help with that! Let me connect you with a ${name} specialist.`,
-            undefined,
-            900,
-          ).then(() => {
-            if (sentImages.length > 0) {
-              addAIMessage(
-                `${photoObservations[sid!]} Let me ask a few more questions.`,
-                undefined,
-                1200,
-              ).then(() => {
-                setStep(3);
-                addAIMessage(followUpQuestions[sid!], { type: "followup" }, 1000);
-              });
-            } else {
-              addAIMessage(
-                "Can you upload a photo of the area? It helps me give a more accurate quote.",
-                { type: "photos-request" },
-                1100,
-              );
-            }
-          });
-          return;
-        }
+      const { reply, quoteData, uiHint } = data as {
+        reply: string;
+        quoteData?: QuoteData;
+        uiHint?: "urgency" | "recurring";
+      };
+
+      setConversationHistory((prev) => [
+        ...prev,
+        { role: "assistant", content: reply },
+      ]);
+
+      const msgType =
+        uiHint === "urgency" ? "urgency" :
+        uiHint === "recurring" ? "recurring" :
+        undefined;
+
+      setIsTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: "ai",
+          text: reply,
+          type: msgType,
+        },
+      ]);
+      scrollToBottom();
+
+      if (quoteData) {
+        setTimeout(() => onQuoteReady(quoteData), 1200);
       }
-
-      if (sentImages.length > 0) {
-        const obs = photoObservations[sid ?? "handyman"];
-        addAIMessage(
-          `${obs} Let me ask a few more questions.`,
-          undefined,
-          1400,
-        ).then(() => {
-          setStep(3);
-          addAIMessage(followUpQuestions[sid ?? "handyman"], { type: "followup" }, 1000);
-        });
-      } else {
-        // No photos — ask for them
-        addAIMessage(
-          "Can you upload a photo of the area? It helps me give a more accurate quote.",
-          { type: "photos-request" },
-        );
-      }
-      return;
-    }
-
-    // Step 1: user responded after photo request (may or may not have sent photos)
-    if (currentStep === 1) {
-      const sid = resolvedServiceId ?? "handyman";
-      if (sentImages.length > 0) {
-        const obs = photoObservations[sid];
-        addAIMessage(
-          `${obs} Let me ask a couple more questions.`,
-          undefined,
-          1400,
-        ).then(() => {
-          setStep(3);
-          addAIMessage(followUpQuestions[sid], { type: "followup" }, 1000);
-        });
-      } else {
-        // User skipped photos — move to follow-up question
-        setStep(3);
-        addAIMessage(followUpQuestions[sid], { type: "followup" });
-      }
-      return;
-    }
-
-    // Step 2: follow-up answer — ask urgency
-    if (currentStep === 2 || currentStep === 3) {
-      addAIMessage("How urgent is this?", { type: "urgency" });
-      setStep(4);
-      return;
+    } catch {
+      setIsTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: "ai",
+          text: "I'm having trouble connecting right now. Please try again.",
+        },
+      ]);
+      scrollToBottom();
     }
   };
 
-  const handleUrgencySelect = (value: string) => {
-    if (urgencySelected) return;
-    setUrgencySelected(true);
-    setUrgency(value);
+  const sendMessage = () => {
+    if (!input.trim() && images.length === 0) return;
+
+    const sentText = input.trim();
+    const sentImages = [...images];
+    addUserMessage(sentText, sentImages);
+    setInput("");
+    setImages([]);
+    callChatAI(sentText, sentImages.length > 0);
+  };
+
+  const handleUrgencySelect = (msgId: string, value: string) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === msgId ? { ...m, consumed: true } : m)),
+    );
     const labels: Record<string, string> = {
       emergency: "Emergency (same day)",
       soon: "This week",
       flexible: "Flexible (anytime)",
     };
-    addUserMessage(labels[value] ?? value);
-    addAIMessage("Would you like this as a one-time or recurring service?", { type: "recurring" });
+    const labelText = labels[value] ?? value;
+    addUserMessage(labelText);
+    callChatAI(labelText, false);
   };
 
-  const handleRecurringSelect = (value: string) => {
-    if (recurringSelected) return;
-    setRecurringSelected(true);
-
+  const handleRecurringSelect = (msgId: string, value: string) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === msgId ? { ...m, consumed: true } : m)),
+    );
     const labels: Record<string, string> = {
       "one-time": "One-time",
       weekly: "Weekly",
       biweekly: "Bi-weekly",
       monthly: "Monthly",
-      seasonal: "Seasonal",
+      seasonal: "Seasonal / quarterly",
     };
-    addUserMessage(labels[value] ?? value);
-
-    const sid = resolvedServiceId ?? "lawn";
-    const quote = serviceQuotes[sid] ?? serviceQuotes.lawn;
-    const reason = quoteReasonByService[sid] ?? "scope varies until on-site";
-
-    const summaryText =
-      quote.type === "diagnostic"
-        ? `Your ${serviceNames[sid] ?? "service"} issue needs a diagnostic visit first. The **$${quote.low}** diagnostic fee applies, which goes toward the repair cost. I'm **${quote.confidence}%** confident in this estimate.`
-        : `Based on your photos and description, I estimate **$${quote.low}–$${quote.high}** for this job. This is a price range because ${reason}. The provider will confirm the exact price on-site. I'm **${quote.confidence}%** confident in this estimate.`;
-
-    setIsTyping(true);
-    scrollToBottom();
-    setTimeout(() => {
-      setIsTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now().toString(), role: "ai", text: summaryText },
-      ]);
-      scrollToBottom();
-      setTimeout(() => onQuoteReady(quote), 1500);
-    }, 1400);
+    const labelText = labels[value] ?? value;
+    addUserMessage(labelText);
+    callChatAI(labelText, false);
   };
 
   const handleVideoConsult = () => {
     addUserMessage("I'd like a video consultation");
-    addAIMessage(
-      "Video consultations are available for $25 (credited toward service). I'm connecting you with an available specialist...",
-      undefined,
-      800,
-    ).then(() => {
-      // Show typing for ~2s to simulate "connecting"
-      setIsTyping(true);
-      scrollToBottom();
-      setTimeout(() => {
-        setIsTyping(false);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            role: "ai",
-            text: "Actually, let me give you an estimate first based on what you've described. If you still need a visual inspection afterward, we can schedule a video call.",
-          },
-        ]);
-        scrollToBottom();
-        // Continue the flow — ask follow-up question
-        const sid = resolvedServiceId ?? "handyman";
-        setTimeout(() => {
-          setStep(4);
-          addAIMessage(followUpQuestions[sid], { type: "followup" }, 900);
-        }, 600);
-      }, 2000);
-    });
+    callChatAI("I'd like a video consultation instead of uploading photos", false);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -441,7 +193,6 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
       };
       reader.readAsDataURL(file);
     });
-    // Reset input so the same file can be re-selected
     e.target.value = "";
   };
 
@@ -484,7 +235,7 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
                 </div>
 
                 {/* Urgency options */}
-                {msg.type === "urgency" && msg.role === "ai" && !urgencySelected && (
+                {msg.type === "urgency" && msg.role === "ai" && !msg.consumed && (
                   <div className="flex gap-2 flex-wrap">
                     {[
                       { label: "🚨 Emergency (same day)", value: "emergency" },
@@ -493,7 +244,7 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
                     ].map((opt) => (
                       <button
                         key={opt.value}
-                        onClick={() => handleUrgencySelect(opt.value)}
+                        onClick={() => handleUrgencySelect(msg.id, opt.value)}
                         className="bg-card border border-border rounded-full px-3 py-1.5 text-xs font-medium text-foreground active:scale-[0.97] transition-transform hover:border-primary/50"
                       >
                         {opt.label}
@@ -503,7 +254,7 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
                 )}
 
                 {/* Recurring options */}
-                {msg.type === "recurring" && msg.role === "ai" && !recurringSelected && (
+                {msg.type === "recurring" && msg.role === "ai" && !msg.consumed && (
                   <div className="flex gap-2 flex-wrap">
                     {[
                       { label: "One-time", value: "one-time" },
@@ -514,7 +265,7 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
                     ].map((opt) => (
                       <button
                         key={opt.value}
-                        onClick={() => handleRecurringSelect(opt.value)}
+                        onClick={() => handleRecurringSelect(msg.id, opt.value)}
                         className="bg-card border border-border rounded-full px-3 py-1.5 text-xs font-medium text-foreground active:scale-[0.97] transition-transform hover:border-primary/50"
                       >
                         {opt.label}

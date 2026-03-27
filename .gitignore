@@ -1,3 +1,6 @@
+# Supabase Edge Function local secrets
+supabase/functions/.env
+
 # Logs
 logs
 *.log
