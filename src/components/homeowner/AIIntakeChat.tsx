@@ -35,22 +35,20 @@ export interface QuoteData {
   breakdown: { label: string; amount: string }[];
   factors: string[];
   slots: string[];
-  timeSlots: string[];        // available times for each date (e.g. "9:00 AM")
-  recurringPerVisit?: number; // per-visit price for 2nd+ bookings
-  frequency?: string;         // "weekly" | "biweekly" | etc. (undefined = one-time)
+  timeSlots: string[];   // available times for each date (e.g. "9:00 AM")
+  frequency?: string;    // "weekly" | "biweekly" | etc. (undefined = one-time)
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const SERVICE_NAMES: Record<string, string> = {
+export const SERVICE_NAMES: Record<string, string> = {
   lawn: "Lawn & Garden",
   house_cleaning: "House Cleaning",
   gutter: "Gutter Cleaning",
   roof: "Roof Cleaning",
   pressure: "Pressure Washing",
-  electrical: "Electrical",
   duct: "Duct Cleaning",
   backwater: "Backwater Testing",
   fence: "Fence Installation",
@@ -138,9 +136,20 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady, initialFormDa
 
       if (error) throw error;
 
-      const { serviceId, reply } = data as { serviceId: string; reply: string };
-      const sid = serviceId ?? "lawn";
-      setDetectedServiceId(sid);
+      const { serviceId, reply } = data as { serviceId: string | null; reply: string };
+
+      // If no recognized service was detected, ask the user to clarify
+      if (!serviceId || !SERVICE_NAMES[serviceId]) {
+        setIsTyping(false);
+        await addAIMessage(
+          "I wasn't sure which service you need. We currently offer: lawn care, house cleaning, gutter cleaning, roof cleaning, pressure washing, duct cleaning, backwater testing, and fence installation. Which would you like a quote for?",
+          {},
+          300
+        );
+        return; // stay in "describe" phase
+      }
+
+      setDetectedServiceId(serviceId);
       setIsTyping(false);
 
       setMessages((prev) => [
@@ -150,7 +159,7 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady, initialFormDa
       scrollToBottom();
 
       // Brief pause then show the form
-      await addAIMessage(getIntroMessage(sid), { isForm: true }, 700);
+      await addAIMessage(getIntroMessage(serviceId), { isForm: true }, 700);
       setPhase("form");
     } catch {
       setIsTyping(false);

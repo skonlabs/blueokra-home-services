@@ -98,12 +98,6 @@ const HomeScreen = ({
         >
           <Calendar className="w-3 h-3" /> Recurring
         </button>
-        <button
-          onClick={() => onOpenIntake()}
-          className="shrink-0 bg-card border border-border rounded-full px-4 py-2 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1.5"
-        >
-          <Shield className="w-3 h-3" /> Bundle &amp; Save
-        </button>
       </div>
 
       {/* Trust badge */}

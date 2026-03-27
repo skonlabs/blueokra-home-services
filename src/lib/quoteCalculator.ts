@@ -1,5 +1,4 @@
 import type { QuoteData } from "@/components/homeowner/AIIntakeChat";
-import { getBulkDiscount } from "@/hooks/usePricing";
 
 // ---------------------------------------------------------------------------
 // Intake form data — all variables needed to calculate any service quote
@@ -11,6 +10,9 @@ export interface IntakeFormData {
   urgency: "emergency" | "soon" | "flexible";
   frequency: "one-time" | "weekly" | "biweekly" | "monthly" | "quarterly";
 
+  // Address
+  serviceAddress?: string;
+
   // Lawn
   yardSize?: "lt1000" | "lt1500" | "lt2000" | "lt3000" | "lt4000" | "lt5000" | "lt10000" | "gte10000";
   grassHeight?: "normal" | "medium" | "tall";
@@ -21,7 +23,8 @@ export interface IntakeFormData {
   // House Cleaning
   bedrooms?: number;
   bathrooms?: number;
-  bonusRooms?: number;
+  bonusRoomTypes?: string[];   // each non-kitchen room = $15
+  lastProfessionalCleaning?: "lt3months" | "gte3months" | "never";
 
   // Gutter
   stories?: 1 | 2 | 3;
@@ -32,9 +35,12 @@ export interface IntakeFormData {
   roofStories?: 1 | 2 | 3;
   mossLevel?: "none" | "light" | "moderate" | "heavy";
   algaeProtection?: boolean;
+  roofType?: "asphalt" | "metal" | "tile" | "slate" | "other";
 
-  // Pressure Washing / Electrical
+  // Pressure Washing
   homeSize?: "lt1000" | "s1000_2000" | "s2000_3000" | "gte3000";
+  surfaces?: string[];
+  pressureCondition?: "light" | "moderate" | "heavy" | "mold";
 
   // Duct
   ventCount?: number;
@@ -44,32 +50,21 @@ export interface IntakeFormData {
   deviceCount?: number;
   deviceRepair?: boolean;
   certFiling?: boolean;
+  lastTested?: "lt1year" | "1_2years" | "gt2years" | "never";
 
-  // Fence
+  // Fence (repair is in addOns as "repair")
   linearFeet?: number;
   fenceHeight?: "standard" | "eight_ft";
   terrain?: "flat" | "steep" | "rocky";
   doorCount?: number;
-  isRepair?: boolean;
   weatherproofCoating?: boolean;
+
+  // Recurring scheduling
+  recurringEndMonth?: number;
+  recurringEndYear?: number;
+  firstServiceDate?: string;
+  firstServiceTimeSlots?: string[];
 }
-
-// ---------------------------------------------------------------------------
-// Pricing tables (mirrors DB seed data)
-// ---------------------------------------------------------------------------
-
-const FREQUENCY_SERVICES_PER_YEAR: Record<string, number> = {
-  "one-time": 1,
-  weekly: 52,
-  biweekly: 26,
-  monthly: 12,
-  quarterly: 4,
-};
-
-// Services that never get recurring bulk discounts
-const BULK_EXEMPT = new Set(["gutter", "roof", "fence"]);
-// Services that never charge the first-time setup surcharge
-const FIRST_TIME_EXEMPT = new Set(["gutter", "roof", "electrical", "duct", "backwater", "fence"]);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -104,21 +99,11 @@ function getSlots(urgency: string): { slots: string[]; timeSlots: string[] } {
   };
 }
 
-/** Per-visit price for 2nd+ bookings — no first-time surcharge, with bulk discount. */
-function toRecurringPerVisit(preFirstTimeTotal: number, serviceId: string, frequency: string): number | undefined {
-  if (frequency === "one-time" || BULK_EXEMPT.has(serviceId)) return undefined;
-  const qty = FREQUENCY_SERVICES_PER_YEAR[frequency] ?? 1;
-  const discount = getBulkDiscount(qty);
-  if (discount === 0) return undefined;
-  return Math.round(preFirstTimeTotal * (1 - discount));
-}
-
 // ---------------------------------------------------------------------------
 // Per-service calculators
 // ---------------------------------------------------------------------------
 
 function calcLawn(d: IntakeFormData): QuoteData {
-  // Standard-tier base prices per yard size
   const basePrices: Record<string, number> = {
     lt1000: 75,   lt1500: 100,  lt2000: 125,  lt3000: 150,
     lt4000: 175,  lt5000: 200,  lt10000: 250, gte10000: 400,
@@ -165,9 +150,15 @@ function calcLawn(d: IntakeFormData): QuoteData {
     breakdown.push({ label: `Weed surcharge (${d.weedLevel})`, amount: `$${weedAmt}` });
   }
 
-  // First-time surcharge — always applied for lawn (not in FIRST_TIME_EXEMPT)
+  // First-time surcharge — always applied for lawn
   const firstTimeSurcharge = Math.round(base * 0.5);
-  breakdown.push({ label: "First-time setup fee (+50% on base)", amount: `$${firstTimeSurcharge}` });
+  const isRecurringAllInstances = d.frequency === "monthly" || d.frequency === "quarterly";
+  breakdown.push({
+    label: isRecurringAllInstances
+      ? "First-time setup fee (+50% on base, applies every visit)"
+      : "First-time setup fee (+50% on base)",
+    amount: `$${firstTimeSurcharge}`,
+  });
 
   // Add-ons
   let addOnTotal = 0;
@@ -184,31 +175,28 @@ function calcLawn(d: IntakeFormData): QuoteData {
     }
   }
 
-  // 1st visit total = grass adjustment + weed + first-time surcharge + add-ons (NO bulk discount)
-  const preFirstTimeBase = grassTotal + weedAmt + addOnTotal;
-  const total = Math.round(preFirstTimeBase + firstTimeSurcharge);
+  const total = Math.round(grassTotal + weedAmt + firstTimeSurcharge + addOnTotal);
 
-  // 2nd+ visits: no first-time surcharge, with bulk discount
-  const recurringPerVisit = toRecurringPerVisit(preFirstTimeBase, "lawn", d.frequency);
+  const factors: string[] = [];
+  if (isRecurringAllInstances) {
+    factors.push("First-time setup fee applies to every visit for monthly/quarterly plans");
+  }
 
   return {
     serviceId: "lawn", serviceName: "Lawn Care", type: "fixed",
     low: total, high: total, confidence: 92,
-    breakdown,
-    factors: ["Upfront payment saves 5% at checkout"],
+    breakdown, factors,
     ...getSlots(d.urgency),
-    recurringPerVisit,
     frequency: d.frequency !== "one-time" ? d.frequency : undefined,
   };
 }
 
 function calcHouseCleaning(d: IntakeFormData): QuoteData {
-  // Standard-tier room rates
   const rates = { bedroom: 15, bathroom: 25, bonus_room: 15, kitchen: 60 };
 
-  const bedrooms   = d.bedrooms   ?? 3;
-  const bathrooms  = d.bathrooms  ?? 2;
-  const bonusRooms = d.bonusRooms ?? 0;
+  const bedrooms  = d.bedrooms  ?? 3;
+  const bathrooms = d.bathrooms ?? 2;
+  const bonusRooms = d.bonusRoomTypes?.length ?? 0;
 
   const roomTotal =
     bedrooms   * rates.bedroom    +
@@ -222,12 +210,22 @@ function calcHouseCleaning(d: IntakeFormData): QuoteData {
     { label: "Kitchen", amount: `$${rates.kitchen}` },
   ];
   if (bonusRooms > 0) {
-    breakdown.push({ label: `${bonusRooms} bonus room${bonusRooms !== 1 ? "s" : ""} × $${rates.bonus_room}`, amount: `$${bonusRooms * rates.bonus_room}` });
+    breakdown.push({ label: `${bonusRooms} additional room${bonusRooms !== 1 ? "s" : ""} × $${rates.bonus_room}`, amount: `$${bonusRooms * rates.bonus_room}` });
   }
 
-  // First-time surcharge — always applied for house cleaning
-  const firstTimeSurcharge = Math.round(roomTotal * 0.5);
-  breakdown.push({ label: "First-time setup fee (+50% on base)", amount: `$${firstTimeSurcharge}` });
+  // First-time surcharge — waived only if cleaned within last 3 months
+  const applyFirstTime = d.lastProfessionalCleaning !== "lt3months";
+  let firstTimeSurcharge = 0;
+  if (applyFirstTime) {
+    firstTimeSurcharge = Math.round(roomTotal * 0.5);
+    const isRecurringAllInstances = d.frequency === "monthly" || d.frequency === "quarterly";
+    breakdown.push({
+      label: isRecurringAllInstances
+        ? "First-time setup fee (+50% on base, applies every visit)"
+        : "First-time setup fee (+50% on base)",
+      amount: `$${firstTimeSurcharge}`,
+    });
+  }
 
   // Add-ons
   const addOnPrices: Record<string, number> = { oven: 20, fridge: 25, garage: 75, carpet_stain: 50 };
@@ -243,26 +241,23 @@ function calcHouseCleaning(d: IntakeFormData): QuoteData {
     }
   }
 
-  // 1st visit total (no bulk discount)
-  const preFirstTimeBase = roomTotal + addOnTotal;
-  const total = Math.round(preFirstTimeBase + firstTimeSurcharge);
+  const total = Math.round(roomTotal + firstTimeSurcharge + addOnTotal);
 
-  // 2nd+ visits: no first-time surcharge, with bulk discount
-  const recurringPerVisit = toRecurringPerVisit(preFirstTimeBase, "house_cleaning", d.frequency);
+  const factors: string[] = [];
+  if ((d.frequency === "monthly" || d.frequency === "quarterly") && applyFirstTime) {
+    factors.push("First-time setup fee applies to every visit for monthly/quarterly plans");
+  }
 
   return {
     serviceId: "house_cleaning", serviceName: "House Cleaning", type: "fixed",
     low: total, high: total, confidence: 95,
-    breakdown,
-    factors: ["Upfront payment saves 5% at checkout"],
+    breakdown, factors,
     ...getSlots(d.urgency),
-    recurringPerVisit,
     frequency: d.frequency !== "one-time" ? d.frequency : undefined,
   };
 }
 
 function calcGutter(d: IntakeFormData): QuoteData {
-  // Standard-tier base prices by stories
   const basePrices: Record<number, number> = { 1: 125, 2: 150, 3: 200 };
 
   const stories = d.stories ?? 1;
@@ -275,15 +270,15 @@ function calcGutter(d: IntakeFormData): QuoteData {
   const conditionSurcharges: Record<string, number> = { moderate: 25, heavy: 50, repair: 100 };
   const condAmt = conditionSurcharges[d.gutterCondition ?? "clear"] ?? 0;
   if (condAmt) {
-    const condLabel = d.gutterCondition === "repair" ? "Repair needed surcharge" : `Condition surcharge (${d.gutterCondition})`;
+    const condLabel = d.gutterCondition === "repair" ? "Needs repair surcharge" : `Condition surcharge (${d.gutterCondition})`;
     breakdown.push({ label: condLabel, amount: `$${condAmt}` });
     total += condAmt;
   }
 
   for (const addOn of d.addOns ?? []) {
-    if (addOn === "downspout")    { breakdown.push({ label: "Downspout cleaning",        amount: "$25"  }); total += 25; }
-    if (addOn === "gutter_guard") { breakdown.push({ label: "Gutter guard installation", amount: "$100" }); total += 100; }
-    if (addOn === "minor_repairs"){ breakdown.push({ label: "Minor repairs",             amount: "$75"  }); total += 75; }
+    if (addOn === "downspout")    { breakdown.push({ label: "Downspout cleaning",         amount: "$25"  }); total += 25; }
+    if (addOn === "gutter_guard") { breakdown.push({ label: "Gutter guard installation",  amount: "$100" }); total += 100; }
+    if (addOn === "minor_repairs"){ breakdown.push({ label: "Minor repairs",              amount: "$75"  }); total += 75; }
   }
 
   return {
@@ -302,12 +297,20 @@ function calcRoof(d: IntakeFormData): QuoteData {
     lt1500: "< 1,500", s1500_2000: "1,500–2,000", s2000_2500: "2,000–2,500",
     s2500_4000: "2,500–4,000", s4000_5000: "4,000–5,000", gte5000: "5,000+",
   };
+  const roofTypeLabels: Record<string, string> = {
+    asphalt: "Asphalt shingles", metal: "Metal", tile: "Tile",
+    slate: "Slate", other: "Other",
+  };
 
   const roofKey = d.roofSize ?? "s2000_2500";
   const base = basePrices[roofKey];
-  const breakdown: { label: string; amount: string }[] = [
-    { label: `Base cleaning (${roofSizeLabels[roofKey]} sq ft)`, amount: `$${base}` },
-  ];
+  const breakdown: { label: string; amount: string }[] = [];
+
+  if (d.roofType) {
+    breakdown.push({ label: `Roof type: ${roofTypeLabels[d.roofType] ?? d.roofType}`, amount: "—" });
+  }
+  breakdown.push({ label: `Base cleaning (${roofSizeLabels[roofKey]} sq ft)`, amount: `$${base}` });
+
   let total = base;
 
   const mossAmounts: Record<string, number> = { light: 50, moderate: 100, heavy: 250 };
@@ -318,7 +321,7 @@ function calcRoof(d: IntakeFormData): QuoteData {
   }
 
   if (d.algaeProtection) {
-    breakdown.push({ label: "Algae protection treatment", amount: "$50" });
+    breakdown.push({ label: "Algae & lichen protection treatment", amount: "$50" });
     total += 50;
   }
 
@@ -333,62 +336,53 @@ function calcRoof(d: IntakeFormData): QuoteData {
 }
 
 function calcPressure(d: IntakeFormData): QuoteData {
-  // Standard-tier base price
   const base = 180;
   const multipliers: Record<string, number> = { lt1000: 0.8, s1000_2000: 1.0, s2000_3000: 1.3, gte3000: 1.6 };
   const homeSizeLabels: Record<string, string> = {
     lt1000: "< 1,000 sq ft", s1000_2000: "1,000–2,000", s2000_3000: "2,000–3,000", gte3000: "3,000+ sq ft",
   };
+  const surfaceLabels: Record<string, string> = {
+    driveway: "Driveway", sidewalks: "Sidewalks", house_exterior: "House exterior",
+    deck_patio: "Deck/Patio", fence: "Fence", garage_floor: "Garage floor",
+  };
+  const conditionMultipliers: Record<string, number> = { light: 1.0, moderate: 1.15, heavy: 1.35, mold: 1.5 };
 
   const mult = multipliers[d.homeSize ?? "s1000_2000"];
   const baseTotal = Math.round(base * mult);
 
   const breakdown: { label: string; amount: string }[] = [
-    { label: `Base rate`, amount: `$${base}` },
-    { label: `Home size (${homeSizeLabels[d.homeSize ?? "s1000_2000"]}, ×${mult})`, amount: `$${baseTotal}` },
+    { label: `Base rate (${homeSizeLabels[d.homeSize ?? "s1000_2000"]}, ×${mult})`, amount: `$${baseTotal}` },
   ];
 
-  // First-time surcharge — always applied for pressure washing
-  const firstTimeSurcharge = Math.round(baseTotal * 0.5);
-  breakdown.push({ label: "First-time setup fee (+50%)", amount: `$${firstTimeSurcharge}` });
+  // Surface selections (informational, included in base for now)
+  if (d.surfaces && d.surfaces.length > 0) {
+    const surfaceList = d.surfaces.map(s => surfaceLabels[s] ?? s).join(", ");
+    breakdown.push({ label: `Surfaces: ${surfaceList}`, amount: "included" });
+  }
 
-  const total = baseTotal + firstTimeSurcharge;
+  // Condition multiplier
+  const condMult = conditionMultipliers[d.pressureCondition ?? "light"];
+  let conditionTotal = Math.round(baseTotal * condMult);
+  if (condMult > 1.0) {
+    const condLabel = d.pressureCondition === "mold"
+      ? "Mold/mildew surcharge (+50%)"
+      : d.pressureCondition === "heavy"
+      ? "Heavy stains surcharge (+35%)"
+      : "Moderate dirt surcharge (+15%)";
+    breakdown.push({ label: condLabel, amount: `$${conditionTotal - baseTotal}` });
+  } else {
+    conditionTotal = baseTotal;
+  }
 
-  // 2nd+ visits: no first-time surcharge, with bulk discount
-  const recurringPerVisit = toRecurringPerVisit(baseTotal, "pressure", d.frequency);
+  const total = conditionTotal;
 
   return {
     serviceId: "pressure", serviceName: "Pressure Washing", type: "fixed",
     low: total, high: total, confidence: 88,
     breakdown,
-    factors: ["Upfront payment saves 5% at checkout"],
+    factors: ["Final scope determined on-site"],
     ...getSlots(d.urgency),
-    recurringPerVisit,
     frequency: d.frequency !== "one-time" ? d.frequency : undefined,
-  };
-}
-
-function calcElectrical(d: IntakeFormData): QuoteData {
-  // Standard-tier base price
-  const base = 150;
-  const multipliers: Record<string, number> = { lt1000: 0.8, s1000_2000: 1.0, s2000_3000: 1.3, gte3000: 1.6 };
-  const homeSizeLabels: Record<string, string> = {
-    lt1000: "< 1,000 sq ft", s1000_2000: "1,000–2,000", s2000_3000: "2,000–3,000", gte3000: "3,000+ sq ft",
-  };
-
-  const mult = multipliers[d.homeSize ?? "s1000_2000"];
-  const total = Math.round(base * mult);
-
-  // Range scales with actual total (not just base), so home size affects the range
-  return {
-    serviceId: "electrical", serviceName: "Electrical", type: "range",
-    low: Math.round(total * 0.85), high: Math.round(total * 1.3), confidence: 72,
-    breakdown: [
-      { label: `Base rate`, amount: `$${base}` },
-      { label: `Home size (${homeSizeLabels[d.homeSize ?? "s1000_2000"]}, ×${mult})`, amount: `$${total}` },
-    ],
-    factors: ["Full scope determined after on-site assessment", "Permits may add cost"],
-    ...getSlots(d.urgency),
   };
 }
 
@@ -411,25 +405,32 @@ function calcDuct(d: IntakeFormData): QuoteData {
   }
 
   const total = ventTotal;
-  const recurringPerVisit = toRecurringPerVisit(ventTotal, "duct", d.frequency);
 
   return {
     serviceId: "duct", serviceName: "Duct Cleaning", type: "fixed",
     low: total, high: total, confidence: 95,
     breakdown,
-    factors: ["Upfront payment saves 5% at checkout"],
+    factors: [],
     ...getSlots(d.urgency),
-    recurringPerVisit,
     frequency: d.frequency !== "one-time" ? d.frequency : undefined,
   };
 }
 
 function calcBackwater(d: IntakeFormData): QuoteData {
+  const lastTestedLabels: Record<string, string> = {
+    lt1year: "Less than 1 year ago", "1_2years": "1–2 years ago",
+    gt2years: "2+ years ago", never: "Never tested",
+  };
+
   const devices = d.deviceCount ?? 1;
   let total = 100 + (devices - 1) * 50;
   const breakdown: { label: string; amount: string }[] = [
     { label: `Device testing (${devices} device${devices !== 1 ? "s" : ""})`, amount: `$${total}` },
   ];
+
+  if (d.lastTested) {
+    breakdown.push({ label: `Last tested: ${lastTestedLabels[d.lastTested] ?? d.lastTested}`, amount: "—" });
+  }
 
   if (d.deviceRepair) {
     breakdown.push({ label: "Device repair", amount: "$150" });
@@ -453,15 +454,18 @@ function calcBackwater(d: IntakeFormData): QuoteData {
 
 function calcFence(d: IntakeFormData): QuoteData {
   const linearFeet = d.linearFeet ?? 50;
+  const isRepair = d.addOns?.includes("repair") ?? false;
   const breakdown: { label: string; amount: string }[] = [];
   let total = 0;
 
-  if (d.isRepair) {
-    // Repair: $50 per 10 linear ft (= $5/ft flat rate, no height/terrain adders)
-    const groups = Math.ceil(linearFeet / 10);
-    const repairBase = groups * 50;
-    breakdown.push({ label: `${linearFeet} linear ft repair (${groups} × $50/10 ft)`, amount: `$${repairBase}` });
+  if (isRepair) {
+    // Repair: $50 per linear ft
+    const repairBase = linearFeet * 50;
+    breakdown.push({ label: `${linearFeet} linear ft repair × $50/ft`, amount: `$${repairBase}` });
     total = repairBase;
+    if (d.fenceHeight || d.terrain) {
+      breakdown.push({ label: "Height/terrain modifiers", amount: "n/a for repair" });
+    }
   } else {
     // Installation: base $50/ft + height and terrain adders
     const ratePerFt = 50;
@@ -494,7 +498,7 @@ function calcFence(d: IntakeFormData): QuoteData {
     total += 100;
   }
 
-  const factors = d.isRepair
+  const factors = isRepair
     ? ["Final measurements confirmed on-site"]
     : ["Final measurements confirmed on-site", "Terrain may affect scope"];
 
@@ -516,7 +520,6 @@ export function calculateQuote(data: IntakeFormData): QuoteData {
     case "gutter":         return calcGutter(data);
     case "roof":           return calcRoof(data);
     case "pressure":       return calcPressure(data);
-    case "electrical":     return calcElectrical(data);
     case "duct":           return calcDuct(data);
     case "backwater":      return calcBackwater(data);
     case "fence":          return calcFence(data);

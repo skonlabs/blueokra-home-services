@@ -119,25 +119,11 @@ export const useFrequencies = () => {
   });
 };
 
-// Bulk discount tiers
-export const getBulkDiscount = (quantity: number): number => {
-  if (quantity >= 30) return 0.15;
-  if (quantity >= 20) return 0.10;
-  if (quantity >= 10) return 0.05;
-  return 0;
-};
-
-export const UPFRONT_DISCOUNT = 0.05;
-
 // Service type mapping from ServiceGrid IDs to DB service_types
 export const SERVICE_TYPE_MAP: Record<string, string> = {
   lawn: "lawn",
-  hvac: "duct", // HVAC maps to duct cleaning
-  plumbing: "backwater", // Plumbing maps to backwater testing
   pressure: "pressure",
   roof: "roof",
-  electrical: "electrical",
-  handyman: "fence", // Handyman maps to fence as closest
   house_cleaning: "house_cleaning",
   gutter: "gutter",
   duct: "duct",

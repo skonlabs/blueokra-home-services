@@ -1,14 +1,18 @@
 import { motion } from "framer-motion";
-import { Check, Calendar, MapPin, DollarSign, Clock, CreditCard, Shield } from "lucide-react";
+import { Check, Calendar, MapPin, DollarSign, Clock, Shield } from "lucide-react";
 import type { QuoteData } from "./AIIntakeChat";
 
 interface BookingConfirmationProps {
   quote: QuoteData;
+  serviceAddress?: string;
   onViewBookings: () => void;
   onHome: () => void;
 }
 
-const BookingConfirmation = ({ quote, onViewBookings, onHome }: BookingConfirmationProps) => {
+const BookingConfirmation = ({ quote, serviceAddress, onViewBookings, onHome }: BookingConfirmationProps) => {
+  // Generate a stable booking reference (in a real app this would come from the backend)
+  const bookingRef = `BK${Date.now().toString(36).toUpperCase()}`;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -29,6 +33,23 @@ const BookingConfirmation = ({ quote, onViewBookings, onHome }: BookingConfirmat
         <p className="text-sm text-muted-foreground mt-1">Your provider will confirm shortly</p>
       </div>
 
+      {/* QR Code — customer shows to provider */}
+      <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-xs font-semibold text-foreground">Show this QR code to your provider</p>
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`blueokra-booking-${bookingRef}`)}&bgcolor=FFFFFF&color=000000`}
+            className="w-44 h-44 rounded-xl border border-border"
+            alt="Booking QR code"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Provider scans this to confirm service — payment is collected after completion
+          </p>
+          <p className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-1 rounded">{bookingRef}</p>
+        </div>
+      </div>
+
+      {/* Booking details */}
       <div className="bg-card rounded-2xl border border-border p-4 text-left space-y-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-okra-50 flex items-center justify-center">
@@ -44,8 +65,7 @@ const BookingConfirmation = ({ quote, onViewBookings, onHome }: BookingConfirmat
             <MapPin className="w-4 h-4 text-blue-500" />
           </div>
           <div>
-            <p className="text-sm font-medium text-foreground">123 Main Street</p>
-            <p className="text-xs text-muted-foreground">Seattle, WA 98101</p>
+            <p className="text-sm font-medium text-foreground">{serviceAddress || "Service address on file"}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -55,17 +75,11 @@ const BookingConfirmation = ({ quote, onViewBookings, onHome }: BookingConfirmat
           <div>
             <p className="text-sm font-medium text-foreground">
               ${quote.low}{quote.type !== "fixed" && `–$${quote.high}`}
+              {quote.type === "fixed" && (
+                <span className="ml-1.5 text-[10px] font-medium bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-full">Fixed Price</span>
+              )}
             </p>
             <p className="text-xs text-muted-foreground">{quote.serviceName}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
-            <CreditCard className="w-4 h-4 text-muted-foreground" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-foreground">Visa •••• 4242</p>
-            <p className="text-xs text-muted-foreground">Pre-authorized · Not charged yet</p>
           </div>
         </div>
       </div>
@@ -79,7 +93,7 @@ const BookingConfirmation = ({ quote, onViewBookings, onHome }: BookingConfirmat
               <li>✓ Pay only after service is complete</li>
               <li>✓ Dispute protection included</li>
               <li>✓ Service warranty on file</li>
-              <li>✓ Full receipt & invoice stored</li>
+              <li>✓ Full receipt &amp; invoice stored</li>
             </ul>
           </div>
         </div>

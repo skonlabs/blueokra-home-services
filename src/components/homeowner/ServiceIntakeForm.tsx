@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronRight, Minus, Plus } from "lucide-react";
 import type { IntakeFormData } from "@/lib/quoteCalculator";
+import AddressInput from "./AddressInput";
 
 interface ServiceIntakeFormProps {
   serviceId: string;
@@ -44,9 +45,10 @@ function ChipRow<T extends string>({
 }
 
 function Stepper({
-  label, value, min = 0, max = 20, onChange,
+  label, value, min = 0, max = 20, onChange, sublabel,
 }: {
   label: string;
+  sublabel?: string;
   value: number;
   min?: number;
   max?: number;
@@ -54,7 +56,10 @@ function Stepper({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <div>
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        {sublabel && <p className="text-[11px] text-muted-foreground">{sublabel}</p>}
+      </div>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -189,7 +194,18 @@ const FREQUENCY_OPTIONS = [
   { value: "quarterly" as const, label: "Quarterly" },
 ];
 
-// Services that don't benefit from recurring bulk discounts
+const TIME_SLOT_OPTIONS = [
+  "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
+  "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM",
+  "4:00 PM", "5:00 PM",
+];
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Services that don't support recurring frequency
 const NO_FREQUENCY = new Set(["gutter", "roof", "fence", "backwater"]);
 
 // ---------------------------------------------------------------------------
@@ -203,6 +219,17 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
   const [frequency, setFrequency] = useState<"one-time" | "weekly" | "biweekly" | "monthly" | "quarterly">(iv.frequency ?? "one-time");
   const [addOns,    setAddOns]    = useState<string[]>(iv.addOns ?? []);
 
+  // Address
+  const [serviceAddress, setServiceAddress] = useState(iv.serviceAddress ?? "");
+  const [addressError,   setAddressError]   = useState(false);
+
+  // Recurring scheduling
+  const currentYear = new Date().getFullYear();
+  const [firstServiceDate,  setFirstServiceDate]  = useState(iv.firstServiceDate  ?? "");
+  const [firstServiceTimeSlots, setFirstServiceTimeSlots] = useState<string[]>(iv.firstServiceTimeSlots ?? []);
+  const [recurringEndMonth, setRecurringEndMonth] = useState(iv.recurringEndMonth ?? (new Date().getMonth() + 1));
+  const [recurringEndYear,  setRecurringEndYear]  = useState(iv.recurringEndYear  ?? (currentYear + 1));
+
   // Lawn
   const [yardSize,    setYardSize]    = useState<IntakeFormData["yardSize"]>(iv.yardSize    ?? "lt3000");
   const [grassHeight, setGrassHeight] = useState<"normal" | "medium" | "tall">(iv.grassHeight ?? "normal");
@@ -210,22 +237,26 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
   const [bushCount,   setBushCount]   = useState(iv.bushCount ?? 0);
 
   // House Cleaning
-  const [bedrooms,   setBedrooms]   = useState(iv.bedrooms   ?? 3);
-  const [bathrooms,  setBathrooms]  = useState(iv.bathrooms  ?? 2);
-  const [bonusRooms, setBonusRooms] = useState(iv.bonusRooms ?? 0);
+  const [bedrooms,              setBedrooms]              = useState(iv.bedrooms              ?? 3);
+  const [bathrooms,             setBathrooms]             = useState(iv.bathrooms             ?? 2);
+  const [bonusRoomTypes,        setBonusRoomTypes]        = useState<string[]>(iv.bonusRoomTypes ?? []);
+  const [lastProfessionalCleaning, setLastProfessionalCleaning] = useState<IntakeFormData["lastProfessionalCleaning"]>(iv.lastProfessionalCleaning ?? "never");
 
   // Gutter
-  const [stories,        setStories]        = useState<1 | 2 | 3>(iv.stories        ?? 1);
-  const [gutterCondition,setGutterCondition] = useState<"clear" | "moderate" | "heavy" | "repair">(iv.gutterCondition ?? "clear");
+  const [stories,         setStories]         = useState<1 | 2 | 3>(iv.stories         ?? 1);
+  const [gutterCondition, setGutterCondition] = useState<"clear" | "moderate" | "heavy" | "repair">(iv.gutterCondition ?? "clear");
 
   // Roof
   const [roofSize,        setRoofSize]        = useState<IntakeFormData["roofSize"]>(iv.roofSize        ?? "s2000_2500");
   const [roofStories,     setRoofStories]     = useState<1 | 2 | 3>(iv.roofStories     ?? 1);
   const [mossLevel,       setMossLevel]       = useState<"none" | "light" | "moderate" | "heavy">(iv.mossLevel ?? "none");
   const [algaeProtection, setAlgaeProtection] = useState(iv.algaeProtection ?? false);
+  const [roofType,        setRoofType]        = useState<IntakeFormData["roofType"]>(iv.roofType ?? "asphalt");
 
-  // Pressure / Electrical
-  const [homeSize, setHomeSize] = useState<IntakeFormData["homeSize"]>(iv.homeSize ?? "s1000_2000");
+  // Pressure Washing
+  const [homeSize,          setHomeSize]          = useState<IntakeFormData["homeSize"]>(iv.homeSize          ?? "s1000_2000");
+  const [surfaces,          setSurfaces]          = useState<string[]>(iv.surfaces          ?? []);
+  const [pressureCondition, setPressureCondition] = useState<IntakeFormData["pressureCondition"]>(iv.pressureCondition ?? "light");
 
   // Duct
   const [ventCount, setVentCount] = useState(iv.ventCount ?? 10);
@@ -235,53 +266,77 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
   const [deviceCount,  setDeviceCount]  = useState(iv.deviceCount  ?? 1);
   const [deviceRepair, setDeviceRepair] = useState(iv.deviceRepair ?? false);
   const [certFiling,   setCertFiling]   = useState(iv.certFiling   ?? false);
+  const [lastTested,   setLastTested]   = useState<IntakeFormData["lastTested"]>(iv.lastTested ?? "never");
 
   // Fence
-  const [linearFeet,         setLinearFeet]         = useState(iv.linearFeet         ?? 50);
-  const [fenceHeight,        setFenceHeight]        = useState<"standard" | "eight_ft">(iv.fenceHeight ?? "standard");
-  const [terrain,            setTerrain]            = useState<"flat" | "steep" | "rocky">(iv.terrain ?? "flat");
-  const [doorCount,          setDoorCount]          = useState(iv.doorCount          ?? 0);
-  const [isRepair,           setIsRepair]           = useState(iv.isRepair           ?? false);
-  const [weatherproofCoating,setWeatherproofCoating]= useState(iv.weatherproofCoating ?? false);
+  const [linearFeet,          setLinearFeet]          = useState(iv.linearFeet          ?? 50);
+  const [fenceHeight,         setFenceHeight]         = useState<"standard" | "eight_ft">(iv.fenceHeight ?? "standard");
+  const [terrain,             setTerrain]             = useState<"flat" | "steep" | "rocky">(iv.terrain ?? "flat");
+  const [doorCount,           setDoorCount]           = useState(iv.doorCount           ?? 0);
+  const [weatherproofCoating, setWeatherproofCoating] = useState(iv.weatherproofCoating ?? false);
 
   const handleSubmit = () => {
-    // package always "standard" — package selector removed (Fix 6)
-    const base: IntakeFormData = { serviceId, package: "standard", urgency, frequency, addOns };
+    if (!serviceAddress.trim()) {
+      setAddressError(true);
+      return;
+    }
+    setAddressError(false);
+
+    const isRecurring = frequency !== "one-time";
+    const base: IntakeFormData = {
+      serviceId,
+      package: "standard",
+      urgency,
+      frequency,
+      addOns,
+      serviceAddress,
+      ...(isRecurring ? {
+        firstServiceDate,
+        firstServiceTimeSlots,
+        recurringEndMonth,
+        recurringEndYear,
+      } : {}),
+    };
+
     switch (serviceId) {
       case "lawn":
         onSubmit({ ...base, yardSize, grassHeight, weedLevel, bushCount: addOns.includes("bush_trimming") ? bushCount : 0 });
         break;
       case "house_cleaning":
-        onSubmit({ ...base, bedrooms, bathrooms, bonusRooms });
+        onSubmit({ ...base, bedrooms, bathrooms, bonusRoomTypes, lastProfessionalCleaning });
         break;
       case "gutter":
         onSubmit({ ...base, stories, gutterCondition });
         break;
       case "roof":
-        onSubmit({ ...base, roofSize, roofStories, mossLevel, algaeProtection });
+        onSubmit({ ...base, roofSize, roofStories, mossLevel, algaeProtection, roofType });
         break;
       case "pressure":
-      case "electrical":
-        onSubmit({ ...base, homeSize });
+        onSubmit({ ...base, homeSize, surfaces, pressureCondition });
         break;
       case "duct":
         onSubmit({ ...base, ventCount, dryerVent });
         break;
       case "backwater":
-        onSubmit({ ...base, deviceCount, deviceRepair, certFiling });
+        onSubmit({ ...base, deviceCount, deviceRepair, certFiling, lastTested });
         break;
       case "fence":
-        onSubmit({ ...base, linearFeet, fenceHeight, terrain, doorCount, isRepair, weatherproofCoating });
+        onSubmit({ ...base, linearFeet, fenceHeight, terrain, doorCount, weatherproofCoating });
         break;
       default:
         onSubmit(base);
     }
   };
 
+  const toggleTimeSlot = (slot: string) => {
+    setFirstServiceTimeSlots(prev =>
+      prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]
+    );
+  };
+
   const renderServiceFields = () => {
     switch (serviceId) {
       case "lawn": {
-        // Dynamic add-on prices based on selected yard size (Fix 5)
         const addOnP = LAWN_ADD_ON_PRICES[yardSize ?? "lt3000"];
         return (
           <>
@@ -319,7 +374,7 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
               <Stepper label="Number of bushes" value={bushCount} min={1} max={50} onChange={setBushCount} />
             )}
             <p className="text-[11px] text-muted-foreground">
-              A first-time setup fee (+50% of base) is included automatically.
+              A first-time setup fee (+50% of base) is applied automatically.
             </p>
           </>
         );
@@ -328,18 +383,32 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
       case "house_cleaning":
         return (
           <>
+            <ChipRow label="Last professional cleaning" value={lastProfessionalCleaning} onChange={setLastProfessionalCleaning} options={[
+              { value: "lt3months",  label: "< 3 months ago" },
+              { value: "gte3months", label: "3+ months ago" },
+              { value: "never",      label: "Never cleaned" },
+            ]} />
+            <p className="text-[11px] text-muted-foreground -mt-2">
+              First-time setup fee (+50%) waived if cleaned within 3 months.
+            </p>
             <Stepper label="Bedrooms" value={bedrooms} min={1} max={10} onChange={setBedrooms} />
             <Stepper label="Bathrooms" value={bathrooms} min={1} max={8} onChange={setBathrooms} />
-            <Stepper label="Bonus rooms (office, den…)" value={bonusRooms} min={0} max={6} onChange={setBonusRooms} />
-            <CheckList label="Add-ons (optional)" values={addOns} onChange={setAddOns} options={[
+            <p className="text-[11px] text-muted-foreground">
+              Kitchen always included — $60
+            </p>
+            <CheckList label="Additional rooms ($15 each)" values={bonusRoomTypes} onChange={setBonusRoomTypes} options={[
+              { value: "den",      label: "Den / family room", price: "$15" },
+              { value: "office",   label: "Office / study",    price: "$15" },
+              { value: "sunroom",  label: "Sun room",          price: "$15" },
+              { value: "basement", label: "Basement room",     price: "$15" },
+              { value: "other",    label: "Other room",        price: "$15" },
+            ]} />
+            <CheckList label="Extras (optional)" values={addOns} onChange={setAddOns} options={[
               { value: "oven",         label: "Inside oven cleaning",   price: "$20" },
               { value: "fridge",       label: "Inside fridge cleaning", price: "$25" },
               { value: "garage",       label: "Garage cleaning",        price: "$75" },
               { value: "carpet_stain", label: "Carpet stain removal",   price: "$50" },
             ]} />
-            <p className="text-[11px] text-muted-foreground">
-              A first-time setup fee (+50% of base) is included automatically.
-            </p>
           </>
         );
 
@@ -352,15 +421,15 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
               { value: "3", label: "3 stories" },
             ]} />
             <ChipRow label="Gutter condition" value={gutterCondition} onChange={setGutterCondition} options={[
-              { value: "clear",    label: "Clear" },
+              { value: "clear",    label: "Good condition" },
               { value: "moderate", label: "Moderately clogged (+$25)" },
               { value: "heavy",    label: "Heavily clogged (+$50)" },
               { value: "repair",   label: "Needs repair (+$100)" },
             ]} />
             <CheckList label="Add-ons (optional)" values={addOns} onChange={setAddOns} options={[
-              { value: "downspout",    label: "Downspout cleaning",      price: "$25" },
-              { value: "gutter_guard", label: "Gutter guard installation", price: "$100" },
-              { value: "minor_repairs",label: "Minor repairs",           price: "$75" },
+              { value: "downspout",     label: "Downspout cleaning",       price: "$25" },
+              { value: "gutter_guard",  label: "Gutter guard installation", price: "$100" },
+              { value: "minor_repairs", label: "Minor repairs",            price: "$75" },
             ]} />
           </>
         );
@@ -368,6 +437,13 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
       case "roof":
         return (
           <>
+            <ChipRow label="Roof type" value={roofType} onChange={setRoofType} options={[
+              { value: "asphalt", label: "Asphalt shingles" },
+              { value: "metal",   label: "Metal" },
+              { value: "tile",    label: "Tile" },
+              { value: "slate",   label: "Slate" },
+              { value: "other",   label: "Other" },
+            ]} />
             <ChipRow label="Roof size" value={roofSize} onChange={setRoofSize} options={[
               { value: "lt1500",     label: "< 1,500 sq ft" },
               { value: "s1500_2000", label: "1,500–2,000" },
@@ -387,40 +463,40 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
               { value: "moderate", label: "Moderate (+$100)" },
               { value: "heavy",    label: "Heavy (+$250)" },
             ]} />
-            <Toggle label="Algae protection treatment?" sublabel="+$50" value={algaeProtection} onChange={setAlgaeProtection} />
+            <Toggle label="Moss, algae & lichen protection?" sublabel="+$50" value={algaeProtection} onChange={setAlgaeProtection} />
           </>
         );
 
       case "pressure":
         return (
           <>
-            <ChipRow label="Home size" value={homeSize} onChange={setHomeSize} options={[
+            <CheckList label="What needs washing?" values={surfaces} onChange={setSurfaces} options={[
+              { value: "driveway",       label: "Driveway",       price: "" },
+              { value: "sidewalks",      label: "Sidewalks",      price: "" },
+              { value: "house_exterior", label: "House exterior", price: "" },
+              { value: "deck_patio",     label: "Deck / Patio",   price: "" },
+              { value: "fence",          label: "Fence",          price: "" },
+              { value: "garage_floor",   label: "Garage floor",   price: "" },
+            ]} />
+            <ChipRow label="Area size" value={homeSize} onChange={setHomeSize} options={[
               { value: "lt1000",     label: "< 1,000 sq ft" },
               { value: "s1000_2000", label: "1,000–2,000" },
               { value: "s2000_3000", label: "2,000–3,000" },
               { value: "gte3000",    label: "3,000+ sq ft" },
             ]} />
-            <p className="text-[11px] text-muted-foreground">
-              A first-time setup fee (+50%) is included automatically.
-            </p>
+            <ChipRow label="Surface condition" value={pressureCondition} onChange={setPressureCondition} options={[
+              { value: "light",    label: "Light / normal" },
+              { value: "moderate", label: "Moderate dirt (+15%)" },
+              { value: "heavy",    label: "Heavy stains (+35%)" },
+              { value: "mold",     label: "Mold / mildew (+50%)" },
+            ]} />
           </>
-        );
-
-      case "electrical":
-        return (
-          <ChipRow label="Home size" value={homeSize} onChange={setHomeSize} options={[
-            { value: "lt1000",     label: "< 1,000 sq ft" },
-            { value: "s1000_2000", label: "1,000–2,000" },
-            { value: "s2000_3000", label: "2,000–3,000" },
-            { value: "gte3000",    label: "3,000+ sq ft" },
-          ]} />
         );
 
       case "duct":
         return (
           <>
-            <Stepper label="Number of vents" value={ventCount} min={1} max={40} onChange={setVentCount} />
-            <p className="text-[11px] text-muted-foreground -mt-1">Base covers up to 10 vents. +$25 each after that.</p>
+            <Stepper label="Number of vents" value={ventCount} min={5} max={50} onChange={setVentCount} sublabel="Base covers up to 10 vents. +$25 each after that." />
             <Toggle label="Add dryer vent cleaning?" sublabel="+$100" value={dryerVent} onChange={setDryerVent} />
           </>
         );
@@ -428,8 +504,17 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
       case "backwater":
         return (
           <>
-            <Stepper label="Number of backwater devices" value={deviceCount} min={1} max={5} onChange={setDeviceCount} />
-            <p className="text-[11px] text-muted-foreground -mt-1">First device $100, each additional +$50.</p>
+            <div className="bg-muted rounded-xl px-3 py-2 space-y-1">
+              <p className="text-xs text-muted-foreground">Property type: <span className="font-medium text-foreground">Residential</span></p>
+              <p className="text-xs text-muted-foreground">Test type: <span className="font-medium text-foreground">Annual compliance testing</span></p>
+            </div>
+            <Stepper label="Number of backwater devices" value={deviceCount} min={1} max={20} onChange={setDeviceCount} sublabel="First device $100, each additional +$50." />
+            <ChipRow label="Last tested" value={lastTested} onChange={setLastTested} options={[
+              { value: "lt1year",  label: "< 1 year ago" },
+              { value: "1_2years", label: "1–2 years ago" },
+              { value: "gt2years", label: "2+ years ago" },
+              { value: "never",    label: "Never tested" },
+            ]} />
             <Toggle label="Any devices need repair?" sublabel="+$150" value={deviceRepair} onChange={setDeviceRepair} />
             <Toggle label="Need certification filing?" sublabel="+$25"  value={certFiling}   onChange={setCertFiling} />
           </>
@@ -439,38 +524,38 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
         return (
           <>
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">
-                {isRepair ? "Linear feet to repair" : "Linear feet of fencing"}
-              </p>
+              <p className="text-xs font-medium text-muted-foreground">Linear feet of fencing</p>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   value={linearFeet}
-                  min={1}
-                  max={2000}
-                  onChange={(e) => setLinearFeet(Math.max(1, parseInt(e.target.value) || 1))}
+                  min={8}
+                  max={1000}
+                  onChange={(e) => setLinearFeet(Math.max(8, parseInt(e.target.value) || 8))}
                   className="w-24 bg-muted rounded-lg px-3 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-primary/30"
                 />
-                <span className="text-xs text-muted-foreground">linear ft</span>
+                <span className="text-xs text-muted-foreground">linear ft (incl. door widths)</span>
               </div>
             </div>
-            <Toggle label="Repair job?" sublabel="$50 per 10 linear ft (repair rate)" value={isRepair} onChange={setIsRepair} />
-            {!isRepair && (
-              <>
-                <ChipRow label="Fence height" value={fenceHeight} onChange={setFenceHeight} options={[
-                  { value: "standard", label: "Standard (6 ft)" },
-                  { value: "eight_ft", label: "8 ft (+$10/ft)" },
-                ]} />
-                <ChipRow label="Terrain" value={terrain} onChange={setTerrain} options={[
-                  { value: "flat",  label: "Flat" },
-                  { value: "steep", label: "Steep (+$10/ft)" },
-                  { value: "rocky", label: "Rocky (+$20/ft)" },
-                ]} />
-              </>
+            <ChipRow label="Fence height" value={fenceHeight} onChange={setFenceHeight} options={[
+              { value: "standard", label: "Standard (6 ft)" },
+              { value: "eight_ft", label: "8 ft (+$10/ft)" },
+            ]} />
+            <ChipRow label="Terrain" value={terrain} onChange={setTerrain} options={[
+              { value: "flat",  label: "Flat" },
+              { value: "steep", label: "Steep (+$10/ft)" },
+              { value: "rocky", label: "Rocky (+$20/ft)" },
+            ]} />
+            <Stepper label="Number of gates / doors" value={doorCount} min={0} max={10} onChange={setDoorCount} sublabel="+$50 per gate" />
+            <CheckList label="Extras (optional)" values={addOns} onChange={setAddOns} options={[
+              { value: "weatherproof", label: "Weatherproof coating",  price: "+$100" },
+              { value: "repair",       label: "Fence repair",          price: "$50/linear ft" },
+            ]} />
+            {addOns.includes("repair") && (
+              <p className="text-[11px] text-muted-foreground bg-blue-50 rounded-lg px-3 py-2 border border-blue-100">
+                Repair rate: $50/linear ft applied to the linear footage above. Height and terrain adders apply to new installation only.
+              </p>
             )}
-            <Stepper label="Number of gates / doors" value={doorCount} min={0} max={10} onChange={setDoorCount} />
-            <p className="text-[11px] text-muted-foreground -mt-1">+$50 per gate</p>
-            <Toggle label="Weatherproof coating?" sublabel="+$100" value={weatherproofCoating} onChange={setWeatherproofCoating} />
           </>
         );
 
@@ -479,8 +564,30 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
     }
   };
 
+  const isRecurring = frequency !== "one-time" && !NO_FREQUENCY.has(serviceId);
+
   return (
     <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
+
+      {/* Service address — required */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-medium text-foreground">
+          Service address <span className="text-destructive">*</span>
+        </p>
+        <AddressInput
+          value={serviceAddress}
+          onChange={(addr) => {
+            setServiceAddress(addr);
+            if (addr.trim()) setAddressError(false);
+          }}
+          placeholder="Enter the address where service is needed"
+          hasError={addressError}
+        />
+        {addressError && (
+          <p className="text-xs text-destructive">Please enter a service address to continue.</p>
+        )}
+      </div>
+
       {/* Service-specific fields */}
       {renderServiceFields()}
 
@@ -490,6 +597,75 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
       {/* Frequency (only for applicable services) */}
       {!NO_FREQUENCY.has(serviceId) && (
         <ChipRow label="How often?" value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} />
+      )}
+
+      {/* Recurring scheduling */}
+      {isRecurring && (
+        <div className="space-y-4 bg-blue-50 rounded-xl p-3 border border-blue-100">
+          <p className="text-xs font-semibold text-primary">Recurring Schedule</p>
+
+          {/* First service date */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">First service date</p>
+            <input
+              type="date"
+              value={firstServiceDate}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setFirstServiceDate(e.target.value)}
+              className="w-full bg-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-blue-200"
+            />
+          </div>
+
+          {/* Time slots — multi-select */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Preferred time slots (select one or more)</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {TIME_SLOT_OPTIONS.map(slot => (
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() => toggleTimeSlot(slot)}
+                  className={`text-xs py-1.5 px-1 rounded-lg border transition-all ${
+                    firstServiceTimeSlots.includes(slot)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-white text-foreground border-blue-200 hover:border-primary/50"
+                  }`}
+                >
+                  {slot}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* End date */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Continue service until</p>
+            <div className="flex gap-2">
+              <select
+                value={recurringEndMonth}
+                onChange={(e) => setRecurringEndMonth(Number(e.target.value))}
+                className="flex-1 bg-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-blue-200"
+              >
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={i + 1}>{m}</option>
+                ))}
+              </select>
+              <select
+                value={recurringEndYear}
+                onChange={(e) => setRecurringEndYear(Number(e.target.value))}
+                className="w-24 bg-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-blue-200"
+              >
+                {[currentYear, currentYear + 1, currentYear + 2, currentYear + 3].map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground">
+            Remaining visits auto-scheduled based on your selected frequency and end date.
+          </p>
+        </div>
       )}
 
       {/* Submit */}
