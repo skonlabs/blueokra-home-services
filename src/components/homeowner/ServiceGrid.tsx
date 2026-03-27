@@ -2,12 +2,14 @@ import { motion } from "framer-motion";
 
 const services = [
   { id: "lawn", name: "Lawn & Garden", icon: "🌿", description: "Mowing, trimming, landscaping", color: "bg-okra-50 border-okra-100" },
-  { id: "hvac", name: "HVAC", icon: "❄️", description: "Heating, cooling, air quality", color: "bg-blue-50 border-blue-100" },
-  { id: "plumbing", name: "Plumbing", icon: "🔧", description: "Leaks, drains, installations", color: "bg-blue-50 border-blue-100" },
-  { id: "pressure", name: "Pressure Wash", icon: "💧", description: "Driveways, siding, decks", color: "bg-blue-50 border-blue-100" },
+  { id: "house_cleaning", name: "House Cleaning", icon: "🏠", description: "Deep clean, recurring, move-out", color: "bg-blue-50 border-blue-100" },
+  { id: "gutter", name: "Gutter Cleaning", icon: "🏗️", description: "Cleaning, guards, repairs", color: "bg-warm-50 border-warm-100" },
   { id: "roof", name: "Roof Cleaning", icon: "🏠", description: "Moss, debris, gutters", color: "bg-warm-50 border-warm-100" },
+  { id: "pressure", name: "Pressure Wash", icon: "💧", description: "Driveways, siding, decks", color: "bg-blue-50 border-blue-100" },
   { id: "electrical", name: "Electrical", icon: "⚡", description: "Wiring, outlets, fixtures", color: "bg-warm-50 border-warm-100" },
-  { id: "handyman", name: "Handyman", icon: "🛠️", description: "Repairs, assembly, odd jobs", color: "bg-okra-50 border-okra-100" },
+  { id: "duct", name: "Duct Cleaning", icon: "🌬️", description: "Vents, dryer ducts, air quality", color: "bg-blue-50 border-blue-100" },
+  { id: "backwater", name: "Backwater Testing", icon: "🔧", description: "Testing, repair, certification", color: "bg-okra-50 border-okra-100" },
+  { id: "fence", name: "Fence Installation", icon: "🏗️", description: "Install, repair, coating", color: "bg-okra-50 border-okra-100" },
 ];
 
 export const getServiceById = (id: string) => services.find((s) => s.id === id);
