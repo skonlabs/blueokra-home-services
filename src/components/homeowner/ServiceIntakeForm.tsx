@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { ChevronRight, Minus, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronRight, Minus, Plus, MapPin } from "lucide-react";
 import type { IntakeFormData } from "@/lib/quoteCalculator";
 import AddressInput from "./AddressInput";
+import { useUserHomes } from "@/hooks/useBookings";
 
 interface ServiceIntakeFormProps {
   serviceId: string;
@@ -194,17 +195,6 @@ const FREQUENCY_OPTIONS = [
   { value: "quarterly" as const, label: "Quarterly" },
 ];
 
-const TIME_SLOT_OPTIONS = [
-  "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
-  "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM",
-  "4:00 PM", "5:00 PM",
-];
-
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
 // Services that don't support recurring frequency
 const NO_FREQUENCY = new Set(["gutter", "roof", "fence", "backwater"]);
 
@@ -222,13 +212,27 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
   // Address
   const [serviceAddress, setServiceAddress] = useState(iv.serviceAddress ?? "");
   const [addressError,   setAddressError]   = useState(false);
+  const [usingNewAddress, setUsingNewAddress] = useState(false);
 
-  // Recurring scheduling
-  const currentYear = new Date().getFullYear();
-  const [firstServiceDate,  setFirstServiceDate]  = useState(iv.firstServiceDate  ?? "");
-  const [firstServiceTimeSlots, setFirstServiceTimeSlots] = useState<string[]>(iv.firstServiceTimeSlots ?? []);
-  const [recurringEndMonth, setRecurringEndMonth] = useState(iv.recurringEndMonth ?? (new Date().getMonth() + 1));
-  const [recurringEndYear,  setRecurringEndYear]  = useState(iv.recurringEndYear  ?? (currentYear + 1));
+  // Saved homes for address auto-fill
+  const { data: homes } = useUserHomes();
+  const primaryHome = homes?.find(h => h.is_primary) ?? homes?.[0];
+
+  // Auto-fill address from primary home when homes load (only if no address set yet)
+  useEffect(() => {
+    if (primaryHome && !serviceAddress) {
+      setServiceAddress(primaryHome.address);
+    }
+  }, [primaryHome?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // If returning with a previously entered address that isn't a saved home, show input mode
+  useEffect(() => {
+    if (iv.serviceAddress && homes && !homes.some(h => h.address === iv.serviceAddress)) {
+      setUsingNewAddress(true);
+    }
+  }, [homes?.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isSavedHomeSelected = !usingNewAddress && !!serviceAddress;
 
   // Lawn
   const [yardSize,    setYardSize]    = useState<IntakeFormData["yardSize"]>(iv.yardSize    ?? "lt3000");
@@ -282,7 +286,6 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
     }
     setAddressError(false);
 
-    const isRecurring = frequency !== "one-time";
     const base: IntakeFormData = {
       serviceId,
       package: "standard",
@@ -290,12 +293,6 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
       frequency,
       addOns,
       serviceAddress,
-      ...(isRecurring ? {
-        firstServiceDate,
-        firstServiceTimeSlots,
-        recurringEndMonth,
-        recurringEndYear,
-      } : {}),
     };
 
     switch (serviceId) {
@@ -326,12 +323,6 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
       default:
         onSubmit(base);
     }
-  };
-
-  const toggleTimeSlot = (slot: string) => {
-    setFirstServiceTimeSlots(prev =>
-      prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]
-    );
   };
 
   const renderServiceFields = () => {
@@ -397,16 +388,16 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
               Kitchen always included — $60
             </p>
             <CheckList label="Additional rooms ($15 each)" values={bonusRoomTypes} onChange={setBonusRoomTypes} options={[
-              { value: "den",      label: "Den / family room", price: "$15" },
-              { value: "office",   label: "Office / study",    price: "$15" },
-              { value: "sunroom",  label: "Sun room",          price: "$15" },
-              { value: "basement", label: "Basement room",     price: "$15" },
-              { value: "other",    label: "Other room",        price: "$15" },
+              { value: "den",     label: "Den / family room", price: "$15" },
+              { value: "office",  label: "Office / study",    price: "$15" },
+              { value: "sunroom", label: "Sun room",          price: "$15" },
+              { value: "other",   label: "Other room",        price: "$15" },
             ]} />
             <CheckList label="Extras (optional)" values={addOns} onChange={setAddOns} options={[
               { value: "oven",         label: "Inside oven cleaning",   price: "$20" },
               { value: "fridge",       label: "Inside fridge cleaning", price: "$25" },
               { value: "garage",       label: "Garage cleaning",        price: "$75" },
+              { value: "basement",     label: "Basement cleaning",      price: "$50" },
               { value: "carpet_stain", label: "Carpet stain removal",   price: "$50" },
             ]} />
           </>
@@ -564,8 +555,6 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
     }
   };
 
-  const isRecurring = frequency !== "one-time" && !NO_FREQUENCY.has(serviceId);
-
   return (
     <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
 
@@ -574,15 +563,60 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
         <p className="text-xs font-medium text-foreground">
           Service address <span className="text-destructive">*</span>
         </p>
-        <AddressInput
-          value={serviceAddress}
-          onChange={(addr) => {
-            setServiceAddress(addr);
-            if (addr.trim()) setAddressError(false);
-          }}
-          placeholder="Enter the address where service is needed"
-          hasError={addressError}
-        />
+
+        {/* Saved home chips */}
+        {homes && homes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {homes.map((home) => (
+              <button
+                key={home.id}
+                type="button"
+                onClick={() => {
+                  setUsingNewAddress(false);
+                  setServiceAddress(home.address);
+                  setAddressError(false);
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
+                  !usingNewAddress && serviceAddress === home.address
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted text-foreground border-border hover:border-primary/50"
+                }`}
+              >
+                {home.nickname || home.address.split(",")[0]}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => { setUsingNewAddress(true); setServiceAddress(""); setAddressError(false); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
+                usingNewAddress
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-muted text-foreground border-border hover:border-primary/50"
+              }`}
+            >
+              + New address
+            </button>
+          </div>
+        )}
+
+        {/* Static display for saved home, or AddressInput for new */}
+        {isSavedHomeSelected ? (
+          <div className="flex items-center gap-2 bg-muted rounded-xl px-3 py-2.5 text-sm text-foreground">
+            <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <span className="flex-1 truncate">{serviceAddress}</span>
+          </div>
+        ) : (
+          <AddressInput
+            value={serviceAddress}
+            onChange={(addr) => {
+              setServiceAddress(addr);
+              if (addr.trim()) setAddressError(false);
+            }}
+            placeholder="Enter the address where service is needed"
+            hasError={addressError}
+          />
+        )}
+
         {addressError && (
           <p className="text-xs text-destructive">Please enter a service address to continue.</p>
         )}
@@ -597,75 +631,6 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
       {/* Frequency (only for applicable services) */}
       {!NO_FREQUENCY.has(serviceId) && (
         <ChipRow label="How often?" value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} />
-      )}
-
-      {/* Recurring scheduling */}
-      {isRecurring && (
-        <div className="space-y-4 bg-blue-50 rounded-xl p-3 border border-blue-100">
-          <p className="text-xs font-semibold text-primary">Recurring Schedule</p>
-
-          {/* First service date */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">First service date</p>
-            <input
-              type="date"
-              value={firstServiceDate}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setFirstServiceDate(e.target.value)}
-              className="w-full bg-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-blue-200"
-            />
-          </div>
-
-          {/* Time slots — multi-select */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">Preferred time slots (select one or more)</p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {TIME_SLOT_OPTIONS.map(slot => (
-                <button
-                  key={slot}
-                  type="button"
-                  onClick={() => toggleTimeSlot(slot)}
-                  className={`text-xs py-1.5 px-1 rounded-lg border transition-all ${
-                    firstServiceTimeSlots.includes(slot)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-white text-foreground border-blue-200 hover:border-primary/50"
-                  }`}
-                >
-                  {slot}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* End date */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">Continue service until</p>
-            <div className="flex gap-2">
-              <select
-                value={recurringEndMonth}
-                onChange={(e) => setRecurringEndMonth(Number(e.target.value))}
-                className="flex-1 bg-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-blue-200"
-              >
-                {MONTHS.map((m, i) => (
-                  <option key={m} value={i + 1}>{m}</option>
-                ))}
-              </select>
-              <select
-                value={recurringEndYear}
-                onChange={(e) => setRecurringEndYear(Number(e.target.value))}
-                className="w-24 bg-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-blue-200"
-              >
-                {[currentYear, currentYear + 1, currentYear + 2, currentYear + 3].map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <p className="text-[11px] text-muted-foreground">
-            Remaining visits auto-scheduled based on your selected frequency and end date.
-          </p>
-        </div>
       )}
 
       {/* Submit */}

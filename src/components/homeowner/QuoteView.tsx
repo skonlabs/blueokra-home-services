@@ -1,7 +1,20 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, Clock, ChevronRight, ChevronLeft, Info, AlertTriangle, Check } from "lucide-react";
+import { Shield, Clock, ChevronRight, ChevronLeft, Info, AlertTriangle, Check, MapPin } from "lucide-react";
 import type { QuoteData } from "./AIIntakeChat";
+
+// ---------------------------------------------------------------------------
+// Scheduling data — exported so Index.tsx can use the type
+// ---------------------------------------------------------------------------
+
+export interface ScheduleData {
+  selectedDate?: string;
+  selectedTime?: string;
+  firstServiceDate?: string;
+  firstServiceTimeSlots?: string[];
+  recurringEndMonth?: number;
+  recurringEndYear?: number;
+}
 
 // ---------------------------------------------------------------------------
 // Calendar helpers
@@ -20,22 +33,49 @@ function formatDate(iso: string) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
+const TIME_SLOT_OPTIONS = [
+  "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
+  "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM",
+  "4:00 PM", "5:00 PM",
+];
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 interface QuoteViewProps {
   quote: QuoteData;
-  onBook: () => void;
+  serviceAddress?: string;
+  onBook: (schedule: ScheduleData) => void;
   onBack: () => void;
 }
 
-const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
+const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) => {
+  const currentYear = new Date().getFullYear();
+
+  // One-time scheduling
   const [calMonth, setCalMonth] = useState<Date>(() =>
     quote.slots[0] ? new Date(quote.slots[0] + "T12:00:00") : new Date()
   );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+
+  // Recurring scheduling
+  const [firstServiceDate, setFirstServiceDate] = useState("");
+  const [firstServiceTimeSlots, setFirstServiceTimeSlots] = useState<string[]>([]);
+  const [recurringEndMonth, setRecurringEndMonth] = useState(new Date().getMonth() + 1);
+  const [recurringEndYear, setRecurringEndYear] = useState(currentYear + 1);
+
+  const toggleTimeSlot = (slot: string) => {
+    setFirstServiceTimeSlots(prev =>
+      prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]
+    );
+  };
 
   const confidenceColor = quote.confidence >= 85 ? "text-secondary bg-okra-50" :
     quote.confidence >= 70 ? "text-primary bg-blue-50" : "text-accent bg-warm-50";
@@ -68,7 +108,17 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
   const monthName = calMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   const isRecurring = !!quote.frequency;
-  const canBook = isRecurring || (!!selectedDate && !!selectedTime);
+  const canBook = isRecurring
+    ? !!firstServiceDate
+    : (!!selectedDate && !!selectedTime);
+
+  const handleBook = () => {
+    if (isRecurring) {
+      onBook({ firstServiceDate, firstServiceTimeSlots, recurringEndMonth, recurringEndYear });
+    } else {
+      onBook({ selectedDate: selectedDate ?? undefined, selectedTime: selectedTime ?? undefined });
+    }
+  };
 
   return (
     <motion.div
@@ -82,21 +132,46 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
           <Shield className="w-3 h-3" />
           {quote.confidence}% — {confidenceLabel}
         </div>
-        <div className="flex items-center justify-center gap-2">
-          <h2 className="font-display text-3xl font-bold text-foreground">
-            ${quote.low}{quote.type !== "fixed" && ` – $${quote.high}`}
-          </h2>
-          {quote.type === "fixed" && (
-            <span className="text-xs font-medium bg-secondary/10 text-secondary px-2 py-0.5 rounded-full">
-              Fixed Price
-            </span>
-          )}
-        </div>
+
+        {/* First visit vs recurring price */}
+        {quote.recurringVisitPrice !== undefined ? (
+          <div className="flex items-center justify-center gap-4">
+            <div className="text-center">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">First visit</p>
+              <h2 className="font-display text-3xl font-bold text-foreground">${quote.low}</h2>
+            </div>
+            <div className="text-muted-foreground/50 text-lg">→</div>
+            <div className="text-center">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">From 2nd visit</p>
+              <h2 className="font-display text-2xl font-bold text-muted-foreground">${quote.recurringVisitPrice}</h2>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2">
+            <h2 className="font-display text-3xl font-bold text-foreground">
+              ${quote.low}{quote.type !== "fixed" && ` – $${quote.high}`}
+            </h2>
+            {quote.type === "fixed" && (
+              <span className="text-xs font-medium bg-secondary/10 text-secondary px-2 py-0.5 rounded-full">
+                Fixed Price
+              </span>
+            )}
+          </div>
+        )}
+
         <p className="text-sm text-muted-foreground mt-1">{quote.serviceName}</p>
         {isRecurring && (
           <p className="text-xs text-primary font-medium mt-1 capitalize">
             {quote.frequency} · recurring
           </p>
+        )}
+
+        {/* Service address */}
+        {serviceAddress && (
+          <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-muted-foreground">
+            <MapPin className="w-3 h-3 shrink-0" />
+            <span className="truncate max-w-[240px]">{serviceAddress}</span>
+          </div>
         )}
       </div>
 
@@ -120,6 +195,12 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
                 )}
               </div>
             </div>
+            {quote.recurringVisitPrice !== undefined && (
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>From 2nd visit</span>
+                <span>${quote.recurringVisitPrice}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -144,7 +225,7 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
         </div>
       )}
 
-      {/* Scheduling — calendar (one-time only) */}
+      {/* Scheduling — calendar (one-time) */}
       {!isRecurring && (
         <div className="bg-card rounded-2xl border border-border p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -206,7 +287,7 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
             })}
           </div>
 
-          {/* Time slots — shown after a date is selected */}
+          {/* Time slots */}
           {selectedDate ? (
             <div className="mt-4 border-t border-border pt-3 space-y-2">
               <p className="text-xs text-muted-foreground">Times on {formatDate(selectedDate)}</p>
@@ -235,15 +316,74 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
         </div>
       )}
 
-      {/* Recurring: scheduling already selected in form */}
+      {/* Scheduling — recurring */}
       {isRecurring && (
-        <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-primary" />
-            <p className="text-sm font-medium text-foreground">Recurring schedule set</p>
+            <h3 className="font-semibold text-sm">Schedule Your Recurring Service</h3>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            Your first service date and preferred times were selected in the previous step. Remaining visits will be auto-scheduled.
+
+          {/* First service date */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">First service date <span className="text-destructive">*</span></p>
+            <input
+              type="date"
+              value={firstServiceDate}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setFirstServiceDate(e.target.value)}
+              className="w-full bg-muted rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent"
+            />
+          </div>
+
+          {/* Preferred time slots */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Preferred time slots (select one or more)</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {TIME_SLOT_OPTIONS.map(slot => (
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() => toggleTimeSlot(slot)}
+                  className={`text-xs py-1.5 px-1 rounded-lg border transition-all ${
+                    firstServiceTimeSlots.includes(slot)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted text-foreground border-border hover:border-primary/50"
+                  }`}
+                >
+                  {slot}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* End date */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Continue service until</p>
+            <div className="flex gap-2">
+              <select
+                value={recurringEndMonth}
+                onChange={(e) => setRecurringEndMonth(Number(e.target.value))}
+                className="flex-1 bg-muted rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent"
+              >
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={i + 1}>{m}</option>
+                ))}
+              </select>
+              <select
+                value={recurringEndYear}
+                onChange={(e) => setRecurringEndYear(Number(e.target.value))}
+                className="w-24 bg-muted rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent"
+              >
+                {[currentYear, currentYear + 1, currentYear + 2, currentYear + 3].map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground">
+            Remaining visits auto-scheduled based on your selected frequency and end date.
           </p>
         </div>
       )}
@@ -271,13 +411,18 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
       {/* Actions */}
       <div className="space-y-2 pt-1">
         <button
-          onClick={onBook}
+          onClick={handleBook}
           disabled={!canBook}
           className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40"
         >
           Book Now
           <ChevronRight className="w-4 h-4" />
         </button>
+        {!canBook && (
+          <p className="text-[11px] text-center text-muted-foreground">
+            {isRecurring ? "Select a first service date to continue" : "Select a date and time to continue"}
+          </p>
+        )}
         <button
           onClick={onBack}
           className="w-full text-muted-foreground text-sm py-2 hover:text-foreground transition-colors"

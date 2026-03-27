@@ -59,11 +59,7 @@ export interface IntakeFormData {
   doorCount?: number;
   weatherproofCoating?: boolean;
 
-  // Recurring scheduling
-  recurringEndMonth?: number;
-  recurringEndYear?: number;
-  firstServiceDate?: string;
-  firstServiceTimeSlots?: string[];
+  // (Recurring scheduling is captured on the quote screen, not in intake form)
 }
 
 // ---------------------------------------------------------------------------
@@ -151,12 +147,15 @@ function calcLawn(d: IntakeFormData): QuoteData {
   }
 
   // First-time surcharge — always applied for lawn
+  // Monthly/Quarterly: applies EVERY visit (same price every time)
+  // Weekly/Biweekly/One-time: applies to first visit only
   const firstTimeSurcharge = Math.round(base * 0.5);
-  const isRecurringAllInstances = d.frequency === "monthly" || d.frequency === "quarterly";
+  const isEveryVisit = d.frequency === "monthly" || d.frequency === "quarterly";
+  const isRecurring = d.frequency !== "one-time";
   breakdown.push({
-    label: isRecurringAllInstances
-      ? "First-time setup fee (+50% on base, applies every visit)"
-      : "First-time setup fee (+50% on base)",
+    label: isEveryVisit
+      ? "First-time setup fee (+50% on base, every visit)"
+      : "First-time setup fee (+50% on base, first visit only)",
     amount: `$${firstTimeSurcharge}`,
   });
 
@@ -177,9 +176,16 @@ function calcLawn(d: IntakeFormData): QuoteData {
 
   const total = Math.round(grassTotal + weedAmt + firstTimeSurcharge + addOnTotal);
 
+  // For weekly/biweekly: 2nd+ visits don't include the first-time surcharge
+  const recurringVisitPrice = (isRecurring && !isEveryVisit)
+    ? Math.round(grassTotal + weedAmt + addOnTotal)
+    : undefined;
+
   const factors: string[] = [];
-  if (isRecurringAllInstances) {
+  if (isEveryVisit) {
     factors.push("First-time setup fee applies to every visit for monthly/quarterly plans");
+  } else if (isRecurring) {
+    factors.push("First-time setup fee applies to first visit only");
   }
 
   return {
@@ -188,6 +194,7 @@ function calcLawn(d: IntakeFormData): QuoteData {
     breakdown, factors,
     ...getSlots(d.urgency),
     frequency: d.frequency !== "one-time" ? d.frequency : undefined,
+    recurringVisitPrice,
   };
 }
 
@@ -214,24 +221,23 @@ function calcHouseCleaning(d: IntakeFormData): QuoteData {
   }
 
   // First-time surcharge — waived only if cleaned within last 3 months
+  // Always applies to first visit only (never every visit — that's lawn-only)
   const applyFirstTime = d.lastProfessionalCleaning !== "lt3months";
+  const isRecurring = d.frequency !== "one-time";
   let firstTimeSurcharge = 0;
   if (applyFirstTime) {
     firstTimeSurcharge = Math.round(roomTotal * 0.5);
-    const isRecurringAllInstances = d.frequency === "monthly" || d.frequency === "quarterly";
     breakdown.push({
-      label: isRecurringAllInstances
-        ? "First-time setup fee (+50% on base, applies every visit)"
-        : "First-time setup fee (+50% on base)",
+      label: "First-time setup fee (+50% on base, first visit only)",
       amount: `$${firstTimeSurcharge}`,
     });
   }
 
   // Add-ons
-  const addOnPrices: Record<string, number> = { oven: 20, fridge: 25, garage: 75, carpet_stain: 50 };
+  const addOnPrices: Record<string, number> = { oven: 20, fridge: 25, garage: 75, basement: 50, carpet_stain: 50 };
   const addOnLabels: Record<string, string> = {
     oven: "Inside oven cleaning", fridge: "Inside fridge cleaning",
-    garage: "Garage cleaning", carpet_stain: "Carpet stain removal",
+    garage: "Garage cleaning", basement: "Basement cleaning", carpet_stain: "Carpet stain removal",
   };
   let addOnTotal = 0;
   for (const addOn of d.addOns ?? []) {
@@ -243,9 +249,14 @@ function calcHouseCleaning(d: IntakeFormData): QuoteData {
 
   const total = Math.round(roomTotal + firstTimeSurcharge + addOnTotal);
 
+  // Recurring: 2nd+ visits don't include first-time surcharge
+  const recurringVisitPrice = (isRecurring && applyFirstTime)
+    ? Math.round(roomTotal + addOnTotal)
+    : undefined;
+
   const factors: string[] = [];
-  if ((d.frequency === "monthly" || d.frequency === "quarterly") && applyFirstTime) {
-    factors.push("First-time setup fee applies to every visit for monthly/quarterly plans");
+  if (applyFirstTime && isRecurring) {
+    factors.push("First-time setup fee applies to first visit only");
   }
 
   return {
@@ -254,6 +265,7 @@ function calcHouseCleaning(d: IntakeFormData): QuoteData {
     breakdown, factors,
     ...getSlots(d.urgency),
     frequency: d.frequency !== "one-time" ? d.frequency : undefined,
+    recurringVisitPrice,
   };
 }
 
