@@ -1,20 +1,60 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Home, Plus, Wrench, Calendar, Thermometer, Droplets, Zap, Shield, Loader2 } from "lucide-react";
+import { Home, Plus, Wrench, Calendar, Thermometer, Shield, Loader2, X, Check } from "lucide-react";
 import { useUserHomes, usePropertyAppliances, usePropertyWarranties, useBookings } from "@/hooks/useBookings";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import AddressInput from "./AddressInput";
 
 const PropertyProfile = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"details" | "appliances" | "history" | "warranties">("details");
   const { data: homes, isLoading: homesLoading } = useUserHomes();
-  const primaryHome = homes?.[0];
+  const [selectedHomeIdx, setSelectedHomeIdx] = useState(0);
+  const primaryHome = homes?.[selectedHomeIdx] ?? homes?.[0];
   const { data: appliances, isLoading: appliancesLoading } = usePropertyAppliances(primaryHome?.id);
   const { data: warranties, isLoading: warrantiesLoading } = usePropertyWarranties(primaryHome?.id);
   const { data: bookings } = useBookings();
 
+  // Add property form state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newNickname, setNewNickname] = useState("");
+  const [newAddress, setNewAddress] = useState("");
+  const [addSaving, setAddSaving] = useState(false);
+  const [addError, setAddError] = useState("");
+
   const completedBookings = (bookings || [])
     .filter((b) => b.booking_status === "completed")
     .slice(0, 10);
+
+  const inputCls = "w-full bg-muted rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent";
+
+  const handleSaveProperty = async () => {
+    if (!newAddress.trim()) { setAddError("Please enter an address."); return; }
+    if (!user) return;
+    setAddError("");
+    setAddSaving(true);
+    try {
+      await supabase.from("user_homes").insert({
+        user_id: user.id,
+        address: newAddress,
+        nickname: newNickname.trim() || null,
+        is_primary: !homes || homes.length === 0,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["user-homes", user.id] });
+      setShowAddForm(false);
+      setNewNickname("");
+      setNewAddress("");
+    } catch (err) {
+      setAddError("Failed to save. Please try again.");
+      console.error(err);
+    } finally {
+      setAddSaving(false);
+    }
+  };
 
   if (homesLoading) {
     return (
@@ -26,6 +66,25 @@ const PropertyProfile = () => {
 
   return (
     <div className="px-4 py-4 pb-24 space-y-4">
+      {/* Property selector chips */}
+      {homes && homes.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {homes.map((home, i) => (
+            <button
+              key={home.id}
+              onClick={() => setSelectedHomeIdx(i)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                selectedHomeIdx === i
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-muted text-foreground border-border"
+              }`}
+            >
+              {home.nickname || home.address.split(",")[0]}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Property card */}
       {primaryHome ? (
         <div className="bg-card rounded-2xl border border-border p-4">
@@ -57,12 +116,59 @@ const PropertyProfile = () => {
         <div className="bg-card rounded-2xl border border-border p-6 text-center">
           <Home className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">No property added yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Add your home to get started</p>
         </div>
       )}
 
-      <button className="w-full flex items-center justify-center gap-2 bg-muted rounded-2xl py-3 text-sm text-muted-foreground hover:text-foreground transition-colors">
-        <Plus className="w-4 h-4" /> Add Another Property
-      </button>
+      {/* Add property button / form */}
+      {!showAddForm ? (
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="w-full flex items-center justify-center gap-2 bg-muted rounded-2xl py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Plus className="w-4 h-4" /> Add Another Property
+        </button>
+      ) : (
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">Add New Property</p>
+            <button onClick={() => { setShowAddForm(false); setAddError(""); }} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1.5">Property name / nickname</label>
+            <input
+              className={inputCls}
+              placeholder="e.g. Main Home, Rental, Cabin"
+              value={newNickname}
+              onChange={(e) => setNewNickname(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1.5">Address <span className="text-destructive">*</span></label>
+            <AddressInput
+              value={newAddress}
+              onChange={(addr) => { setNewAddress(addr); setAddError(""); }}
+              placeholder="Start typing your address…"
+              hasError={!!addError && !newAddress}
+            />
+          </div>
+
+          {addError && <p className="text-xs text-destructive">{addError}</p>}
+
+          <button
+            onClick={handleSaveProperty}
+            disabled={addSaving || !newAddress.trim()}
+            className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-transform"
+          >
+            {addSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            {addSaving ? "Saving…" : "Save Property"}
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-muted rounded-xl p-1 overflow-x-auto">
@@ -155,6 +261,7 @@ const PropertyProfile = () => {
             {primaryHome ? (
               <>
                 {[
+                  { label: "Name", value: primaryHome.nickname || "—" },
                   { label: "Address", value: primaryHome.address },
                   { label: "City", value: primaryHome.city || "—" },
                   { label: "State", value: primaryHome.state || "—" },

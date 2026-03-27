@@ -22,6 +22,7 @@ import ProviderSchedule from "@/components/provider/ProviderSchedule";
 import ProfileScreen from "@/components/shared/ProfileScreen";
 import type { QuoteData } from "@/components/homeowner/AIIntakeChat";
 import { SERVICE_NAMES } from "@/components/homeowner/AIIntakeChat";
+import type { ScheduleData } from "@/components/homeowner/QuoteView";
 import type { IntakeFormData } from "@/lib/quoteCalculator";
 import type { Job } from "@/components/provider/ProviderJobs";
 
@@ -41,6 +42,7 @@ const Index = () => {
   const [selectedService, setSelectedService] = useState<string | undefined>();
   const [currentQuote, setCurrentQuote] = useState<QuoteData | null>(null);
   const [lastIntakeData, setLastIntakeData] = useState<IntakeFormData | null>(null);
+  const [bookingSchedule, setBookingSchedule] = useState<ScheduleData | null>(null);
   const [mode, setMode] = useState<"homeowner" | "provider">("homeowner");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [reviewBooking, setReviewBooking] = useState<any>(null);
@@ -69,6 +71,7 @@ const Index = () => {
     setSelectedService(undefined);
     setCurrentQuote(null);
     setLastIntakeData(null);
+    setBookingSchedule(null);
     navigate(mode === "provider" ? "provider-home" : "home");
   };
 
@@ -79,7 +82,13 @@ const Index = () => {
 
   const handleQuoteReady = (quote: QuoteData) => {
     setCurrentQuote(quote);
+    setSelectedService(quote.serviceId); // preserve for back-navigation
     navigate("quote");
+  };
+
+  const handleBook = (schedule: ScheduleData) => {
+    setBookingSchedule(schedule);
+    navigate("booked");
   };
 
   const handleNavigation = (target: string) => {
@@ -189,7 +198,12 @@ const Index = () => {
 
           {screen === "quote" && currentQuote && (
             <motion.div key="quote" initial={{ x: "50%", opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: "50%", opacity: 0 }} transition={{ duration: 0.2 }}>
-              <QuoteView quote={currentQuote} onBook={() => navigate("booked")} onBack={() => navigate("intake")} />
+              <QuoteView
+                quote={currentQuote}
+                serviceAddress={lastIntakeData?.serviceAddress}
+                onBook={handleBook}
+                onBack={() => navigate("intake")}
+              />
             </motion.div>
           )}
 
@@ -198,6 +212,8 @@ const Index = () => {
               <BookingConfirmation
                 quote={currentQuote}
                 serviceAddress={lastIntakeData?.serviceAddress}
+                scheduleData={bookingSchedule ?? undefined}
+                intakeData={lastIntakeData ?? undefined}
                 onViewBookings={() => navigate("bookings")}
                 onHome={goHome}
               />

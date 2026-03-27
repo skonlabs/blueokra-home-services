@@ -1,17 +1,79 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Calendar, MapPin, DollarSign, Clock, Shield } from "lucide-react";
+import { Check, Calendar, MapPin, DollarSign, Clock, Shield, Loader2 } from "lucide-react";
 import type { QuoteData } from "./AIIntakeChat";
+import type { ScheduleData } from "./QuoteView";
+import type { IntakeFormData } from "@/lib/quoteCalculator";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface BookingConfirmationProps {
   quote: QuoteData;
   serviceAddress?: string;
+  scheduleData?: ScheduleData;
+  intakeData?: IntakeFormData;
   onViewBookings: () => void;
   onHome: () => void;
 }
 
-const BookingConfirmation = ({ quote, serviceAddress, onViewBookings, onHome }: BookingConfirmationProps) => {
-  // Generate a stable booking reference (in a real app this would come from the backend)
-  const bookingRef = `BK${Date.now().toString(36).toUpperCase()}`;
+const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, onViewBookings, onHome }: BookingConfirmationProps) => {
+  const { user } = useAuth();
+  const [dbBookingId, setDbBookingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(true);
+
+  useEffect(() => {
+    if (!user) { setSaving(false); return; }
+
+    const save = async () => {
+      try {
+        // Insert into booking_service
+        const { data: bookingData, error: bookingError } = await supabase
+          .from("booking_service")
+          .insert({
+            customer_user_id: user.id,
+            service_type: quote.serviceId,
+            package_name: quote.serviceName,
+            booking_status: "pending",
+            frequency: quote.frequency ?? "one-time",
+            revenue: quote.low,
+            notes: serviceAddress ?? null,
+            customizations: intakeData as unknown as import("@/integrations/supabase/types").Json ?? null,
+          })
+          .select("id")
+          .single();
+
+        if (bookingError) throw bookingError;
+        setDbBookingId(bookingData.id);
+
+        // Insert booking_appointment if a date is selected
+        const appointmentDate = scheduleData?.selectedDate ?? scheduleData?.firstServiceDate;
+        if (appointmentDate && bookingData.id) {
+          await supabase.from("booking_appointment").insert({
+            service_id: bookingData.id,
+            appointment_date: appointmentDate,
+            customer_user_id: user.id,
+            appointment_status: "pending",
+            customer_amount: quote.low,
+          });
+        }
+      } catch (err) {
+        console.error("Booking save failed:", err);
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    save();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Booking reference: use last 8 chars of DB id when available
+  const bookingRef = dbBookingId
+    ? `BK${dbBookingId.replace(/-/g, "").slice(-8).toUpperCase()}`
+    : `BK${Date.now().toString(36).toUpperCase()}`;
+
+  const appointmentDate = scheduleData?.selectedDate ?? scheduleData?.firstServiceDate;
+  const appointmentTime = scheduleData?.selectedTime ??
+    (scheduleData?.firstServiceTimeSlots?.[0] ?? null);
 
   return (
     <motion.div
@@ -25,7 +87,7 @@ const BookingConfirmation = ({ quote, serviceAddress, onViewBookings, onHome }: 
         transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
         className="w-16 h-16 bg-success text-success-foreground rounded-full flex items-center justify-center mx-auto"
       >
-        <Check className="w-8 h-8" />
+        {saving ? <Loader2 className="w-8 h-8 animate-spin" /> : <Check className="w-8 h-8" />}
       </motion.div>
 
       <div>
@@ -51,23 +113,31 @@ const BookingConfirmation = ({ quote, serviceAddress, onViewBookings, onHome }: 
 
       {/* Booking details */}
       <div className="bg-card rounded-2xl border border-border p-4 text-left space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-okra-50 flex items-center justify-center">
-            <Calendar className="w-4 h-4 text-okra-500" />
+        {appointmentDate && (
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-okra-50 flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-okra-500" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                {appointmentDate}{appointmentTime ? ` · ${appointmentTime}` : ""}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {quote.frequency ? `${quote.frequency} · recurring` : "One-time service"}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-foreground">{quote.slots[0]}</p>
-            <p className="text-xs text-muted-foreground">Estimated 1–2 hours</p>
+        )}
+        {serviceAddress && (
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center">
+              <MapPin className="w-4 h-4 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">{serviceAddress}</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center">
-            <MapPin className="w-4 h-4 text-blue-500" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-foreground">{serviceAddress || "Service address on file"}</p>
-          </div>
-        </div>
+        )}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-warm-50 flex items-center justify-center">
             <DollarSign className="w-4 h-4 text-warm-500" />
