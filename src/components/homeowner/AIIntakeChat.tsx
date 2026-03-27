@@ -31,136 +31,160 @@ export interface QuoteData {
 
 const serviceQuotes: Record<string, QuoteData> = {
   lawn: {
-    serviceId: "lawn", serviceName: "Lawn Mowing + Edge Trimming",
-    type: "range", low: 185, high: 240, confidence: 92,
+    serviceId: "lawn", serviceName: "Lawn Care",
+    type: "range", low: 75, high: 500, confidence: 92,
     breakdown: [
-      { label: "Base mowing", amount: "$120" },
-      { label: "Edge trimming", amount: "$35" },
-      { label: "Clippings cleanup", amount: "$15" },
-      { label: "Complexity factor", amount: "$15–$70" },
+      { label: "Base mowing (varies by yard size)", amount: "$75–$400" },
+      { label: "Possible surcharges (grass height/weeds)", amount: "$25–$100" },
     ],
-    factors: ["Actual yard size", "Grass height", "Obstacles & slope", "Wet conditions"],
+    factors: ["Yard size (sq ft)", "Grass height", "Weed level", "First-time visit"],
     slots: ["Today 2pm", "Tomorrow 9am", "Tomorrow 1pm", "Sat 10am", "Sat 2pm", "Sun 11am"],
   },
-  hvac: {
-    serviceId: "hvac", serviceName: "HVAC Diagnostic & Tune-up",
-    type: "diagnostic", low: 89, high: 150, confidence: 78,
+  house_cleaning: {
+    serviceId: "house_cleaning", serviceName: "House Cleaning",
+    type: "range", low: 120, high: 350, confidence: 88,
     breakdown: [
-      { label: "Diagnostic fee", amount: "$89" },
-      { label: "Tune-up (if needed)", amount: "$60–$120" },
-      { label: "Parts", amount: "TBD" },
+      { label: "Per bedroom ($15–$22.50)", amount: "Varies" },
+      { label: "Per bathroom ($25–$37.50)", amount: "Varies" },
+      { label: "Kitchen ($60–$90)", amount: "Varies" },
+      { label: "Bonus rooms ($15–$22.50 each)", amount: "Varies" },
     ],
-    factors: ["System age & condition", "Required parts", "Refrigerant levels", "Ductwork issues"],
-    slots: ["Tomorrow 10am", "Tomorrow 2pm", "Wed 9am", "Thu 11am"],
+    factors: ["Number of rooms", "Package tier", "First-time surcharge (50%)", "Add-ons selected"],
+    slots: ["Tomorrow 9am", "Tomorrow 1pm", "Wed 9am", "Thu 10am", "Fri 9am"],
   },
-  plumbing: {
-    serviceId: "plumbing", serviceName: "Plumbing Repair",
-    type: "range", low: 150, high: 350, confidence: 75,
+  gutter: {
+    serviceId: "gutter", serviceName: "Gutter Cleaning",
+    type: "range", low: 125, high: 500, confidence: 85,
     breakdown: [
-      { label: "Service call", amount: "$75" },
-      { label: "Labor (1–2 hrs)", amount: "$75–$150" },
-      { label: "Materials", amount: "Varies" },
+      { label: "Base cleaning (by stories)", amount: "$125–$500" },
+      { label: "Condition surcharge", amount: "$0–$100" },
     ],
-    factors: ["Pipe accessibility", "Parts needed", "Code requirements", "Water damage extent"],
-    slots: ["Today 4pm", "Tomorrow 8am", "Tomorrow 11am", "Wed 9am"],
+    factors: ["Number of stories", "Clog severity", "Repairs needed"],
+    slots: ["Mon 8am", "Tue 9am", "Wed 8am", "Thu 9am"],
+  },
+  roof: {
+    serviceId: "roof", serviceName: "Roof Cleaning",
+    type: "range", low: 150, high: 500, confidence: 80,
+    breakdown: [
+      { label: "Base cleaning (by roof size)", amount: "$150–$500" },
+      { label: "Moss/algae treatment", amount: "$50–$250" },
+    ],
+    factors: ["Roof size (sq ft)", "Moss severity", "Roof material", "Access difficulty"],
+    slots: ["Mon 8am", "Tue 8am", "Wed 8am", "Thu 8am"],
   },
   pressure: {
     serviceId: "pressure", serviceName: "Pressure Washing",
-    type: "range", low: 200, high: 450, confidence: 85,
+    type: "range", low: 144, high: 640, confidence: 85,
     breakdown: [
-      { label: "Base service", amount: "$150" },
-      { label: "Area size factor", amount: "$50–$200" },
-      { label: "Stain treatment", amount: "$0–$100" },
+      { label: "Base service", amount: "$180–$400" },
+      { label: "Size multiplier (0.8×–1.6×)", amount: "Applied" },
     ],
-    factors: ["Surface area", "Stain severity", "Surface material", "Water access"],
+    factors: ["Home size (sq ft)", "Surface area", "Stain severity", "First-time surcharge"],
     slots: ["Sat 9am", "Sat 1pm", "Sun 10am", "Mon 9am"],
-  },
-  roof: {
-    serviceId: "roof", serviceName: "Roof Cleaning & Moss Treatment",
-    type: "range", low: 350, high: 600, confidence: 80,
-    breakdown: [
-      { label: "Moss treatment", amount: "$200–$300" },
-      { label: "Debris removal", amount: "$100–$150" },
-      { label: "Gutter cleaning", amount: "$50–$100" },
-      { label: "Safety equipment", amount: "Included" },
-    ],
-    factors: ["Roof size & pitch", "Moss severity", "Roof material", "Access difficulty"],
-    slots: ["Mon 8am", "Tue 8am", "Wed 8am", "Thu 8am"],
   },
   electrical: {
     serviceId: "electrical", serviceName: "Electrical Service",
-    type: "diagnostic", low: 95, high: 300, confidence: 70,
+    type: "range", low: 120, high: 640, confidence: 70,
     breakdown: [
-      { label: "Diagnostic/call fee", amount: "$95" },
-      { label: "Labor", amount: "$75–$150/hr" },
-      { label: "Materials", amount: "Varies" },
+      { label: "Base service", amount: "$150–$400" },
+      { label: "Size multiplier (0.8×–1.6×)", amount: "Applied" },
     ],
-    factors: ["Issue complexity", "Panel condition", "Code compliance", "Permit requirements"],
+    factors: ["Issue complexity", "Home size", "Code compliance", "Permit requirements"],
     slots: ["Tomorrow 10am", "Wed 1pm", "Thu 9am", "Fri 10am"],
   },
-  handyman: {
-    serviceId: "handyman", serviceName: "Handyman Service",
-    type: "range", low: 100, high: 250, confidence: 82,
+  duct: {
+    serviceId: "duct", serviceName: "Duct Cleaning",
+    type: "range", low: 200, high: 400, confidence: 90,
     breakdown: [
-      { label: "Minimum service", amount: "$75" },
-      { label: "Labor (hourly)", amount: "$55–$75/hr" },
-      { label: "Materials", amount: "Varies" },
+      { label: "Base (up to 10 vents)", amount: "$200" },
+      { label: "Additional vents ($25 each)", amount: "Varies" },
     ],
-    factors: ["Task complexity", "Materials needed", "Number of tasks", "Access issues"],
-    slots: ["Today 3pm", "Tomorrow 9am", "Tomorrow 2pm", "Sat 10am"],
+    factors: ["Number of vents", "Dryer vent add-on"],
+    slots: ["Tomorrow 9am", "Wed 10am", "Thu 9am", "Fri 10am"],
+  },
+  backwater: {
+    serviceId: "backwater", serviceName: "Backwater Testing",
+    type: "range", low: 100, high: 350, confidence: 92,
+    breakdown: [
+      { label: "Base device test", amount: "$100" },
+      { label: "Additional devices ($50 each)", amount: "Varies" },
+    ],
+    factors: ["Number of devices", "Repairs needed", "Certification filing"],
+    slots: ["Today 3pm", "Tomorrow 9am", "Tomorrow 2pm", "Wed 10am"],
+  },
+  fence: {
+    serviceId: "fence", serviceName: "Fence Installation",
+    type: "range", low: 500, high: 5000, confidence: 75,
+    breakdown: [
+      { label: "Per linear ft ($50–$100)", amount: "Varies" },
+      { label: "Door surcharge ($50 each)", amount: "Varies" },
+      { label: "Terrain/height surcharges", amount: "Varies" },
+    ],
+    factors: ["Linear footage", "Package tier", "Fence height", "Terrain type", "Repair vs new"],
+    slots: ["Mon 8am", "Tue 8am", "Wed 8am", "Thu 8am"],
   },
 };
 
 const serviceNames: Record<string, string> = {
   lawn: "Lawn & Garden",
-  hvac: "HVAC",
-  plumbing: "Plumbing",
-  pressure: "Pressure Washing",
+  house_cleaning: "House Cleaning",
+  gutter: "Gutter Cleaning",
   roof: "Roof Cleaning",
+  pressure: "Pressure Washing",
   electrical: "Electrical",
-  handyman: "Handyman",
+  duct: "Duct Cleaning",
+  backwater: "Backwater Testing",
+  fence: "Fence Installation",
 };
 
 const detectServiceFromText = (text: string): string | null => {
   const lower = text.toLowerCase();
-  if (/lawn|grass|mow|yard/.test(lower)) return "lawn";
-  if (/hvac|ac\b|heat|furnace|cool/.test(lower)) return "hvac";
-  if (/plumb|pipe|leak|drain|toilet/.test(lower)) return "plumbing";
-  if (/pressure|wash|driveway|patio/.test(lower)) return "pressure";
-  if (/roof|moss|gutter|shingle/.test(lower)) return "roof";
+  if (/lawn|grass|mow|yard|garden/.test(lower)) return "lawn";
+  if (/clean.*house|house.*clean|maid|deep clean|move.?out/.test(lower)) return "house_cleaning";
+  if (/gutter/.test(lower)) return "gutter";
+  if (/roof|moss|shingle/.test(lower)) return "roof";
+  if (/pressure|wash|driveway|patio|siding/.test(lower)) return "pressure";
   if (/electric|outlet|breaker|wiring/.test(lower)) return "electrical";
-  if (/fix|repair|install|build|handyman/.test(lower)) return "handyman";
+  if (/duct|vent|air quality|hvac|ac\b|heat|furnace/.test(lower)) return "duct";
+  if (/backwater|backflow|sewer|test.*device/.test(lower)) return "backwater";
+  if (/fence|fenc/.test(lower)) return "fence";
   return null;
 };
 
 const photoObservations: Record<string, string> = {
   lawn: "I can see the lawn area clearly. The grass appears overgrown in sections with some uneven edges along the borders.",
-  hvac: "I can see the HVAC unit. There's visible dust buildup on the coils and the filter housing looks like it needs attention.",
-  plumbing: "I can see the affected area. There are signs of moisture and potential pipe corrosion that will need assessment.",
+  house_cleaning: "I can see the space. Looks like it needs a thorough cleaning — I'll factor in the rooms and any extras.",
+  gutter: "I can see the gutters. There's visible debris buildup that needs clearing.",
   pressure: "I can see the surface clearly. There's significant buildup of grime, algae staining, and weathering across the area.",
   roof: "I can see the roof surface. There's notable moss growth concentrated near the ridge and debris accumulation in the valleys.",
   electrical: "I can see the panel/outlet area. There are signs of wear and the wiring configuration will need a closer look by a technician.",
-  handyman: "I can see the area that needs work. The scope looks manageable and I can get a good estimate from what's visible.",
+  duct: "I can see the vent area. There's visible dust buildup that suggests the ducts need cleaning.",
+  backwater: "I can see the backwater device area. I'll need to assess the condition for testing.",
+  fence: "I can see the area for the fence. The terrain and layout look workable.",
 };
 
 const followUpQuestions: Record<string, string> = {
-  lawn: "Is this the front yard, backyard, or both? And approximately how large is the lawn?",
-  hvac: "Is this for heating, cooling, or both? And what's the make/model of your system if you know it?",
-  plumbing: "Where is the issue located — kitchen, bathroom, basement, or outside?",
-  pressure: "What surfaces need washing? (driveway, patio, siding, deck)",
-  roof: "Have you noticed any active leaks inside? And roughly how old is your roof?",
-  electrical: "Is this an emergency situation (no power, sparks, burning smell)? Or a non-urgent issue?",
-  handyman: "How many tasks need to be done, and what's the top priority item?",
+  lawn: "How large is the yard approximately? (under 1000, 1000-3000, 3000-5000, or over 5000 sq ft)",
+  house_cleaning: "How many bedrooms, bathrooms, and bonus rooms? And would you like Standard, Premium, or Ultimate cleaning?",
+  gutter: "How many stories is your home? And are the gutters moderately or heavily clogged?",
+  pressure: "What's the approximate size of your home? (under 1000, 1000-2000, 2000-3000, or over 3000 sq ft)",
+  roof: "What's the approximate roof size in sq ft? And do you see any moss or algae?",
+  electrical: "What's the approximate size of your home? And is this an emergency?",
+  duct: "How many vents do you have? (approximately) And would you like dryer vent cleaning too?",
+  backwater: "How many backwater devices do you have? And do any need repair?",
+  fence: "How many linear feet of fencing do you need? And would you like Standard, Premium, or Ultimate materials?",
 };
 
 const quoteReasonByService: Record<string, string> = {
-  lawn: "yard size and grass condition vary until we're on-site",
-  hvac: "parts and labor depend on what the diagnostic uncovers",
-  plumbing: "pipe accessibility and materials won't be fully known until we open things up",
+  lawn: "yard size, grass height, and weed conditions vary until we're on-site",
+  house_cleaning: "the number of rooms and condition affect the final price",
+  gutter: "clog severity and repair needs are assessed on arrival",
   pressure: "surface area and stain severity are assessed on arrival",
-  roof: "pitch, moss coverage, and access complexity affect the final price",
-  electrical: "the full scope of work can only be determined after a diagnostic",
-  handyman: "materials and task complexity may vary from the initial description",
+  roof: "roof size, moss coverage, and access complexity affect the final price",
+  electrical: "the full scope of work can only be determined after assessment",
+  duct: "the number of vents and system condition affect the final price",
+  backwater: "device condition and repair needs are assessed on-site",
+  fence: "terrain, height, and material choices affect the final price",
 };
 
 const getInitialMessage = (serviceId?: string): Message => {

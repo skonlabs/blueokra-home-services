@@ -26,8 +26,8 @@ const Auth = () => {
 
   const handleSendOtp = async () => {
     const digits = phone.replace(/\D/g, "");
-    if (digits.length < 10) {
-      toast({ title: "Invalid phone number", description: "Please enter a valid 10-digit phone number.", variant: "destructive" });
+    if (digits.length < 3) {
+      toast({ title: "Enter a phone number", description: "Please enter any phone number to continue.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -42,8 +42,8 @@ const Auth = () => {
   };
 
   const handleVerifyOtp = async () => {
-    if (otp.length < 6) {
-      toast({ title: "Invalid code", description: "Please enter the 6-digit code.", variant: "destructive" });
+    if (otp.length < 4) {
+      toast({ title: "Invalid code", description: "Please enter the verification code.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -109,7 +109,7 @@ const Auth = () => {
 
               <button
                 onClick={handleSendOtp}
-                disabled={loading || phone.replace(/\D/g, "").length < 10}
+                disabled={loading || phone.replace(/\D/g, "").length < 3}
                 className="w-full bg-primary text-primary-foreground font-medium py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
               >
                 {loading ? (

@@ -163,7 +163,7 @@ const Index = () => {
                 onOpenIntake={() => { setSelectedService(undefined); navigate("intake"); }}
                 onViewBookings={() => navigate("bookings")}
                 onViewProperty={() => navigate("property")}
-                onSwitchToProvider={() => { setMode("provider"); navigate("provider-home"); }}
+                
                 onOpenNotifications={() => setNotificationsOpen(true)}
                 onEmergency={() => { setSelectedService("emergency"); navigate("intake"); }}
                 onBookAgain={() => navigate("bookings")}
