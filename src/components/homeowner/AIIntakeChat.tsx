@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Camera, X, Video, AlertTriangle, RotateCcw, Calendar as CalIcon } from "lucide-react";
+import { Send, Camera, X, Video } from "lucide-react";
 import { getServiceById } from "./ServiceGrid";
 
 interface Message {
@@ -9,7 +9,7 @@ interface Message {
   text: string;
   images?: string[];
   options?: { label: string; value: string }[];
-  type?: "text" | "urgency" | "recurring" | "photos-request" | "video-consult";
+  type?: "text" | "urgency" | "recurring" | "photos-request" | "video-consult" | "followup";
 }
 
 interface AIIntakeProps {
@@ -111,26 +111,85 @@ const serviceQuotes: Record<string, QuoteData> = {
   },
 };
 
-const getAIFlow = (serviceId?: string): Message[] => {
-  const service = serviceId ? getServiceById(serviceId) : null;
-  return [
-    {
-      id: "1", role: "ai",
-      text: service
-        ? `I'll help you with ${service.name.toLowerCase()}. Tell me about the issue — you can type, upload photos, or both. 📸`
-        : "What do you need help with? Describe the issue and I'll identify the right service for you.",
-    },
-  ];
+const serviceNames: Record<string, string> = {
+  lawn: "Lawn & Garden",
+  hvac: "HVAC",
+  plumbing: "Plumbing",
+  pressure: "Pressure Washing",
+  roof: "Roof Cleaning",
+  electrical: "Electrical",
+  handyman: "Handyman",
 };
 
-const AIIntakeChat = ({ serviceId, onQuoteReady }: AIIntakeProps) => {
-  const [messages, setMessages] = useState<Message[]>(getAIFlow(serviceId));
+const detectServiceFromText = (text: string): string | null => {
+  const lower = text.toLowerCase();
+  if (/lawn|grass|mow|yard/.test(lower)) return "lawn";
+  if (/hvac|ac\b|heat|furnace|cool/.test(lower)) return "hvac";
+  if (/plumb|pipe|leak|drain|toilet/.test(lower)) return "plumbing";
+  if (/pressure|wash|driveway|patio/.test(lower)) return "pressure";
+  if (/roof|moss|gutter|shingle/.test(lower)) return "roof";
+  if (/electric|outlet|breaker|wiring/.test(lower)) return "electrical";
+  if (/fix|repair|install|build|handyman/.test(lower)) return "handyman";
+  return null;
+};
+
+const photoObservations: Record<string, string> = {
+  lawn: "I can see the lawn area clearly. The grass appears overgrown in sections with some uneven edges along the borders.",
+  hvac: "I can see the HVAC unit. There's visible dust buildup on the coils and the filter housing looks like it needs attention.",
+  plumbing: "I can see the affected area. There are signs of moisture and potential pipe corrosion that will need assessment.",
+  pressure: "I can see the surface clearly. There's significant buildup of grime, algae staining, and weathering across the area.",
+  roof: "I can see the roof surface. There's notable moss growth concentrated near the ridge and debris accumulation in the valleys.",
+  electrical: "I can see the panel/outlet area. There are signs of wear and the wiring configuration will need a closer look by a technician.",
+  handyman: "I can see the area that needs work. The scope looks manageable and I can get a good estimate from what's visible.",
+};
+
+const followUpQuestions: Record<string, string> = {
+  lawn: "Is this the front yard, backyard, or both? And approximately how large is the lawn?",
+  hvac: "Is this for heating, cooling, or both? And what's the make/model of your system if you know it?",
+  plumbing: "Where is the issue located — kitchen, bathroom, basement, or outside?",
+  pressure: "What surfaces need washing? (driveway, patio, siding, deck)",
+  roof: "Have you noticed any active leaks inside? And roughly how old is your roof?",
+  electrical: "Is this an emergency situation (no power, sparks, burning smell)? Or a non-urgent issue?",
+  handyman: "How many tasks need to be done, and what's the top priority item?",
+};
+
+const quoteReasonByService: Record<string, string> = {
+  lawn: "yard size and grass condition vary until we're on-site",
+  hvac: "parts and labor depend on what the diagnostic uncovers",
+  plumbing: "pipe accessibility and materials won't be fully known until we open things up",
+  pressure: "surface area and stain severity are assessed on arrival",
+  roof: "pitch, moss coverage, and access complexity affect the final price",
+  electrical: "the full scope of work can only be determined after a diagnostic",
+  handyman: "materials and task complexity may vary from the initial description",
+};
+
+const getInitialMessage = (serviceId?: string): Message => {
+  const service = serviceId ? getServiceById(serviceId) : null;
+  return {
+    id: "1", role: "ai",
+    text: service
+      ? `I'll help you with ${service.name.toLowerCase()}. Tell me about the issue — you can type, upload photos, or both.`
+      : "What do you need help with? Describe the issue and I'll identify the right service for you.",
+  };
+};
+
+// Steps:
+// 0 = initial description (text or photos)
+// 1 = photos request (if no photos at step 0)
+// 2 = follow-up question (service-specific)
+// 3 = urgency
+// 4 = recurring
+
+const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakeProps) => {
+  const [messages, setMessages] = useState<Message[]>([getInitialMessage(initialServiceId)]);
   const [input, setInput] = useState("");
   const [step, setStep] = useState(0);
   const [images, setImages] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [urgency, setUrgency] = useState<string | null>(null);
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [resolvedServiceId, setResolvedServiceId] = useState<string | null>(initialServiceId ?? null);
+  const [urgencySelected, setUrgencySelected] = useState(false);
+  const [recurringSelected, setRecurringSelected] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -138,71 +197,214 @@ const AIIntakeChat = ({ serviceId, onQuoteReady }: AIIntakeProps) => {
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
-  const addAIMessage = (text: string, extra?: Partial<Message>) => {
+  const addAIMessage = (
+    text: string,
+    extra?: Partial<Message>,
+    delay: number = 800 + Math.random() * 600,
+  ) => {
     setIsTyping(true);
     scrollToBottom();
-    setTimeout(() => {
-      setIsTyping(false);
-      setMessages((prev) => [...prev, { id: Date.now().toString(), role: "ai", text, ...extra }]);
-      scrollToBottom();
-    }, 800 + Math.random() * 600);
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now().toString(), role: "ai", text, ...extra },
+        ]);
+        scrollToBottom();
+        resolve();
+      }, delay);
+    });
+  };
+
+  const addUserMessage = (text: string, imgs?: string[]) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        role: "user",
+        text,
+        images: imgs && imgs.length > 0 ? imgs : undefined,
+      },
+    ]);
   };
 
   const sendMessage = () => {
     if (!input.trim() && images.length === 0) return;
-    const userMsg: Message = {
-      id: Date.now().toString(), role: "user", text: input,
-      images: images.length > 0 ? [...images] : undefined,
-    };
-    setMessages((prev) => [...prev, userMsg]);
+
+    const sentImages = [...images];
+    const sentText = input;
+    addUserMessage(sentText, sentImages);
     setInput("");
     setImages([]);
 
     const currentStep = step;
     setStep((s) => s + 1);
 
+    // Step 0: initial description
     if (currentStep === 0) {
-      if (images.length > 0) {
-        addAIMessage("Great photos! I can see the area clearly. 📐 I'm analyzing the size and condition...");
-        setTimeout(() => {
-          addAIMessage("Got it! How urgent is this?", { type: "urgency" });
-        }, 2000);
-        setStep(2);
-      } else {
-        addAIMessage("Thanks! Can you upload a photo of the area? It helps me give a more accurate quote. 📸", { type: "photos-request" });
+      let sid = resolvedServiceId;
+
+      // Detect service from text if not provided
+      if (!sid && sentText) {
+        const detected = detectServiceFromText(sentText);
+        if (detected) {
+          sid = detected;
+          setResolvedServiceId(detected);
+          const name = serviceNames[detected];
+          // Show detection message, then continue
+          addAIMessage(
+            `I can help with that! Let me connect you with a ${name} specialist.`,
+            undefined,
+            900,
+          ).then(() => {
+            if (sentImages.length > 0) {
+              addAIMessage(
+                `${photoObservations[sid!]} Let me ask a few more questions.`,
+                undefined,
+                1200,
+              ).then(() => {
+                setStep(3);
+                addAIMessage(followUpQuestions[sid!], { type: "followup" }, 1000);
+              });
+            } else {
+              addAIMessage(
+                "Can you upload a photo of the area? It helps me give a more accurate quote.",
+                { type: "photos-request" },
+                1100,
+              );
+            }
+          });
+          return;
+        }
       }
-    } else if (currentStep === 1) {
+
+      if (sentImages.length > 0) {
+        const obs = photoObservations[sid ?? "handyman"];
+        addAIMessage(
+          `${obs} Let me ask a few more questions.`,
+          undefined,
+          1400,
+        ).then(() => {
+          setStep(3);
+          addAIMessage(followUpQuestions[sid ?? "handyman"], { type: "followup" }, 1000);
+        });
+      } else {
+        // No photos — ask for them
+        addAIMessage(
+          "Can you upload a photo of the area? It helps me give a more accurate quote.",
+          { type: "photos-request" },
+        );
+      }
+      return;
+    }
+
+    // Step 1: user responded after photo request (may or may not have sent photos)
+    if (currentStep === 1) {
+      const sid = resolvedServiceId ?? "handyman";
+      if (sentImages.length > 0) {
+        const obs = photoObservations[sid];
+        addAIMessage(
+          `${obs} Let me ask a couple more questions.`,
+          undefined,
+          1400,
+        ).then(() => {
+          setStep(3);
+          addAIMessage(followUpQuestions[sid], { type: "followup" }, 1000);
+        });
+      } else {
+        // User skipped photos — move to follow-up question
+        setStep(3);
+        addAIMessage(followUpQuestions[sid], { type: "followup" });
+      }
+      return;
+    }
+
+    // Step 2: follow-up answer — ask urgency
+    if (currentStep === 2 || currentStep === 3) {
       addAIMessage("How urgent is this?", { type: "urgency" });
+      setStep(4);
+      return;
     }
   };
 
   const handleUrgencySelect = (value: string) => {
+    if (urgencySelected) return;
+    setUrgencySelected(true);
     setUrgency(value);
-    setMessages((prev) => [...prev, { id: Date.now().toString(), role: "user", text: `Urgency: ${value}` }]);
-    addAIMessage("Would you like this as a one-time service or recurring?", { type: "recurring" });
+    const labels: Record<string, string> = {
+      emergency: "Emergency (same day)",
+      soon: "This week",
+      flexible: "Flexible (anytime)",
+    };
+    addUserMessage(labels[value] ?? value);
+    addAIMessage("Would you like this as a one-time or recurring service?", { type: "recurring" });
   };
 
   const handleRecurringSelect = (value: string) => {
-    setIsRecurring(value === "recurring");
-    setMessages((prev) => [...prev, { id: Date.now().toString(), role: "user", text: value === "recurring" ? "Recurring" : "One-time" }]);
+    if (recurringSelected) return;
+    setRecurringSelected(true);
+
+    const labels: Record<string, string> = {
+      "one-time": "One-time",
+      weekly: "Weekly",
+      biweekly: "Bi-weekly",
+      monthly: "Monthly",
+      seasonal: "Seasonal",
+    };
+    addUserMessage(labels[value] ?? value);
+
+    const sid = resolvedServiceId ?? "lawn";
+    const quote = serviceQuotes[sid] ?? serviceQuotes.lawn;
+    const reason = quoteReasonByService[sid] ?? "scope varies until on-site";
+
+    const summaryText =
+      quote.type === "diagnostic"
+        ? `Your ${serviceNames[sid] ?? "service"} issue needs a diagnostic visit first. The **$${quote.low}** diagnostic fee applies, which goes toward the repair cost. I'm **${quote.confidence}%** confident in this estimate.`
+        : `Based on your photos and description, I estimate **$${quote.low}–$${quote.high}** for this job. This is a price range because ${reason}. The provider will confirm the exact price on-site. I'm **${quote.confidence}%** confident in this estimate.`;
 
     setIsTyping(true);
     scrollToBottom();
     setTimeout(() => {
       setIsTyping(false);
-      setMessages((prev) => [...prev, {
-        id: Date.now().toString(), role: "ai",
-        text: "✨ Analyzing your request... I've estimated the scope, checked provider availability, and calculated pricing. Your quote is ready!"
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now().toString(), role: "ai", text: summaryText },
+      ]);
       scrollToBottom();
-      const sid = serviceId || "lawn";
-      setTimeout(() => onQuoteReady(serviceQuotes[sid] || serviceQuotes.lawn), 1200);
-    }, 1500);
+      setTimeout(() => onQuoteReady(quote), 1500);
+    }, 1400);
   };
 
   const handleVideoConsult = () => {
-    setMessages((prev) => [...prev, { id: Date.now().toString(), role: "user", text: "I'd like a video consultation" }]);
-    addAIMessage("Great choice! A video consultation costs $25 and will be credited toward your service. I'll connect you with an available provider. 📹");
+    addUserMessage("I'd like a video consultation");
+    addAIMessage(
+      "Video consultations are available for $25 (credited toward service). I'm connecting you with an available specialist...",
+      undefined,
+      800,
+    ).then(() => {
+      // Show typing for ~2s to simulate "connecting"
+      setIsTyping(true);
+      scrollToBottom();
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            role: "ai",
+            text: "Actually, let me give you an estimate first based on what you've described. If you still need a visual inspection afterward, we can schedule a video call.",
+          },
+        ]);
+        scrollToBottom();
+        // Continue the flow — ask follow-up question
+        const sid = resolvedServiceId ?? "handyman";
+        setTimeout(() => {
+          setStep(4);
+          addAIMessage(followUpQuestions[sid], { type: "followup" }, 900);
+        }, 600);
+      }, 2000);
+    });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,6 +417,8 @@ const AIIntakeChat = ({ serviceId, onQuoteReady }: AIIntakeProps) => {
       };
       reader.readAsDataURL(file);
     });
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
   };
 
   return (
@@ -243,16 +447,25 @@ const AIIntakeChat = ({ serviceId, onQuoteReady }: AIIntakeProps) => {
                       ))}
                     </div>
                   )}
-                  {msg.text}
+                  {/* Render **bold** markdown inline */}
+                  {msg.text.includes("**") ? (
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: msg.text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>"),
+                      }}
+                    />
+                  ) : (
+                    msg.text
+                  )}
                 </div>
 
                 {/* Urgency options */}
-                {msg.type === "urgency" && msg.role === "ai" && !urgency && (
+                {msg.type === "urgency" && msg.role === "ai" && !urgencySelected && (
                   <div className="flex gap-2 flex-wrap">
                     {[
-                      { label: "🚨 Emergency", value: "emergency" },
+                      { label: "🚨 Emergency (same day)", value: "emergency" },
                       { label: "⏰ This week", value: "soon" },
-                      { label: "📅 Flexible", value: "flexible" },
+                      { label: "📅 Flexible (anytime)", value: "flexible" },
                     ].map((opt) => (
                       <button
                         key={opt.value}
@@ -266,20 +479,23 @@ const AIIntakeChat = ({ serviceId, onQuoteReady }: AIIntakeProps) => {
                 )}
 
                 {/* Recurring options */}
-                {msg.type === "recurring" && msg.role === "ai" && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleRecurringSelect("one-time")}
-                      className="bg-card border border-border rounded-full px-3 py-1.5 text-xs font-medium text-foreground active:scale-[0.97] transition-transform hover:border-primary/50"
-                    >
-                      One-time
-                    </button>
-                    <button
-                      onClick={() => handleRecurringSelect("recurring")}
-                      className="bg-card border border-border rounded-full px-3 py-1.5 text-xs font-medium text-foreground active:scale-[0.97] transition-transform hover:border-primary/50"
-                    >
-                      🔄 Recurring
-                    </button>
+                {msg.type === "recurring" && msg.role === "ai" && !recurringSelected && (
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { label: "One-time", value: "one-time" },
+                      { label: "Weekly", value: "weekly" },
+                      { label: "Bi-weekly", value: "biweekly" },
+                      { label: "Monthly", value: "monthly" },
+                      { label: "Seasonal", value: "seasonal" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => handleRecurringSelect(opt.value)}
+                        className="bg-card border border-border rounded-full px-3 py-1.5 text-xs font-medium text-foreground active:scale-[0.97] transition-transform hover:border-primary/50"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
                 )}
 
@@ -306,7 +522,13 @@ const AIIntakeChat = ({ serviceId, onQuoteReady }: AIIntakeProps) => {
 
           {/* Typing indicator */}
           {isTyping && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+            <motion.div
+              key="typing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex justify-start"
+            >
               <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex gap-1">
                 <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-pulse-soft" style={{ animationDelay: "0ms" }} />
                 <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-pulse-soft" style={{ animationDelay: "200ms" }} />

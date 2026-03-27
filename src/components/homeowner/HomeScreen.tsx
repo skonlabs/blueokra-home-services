@@ -5,10 +5,14 @@ import ServiceGrid from "./ServiceGrid";
 
 interface HomeScreenProps {
   onServiceSelect: (serviceId: string) => void;
-  onOpenIntake: () => void;
+  onOpenIntake: (context?: string) => void;
   onViewBookings: () => void;
   onViewProperty: () => void;
-  onSwitchToProvider: () => void;
+  onOpenProfile: () => void;
+  onOpenNotifications: () => void;
+  onEmergency: () => void;
+  onBookAgain: () => void;
+  onRebook: (id: string) => void;
 }
 
 const recentBookings = [
@@ -22,7 +26,17 @@ const seasonalRecs = [
   { title: "Gutter Cleaning", description: "Clear winter debris", icon: Sun, color: "text-accent" },
 ];
 
-const HomeScreen = ({ onServiceSelect, onOpenIntake, onViewBookings, onViewProperty, onSwitchToProvider }: HomeScreenProps) => {
+const HomeScreen = ({
+  onServiceSelect,
+  onOpenIntake,
+  onViewBookings,
+  onViewProperty,
+  onOpenProfile,
+  onOpenNotifications,
+  onEmergency,
+  onBookAgain,
+  onRebook,
+}: HomeScreenProps) => {
   return (
     <div className="px-4 pt-12 pb-24">
       {/* Header */}
@@ -34,12 +48,15 @@ const HomeScreen = ({ onServiceSelect, onOpenIntake, onViewBookings, onViewPrope
           </h1>
         </div>
         <div className="flex gap-2">
-          <button className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground relative">
+          <button
+            onClick={onOpenNotifications}
+            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground relative"
+          >
             <Bell className="w-4 h-4" />
             <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full border-2 border-background" />
           </button>
-          <button 
-            onClick={onSwitchToProvider}
+          <button
+            onClick={onOpenProfile}
             className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground"
           >
             <User className="w-4 h-4" />
@@ -49,7 +66,7 @@ const HomeScreen = ({ onServiceSelect, onOpenIntake, onViewBookings, onViewPrope
 
       {/* Search / Quick input */}
       <button
-        onClick={onOpenIntake}
+        onClick={() => onOpenIntake()}
         className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3.5 mb-5 active:scale-[0.99] transition-transform"
       >
         <Search className="w-4 h-4 text-muted-foreground" />
@@ -58,17 +75,29 @@ const HomeScreen = ({ onServiceSelect, onOpenIntake, onViewBookings, onViewPrope
 
       {/* Quick actions */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-4 px-4">
-        <button className="shrink-0 bg-destructive/10 text-destructive border border-destructive/20 rounded-full px-4 py-2 text-xs font-medium active:scale-[0.97] transition-transform flex items-center gap-1.5">
+        <button
+          onClick={onEmergency}
+          className="shrink-0 bg-destructive/10 text-destructive border border-destructive/20 rounded-full px-4 py-2 text-xs font-medium active:scale-[0.97] transition-transform flex items-center gap-1.5"
+        >
           <Zap className="w-3 h-3" /> Emergency
         </button>
-        <button className="shrink-0 bg-card border border-border rounded-full px-4 py-2 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1.5">
+        <button
+          onClick={onBookAgain}
+          className="shrink-0 bg-card border border-border rounded-full px-4 py-2 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1.5"
+        >
           <RotateCcw className="w-3 h-3" /> Book Again
         </button>
-        <button className="shrink-0 bg-card border border-border rounded-full px-4 py-2 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1.5">
+        <button
+          onClick={() => onOpenIntake("recurring")}
+          className="shrink-0 bg-card border border-border rounded-full px-4 py-2 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1.5"
+        >
           <Calendar className="w-3 h-3" /> Recurring
         </button>
-        <button className="shrink-0 bg-card border border-border rounded-full px-4 py-2 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1.5">
-          <Shield className="w-3 h-3" /> Bundle & Save
+        <button
+          onClick={() => onOpenIntake()}
+          className="shrink-0 bg-card border border-border rounded-full px-4 py-2 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1.5"
+        >
+          <Shield className="w-3 h-3" /> Bundle &amp; Save
         </button>
       </div>
 
@@ -98,7 +127,10 @@ const HomeScreen = ({ onServiceSelect, onOpenIntake, onViewBookings, onViewPrope
                   <p className="text-sm font-medium text-foreground">{booking.service}</p>
                   <p className="text-xs text-muted-foreground">{booking.date} · {booking.price}</p>
                 </div>
-                <button className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full font-medium">
+                <button
+                  onClick={() => onRebook(booking.id)}
+                  className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full font-medium active:scale-[0.97] transition-transform"
+                >
                   Rebook
                 </button>
               </div>
@@ -123,7 +155,7 @@ const HomeScreen = ({ onServiceSelect, onOpenIntake, onViewBookings, onViewPrope
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 + i * 0.1 }}
-              onClick={onOpenIntake}
+              onClick={() => onOpenIntake()}
               className="w-full flex items-center gap-3 bg-card border border-border rounded-xl p-3 text-left active:scale-[0.99] transition-transform"
             >
               <div className={`w-9 h-9 rounded-full bg-muted flex items-center justify-center ${rec.color}`}>
