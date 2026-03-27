@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import Auth from "./Auth";
 import BottomNav from "@/components/shared/BottomNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import HomeScreen from "@/components/homeowner/HomeScreen";
@@ -14,6 +17,7 @@ import ProviderJobs from "@/components/provider/ProviderJobs";
 import ProviderCompletion from "@/components/provider/ProviderCompletion";
 import ProviderEarnings from "@/components/provider/ProviderEarnings";
 import ProviderSchedule from "@/components/provider/ProviderSchedule";
+import ProfileScreen from "@/components/shared/ProfileScreen";
 import type { QuoteData } from "@/components/homeowner/AIIntakeChat";
 
 type Screen =
@@ -21,11 +25,26 @@ type Screen =
   | "provider-home" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-profile";
 
 const Index = () => {
+  const { user, loading } = useAuth();
   const [screen, setScreen] = useState<Screen>("home");
   const [prevScreen, setPrevScreen] = useState<Screen>("home");
   const [selectedService, setSelectedService] = useState<string | undefined>();
   const [currentQuote, setCurrentQuote] = useState<QuoteData | null>(null);
   const [mode, setMode] = useState<"homeowner" | "provider">("homeowner");
+
+  // Show loading spinner
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Show auth if not logged in
+  if (!user) {
+    return <Auth />;
+  }
 
   const navigate = (to: Screen) => {
     setPrevScreen(screen);
@@ -56,8 +75,6 @@ const Index = () => {
     }
     navigate(target as Screen);
   };
-
-  const isProvider = screen.startsWith("provider");
 
   const getHeaderConfig = (): { title: string; subtitle?: string; onBack?: () => void } | null => {
     switch (screen) {
@@ -104,11 +121,13 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-primary-foreground/70 text-sm">Good afternoon</p>
-              <h1 className="font-display text-xl font-bold text-primary-foreground">Mike's Services</h1>
+              <h1 className="font-display text-xl font-bold text-primary-foreground">
+                {user.phone || "Provider"}
+              </h1>
             </div>
             <div className="text-right">
               <p className="text-primary-foreground/70 text-xs">Today's earnings</p>
-              <p className="text-primary-foreground font-bold text-lg">$505</p>
+              <p className="text-primary-foreground font-bold text-lg">$0</p>
             </div>
           </div>
           <button
@@ -120,10 +139,8 @@ const Index = () => {
         </div>
       )}
 
-      {/* Header for non-home screens */}
       {headerConfig && <ScreenHeader {...headerConfig} />}
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           {screen === "home" && (
@@ -190,7 +207,6 @@ const Index = () => {
             </motion.div>
           )}
 
-          {/* Provider screens */}
           {screen === "provider-home" && (
             <motion.div key="provider-home" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <ProviderJobs onCompleteJob={() => navigate("provider-completion")} />
@@ -223,54 +239,7 @@ const Index = () => {
         </AnimatePresence>
       </div>
 
-      {/* Bottom Nav */}
-      <BottomNav
-        active={screen}
-        onNavigate={handleNavigation}
-        mode={mode}
-      />
-    </div>
-  );
-};
-
-// Simple profile screen
-const ProfileScreen = ({ onSwitchMode, isProvider }: { onSwitchMode: () => void; isProvider?: boolean }) => {
-  return (
-    <div className="px-4 py-6 pb-24 space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <span className="text-2xl">{isProvider ? "👷" : "👤"}</span>
-        </div>
-        <div>
-          <h2 className="font-display text-lg font-bold text-foreground">{isProvider ? "Mike Johnson" : "Alex Thompson"}</h2>
-          <p className="text-sm text-muted-foreground">{isProvider ? "Provider since 2022" : "Member since 2023"}</p>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        {[
-          "Account Settings",
-          "Payment Methods",
-          "Notifications",
-          "Help & Support",
-          "Privacy Policy",
-          "Terms of Service",
-        ].map((item) => (
-          <button key={item} className="w-full flex items-center justify-between bg-card border border-border rounded-xl p-3.5 text-sm text-foreground text-left">
-            {item}
-            <span className="text-muted-foreground">→</span>
-          </button>
-        ))}
-      </div>
-
-      <button
-        onClick={onSwitchMode}
-        className="w-full bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm active:scale-[0.98] transition-transform"
-      >
-        Switch to {isProvider ? "Homeowner" : "Provider"} Mode
-      </button>
-
-      <button className="w-full text-destructive text-sm py-2">Sign Out</button>
+      <BottomNav active={screen} onNavigate={handleNavigation} mode={mode} />
     </div>
   );
 };
