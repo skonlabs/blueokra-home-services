@@ -26,8 +26,8 @@ const Auth = () => {
 
   const handleSendOtp = async () => {
     const digits = phone.replace(/\D/g, "");
-    if (digits.length < 10) {
-      toast({ title: "Invalid phone number", description: "Please enter a valid 10-digit phone number.", variant: "destructive" });
+    if (digits.length < 3) {
+      toast({ title: "Enter a phone number", description: "Please enter any phone number to continue.", variant: "destructive" });
       return;
     }
     setLoading(true);
