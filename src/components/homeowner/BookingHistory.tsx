@@ -13,6 +13,7 @@ type BookingStatus = "upcoming" | "in_progress" | "completed" | "disputed";
 
 interface Booking {
   id: string;
+  serviceId: string;
   service: string;
   icon: string;
   provider: string;
@@ -23,11 +24,11 @@ interface Booking {
 }
 
 const mockBookings: Booking[] = [
-  { id: "1", service: "Lawn Mowing", icon: "🌿", provider: "Mike's Lawn Care", date: "Today, 2:00 PM", price: "$185", status: "in_progress" },
-  { id: "2", service: "HVAC Tune-up", icon: "❄️", provider: "Cool Air Pros", date: "Mar 15, 10:00 AM", price: "$150", status: "completed", rating: 5 },
-  { id: "3", service: "Pressure Wash", icon: "💧", provider: "SparkleClean", date: "Mar 8, 9:00 AM", price: "$320", status: "completed", rating: 4 },
-  { id: "4", service: "Plumbing Repair", icon: "🔧", provider: "QuickFix Plumbing", date: "Feb 20, 11:00 AM", price: "$275", status: "completed", rating: 5 },
-  { id: "5", service: "Gutter Cleaning", icon: "🏠", provider: "Roof Pros NW", date: "Feb 5, 8:00 AM", price: "$180", status: "completed" },
+  { id: "1", serviceId: "lawn", service: "Lawn Mowing", icon: "🌿", provider: "Mike's Lawn Care", date: "Today, 2:00 PM", price: "$185", status: "in_progress" },
+  { id: "2", serviceId: "hvac", service: "HVAC Tune-up", icon: "❄️", provider: "Cool Air Pros", date: "Mar 15, 10:00 AM", price: "$150", status: "completed", rating: 5 },
+  { id: "3", serviceId: "pressure", service: "Pressure Wash", icon: "💧", provider: "SparkleClean", date: "Mar 8, 9:00 AM", price: "$320", status: "completed", rating: 4 },
+  { id: "4", serviceId: "plumbing", service: "Plumbing Repair", icon: "🔧", provider: "QuickFix Plumbing", date: "Feb 20, 11:00 AM", price: "$275", status: "completed", rating: 5 },
+  { id: "5", serviceId: "roof", service: "Gutter Cleaning", icon: "🏠", provider: "Roof Pros NW", date: "Feb 5, 8:00 AM", price: "$180", status: "completed" },
 ];
 
 const statusColors: Record<BookingStatus, string> = {
@@ -143,7 +144,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
               {booking.status === "completed" && (
                 <>
                   <button
-                    onClick={() => onRebook(booking.id)}
+                    onClick={() => onRebook(booking.serviceId)}
                     className="flex-1 bg-muted text-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
                   >
                     <RotateCcw className="w-3.5 h-3.5" /> Rebook

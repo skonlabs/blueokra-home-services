@@ -62,11 +62,11 @@ const initialAppliances: Appliance[] = [
 ];
 
 const initialHistory: HistoryItem[] = [
-  { id: "h1", date: `Mar 15, ${currentYear}`, service: "Lawn Mowing", provider: "Mike's Lawn Care", cost: "$185" },
-  { id: "h2", date: `Feb 28, ${currentYear}`, service: "HVAC Tune-up", provider: "Cool Air Pros", cost: "$150" },
-  { id: "h3", date: `Jan 10, ${currentYear}`, service: "Plumbing Repair", provider: "QuickFix", cost: "$275" },
-  { id: "h4", date: `Nov 5, ${currentYear - 1}`, service: "Gutter Cleaning", provider: "Roof Pros NW", cost: "$180" },
-  { id: "h5", date: `Sep 20, ${currentYear - 1}`, service: "Electrical Inspection", provider: "SafeWire", cost: "$120" },
+  { id: "lawn", date: `Mar 15, ${currentYear}`, service: "Lawn Mowing", provider: "Mike's Lawn Care", cost: "$185" },
+  { id: "hvac", date: `Feb 28, ${currentYear}`, service: "HVAC Tune-up", provider: "Cool Air Pros", cost: "$150" },
+  { id: "plumbing", date: `Jan 10, ${currentYear}`, service: "Plumbing Repair", provider: "QuickFix", cost: "$275" },
+  { id: "roof", date: `Nov 5, ${currentYear - 1}`, service: "Gutter Cleaning", provider: "Roof Pros NW", cost: "$180" },
+  { id: "electrical", date: `Sep 20, ${currentYear - 1}`, service: "Electrical Inspection", provider: "SafeWire", cost: "$120" },
 ];
 
 const PROPERTY_TYPES = ["Single Family", "Condo", "Townhouse", "Multi-Family"] as const;

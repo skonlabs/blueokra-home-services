@@ -2,15 +2,32 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Camera, Check, ChevronRight, X } from "lucide-react";
 
+interface JobSummary {
+  id: string;
+  service: string;
+  customer: string;
+  address: string;
+  price: string;
+}
+
 interface ProviderCompletionProps {
+  job?: JobSummary | null;
   onDone: () => void;
 }
 
+const DEFAULT_JOB: JobSummary = {
+  id: "job-default",
+  service: "Lawn Mowing",
+  customer: "Sarah M.",
+  address: "123 Main St",
+  price: "$195",
+};
+
 const CHECKLIST_ITEMS = [
-  { label: "Mowing completed", required: true },
-  { label: "Edges trimmed", required: true },
-  { label: "Clippings cleaned up", required: true },
-  { label: "Area inspected", required: false },
+  { label: "Work completed as described", required: true },
+  { label: "Area cleaned up", required: true },
+  { label: "Customer satisfied", required: true },
+  { label: "Site inspection done", required: false },
 ];
 
 const REASONS = [
@@ -20,13 +37,15 @@ const REASONS = [
   "Less work than estimated",
 ];
 
-const QUOTE_LOW = 185;
-const QUOTE_HIGH = 240;
+const ProviderCompletion = ({ job: jobProp, onDone }: ProviderCompletionProps) => {
+  const job = jobProp ?? DEFAULT_JOB;
+  const rawPrice = parseFloat(job.price.replace(/[^0-9.]/g, "")) || 195;
+  const QUOTE_LOW = Math.round(rawPrice * 0.9);
+  const QUOTE_HIGH = Math.round(rawPrice * 1.25);
 
-const ProviderCompletion = ({ onDone }: ProviderCompletionProps) => {
   const [step, setStep] = useState<"photos" | "adjust" | "qr" | "done">("photos");
   const [photos, setPhotos] = useState<string[]>([]);
-  const [adjustedPrice, setAdjustedPrice] = useState("195");
+  const [adjustedPrice, setAdjustedPrice] = useState(String(rawPrice));
   const [checkedItems, setCheckedItems] = useState<boolean[]>(CHECKLIST_ITEMS.map(() => false));
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
@@ -99,7 +118,7 @@ const ProviderCompletion = ({ onDone }: ProviderCompletionProps) => {
         </motion.div>
         <div>
           <h2 className="font-display text-2xl font-bold text-foreground">Payment Received!</h2>
-          <p className="text-sm text-muted-foreground mt-1">${adjustedPrice} from Sarah M.</p>
+          <p className="text-sm text-muted-foreground mt-1">${adjustedPrice} from {job.customer}</p>
         </div>
         <div className="bg-card rounded-2xl border border-border p-4 text-left space-y-2 text-sm">
           <div className="flex justify-between">
@@ -143,7 +162,7 @@ const ProviderCompletion = ({ onDone }: ProviderCompletionProps) => {
         <div className="bg-card rounded-2xl border border-border p-4">
           <p className="text-xs text-muted-foreground mb-1">Amount</p>
           <p className="font-display text-2xl font-bold text-foreground">${adjustedPrice}</p>
-          <p className="text-xs text-muted-foreground mt-1">Lawn Mowing · Sarah M.</p>
+          <p className="text-xs text-muted-foreground mt-1">{job.service} · {job.customer}</p>
         </div>
 
         <button
@@ -228,7 +247,7 @@ const ProviderCompletion = ({ onDone }: ProviderCompletionProps) => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 py-6 space-y-5 pb-24">
       <div>
         <h2 className="font-display text-lg font-bold text-foreground">Complete Job</h2>
-        <p className="text-sm text-muted-foreground">Lawn Mowing · Sarah M. · 123 Main St</p>
+        <p className="text-sm text-muted-foreground">{job.service} · {job.customer} · {job.address}</p>
       </div>
 
       {/* Checklist */}

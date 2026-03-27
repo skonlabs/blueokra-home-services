@@ -21,7 +21,7 @@ import type { QuoteData } from "@/components/homeowner/AIIntakeChat";
 import type { Job } from "@/components/provider/ProviderJobs";
 
 type Screen =
-  | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "review" | "dispute" | "property" | "profile" | "notifications"
+  | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile"
   | "provider-home" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-profile" | "provider-onboarding";
 
 const getGreeting = () => {
@@ -226,7 +226,7 @@ const Index = () => {
 
           {screen === "provider-completion" && (
             <motion.div key="provider-completion" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ProviderCompletion onDone={() => navigate("provider-home")} />
+              <ProviderCompletion job={selectedJobForCompletion} onDone={() => { setSelectedJobForCompletion(null); navigate("provider-home"); }} />
             </motion.div>
           )}
 
@@ -264,7 +264,11 @@ const Index = () => {
       />
 
       {/* Notifications Drawer */}
-      <NotificationsDrawer open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+      <NotificationsDrawer
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        onPaymentAction={() => { setNotificationsOpen(false); navigate("payment"); }}
+      />
 
       {/* Review Modal */}
       {reviewBooking && (
