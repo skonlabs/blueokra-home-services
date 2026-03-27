@@ -36,8 +36,8 @@ const Auth = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      setStep("otp");
-      toast({ title: "Code sent!", description: "Check your phone for the verification code." });
+      toast({ title: "Welcome!", description: "You're signed in." });
+      // No OTP step needed — user is already authenticated
     }
   };
 
