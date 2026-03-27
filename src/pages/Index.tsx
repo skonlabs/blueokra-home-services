@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ import ProviderCompletion from "@/components/provider/ProviderCompletion";
 import ProviderEarnings from "@/components/provider/ProviderEarnings";
 import ProviderSchedule from "@/components/provider/ProviderSchedule";
 import ProfileScreen from "@/components/shared/ProfileScreen";
+import RegistrationFlow from "@/components/RegistrationFlow";
 import type { QuoteData } from "@/components/homeowner/AIIntakeChat";
 import { SERVICE_NAMES } from "@/components/homeowner/AIIntakeChat";
 import type { ScheduleData } from "@/components/homeowner/QuoteView";
@@ -28,7 +29,7 @@ import type { Job } from "@/components/provider/ProviderJobs";
 
 type Screen =
   | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile"
-  | "provider-home" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-profile" | "provider-onboarding";
+  | "provider-home" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-profile";
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -36,9 +37,8 @@ const getGreeting = () => {
 };
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, roles, refreshProfile } = useAuth();
   const [screen, setScreen] = useState<Screen>("home");
-  const [prevScreen, setPrevScreen] = useState<Screen>("home");
   const [selectedService, setSelectedService] = useState<string | undefined>();
   const [currentQuote, setCurrentQuote] = useState<QuoteData | null>(null);
   const [lastIntakeData, setLastIntakeData] = useState<IntakeFormData | null>(null);
@@ -47,6 +47,14 @@ const Index = () => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [reviewBooking, setReviewBooking] = useState<any>(null);
   const [selectedJobForCompletion, setSelectedJobForCompletion] = useState<Job | null>(null);
+
+  // Set mode based on user role
+  useEffect(() => {
+    if (roles.includes("provider") && !roles.includes("homeowner")) {
+      setMode("provider");
+      setScreen("provider-home");
+    }
+  }, [roles]);
 
   // Show loading spinner
   if (loading) {
@@ -62,8 +70,21 @@ const Index = () => {
     return <Auth />;
   }
 
+  // Show registration flow for new users (no role assigned yet)
+  if (roles.length === 0) {
+    return (
+      <RegistrationFlow
+        onComplete={async () => {
+          await refreshProfile();
+          // After refresh, the useEffect above will set the correct mode
+        }}
+      />
+    );
+  }
+
+  const isProvider = roles.includes("provider");
+
   const navigate = (to: Screen) => {
-    setPrevScreen(screen);
     setScreen(to);
   };
 
@@ -72,7 +93,7 @@ const Index = () => {
     setCurrentQuote(null);
     setLastIntakeData(null);
     setBookingSchedule(null);
-    navigate(mode === "provider" ? "provider-home" : "home");
+    navigate(isProvider ? "provider-home" : "home");
   };
 
   const handleServiceSelect = (serviceId: string) => {
@@ -82,7 +103,7 @@ const Index = () => {
 
   const handleQuoteReady = (quote: QuoteData) => {
     setCurrentQuote(quote);
-    setSelectedService(quote.serviceId); // preserve for back-navigation
+    setSelectedService(quote.serviceId);
     navigate("quote");
   };
 
@@ -92,11 +113,6 @@ const Index = () => {
   };
 
   const handleNavigation = (target: string) => {
-    if (target.startsWith("provider")) {
-      setMode("provider");
-    } else {
-      setMode("homeowner");
-    }
     navigate(target as Screen);
   };
 
@@ -129,8 +145,6 @@ const Index = () => {
         return { title: "Earnings" };
       case "provider-profile":
         return { title: "Profile" };
-      case "provider-onboarding":
-        return { title: "Get Started", subtitle: "Set up your provider profile", onBack: () => { setMode("homeowner"); navigate("home"); } };
       default:
         return null;
     }
@@ -155,12 +169,6 @@ const Index = () => {
               <p className="text-primary-foreground font-bold text-lg">$0</p>
             </div>
           </div>
-          <button
-            onClick={() => { setMode("homeowner"); navigate("home"); }}
-            className="mt-3 text-xs text-primary-foreground/60 underline"
-          >
-            Switch to Homeowner View
-          </button>
         </div>
       )}
 
@@ -175,9 +183,7 @@ const Index = () => {
                 onOpenIntake={() => { setSelectedService(undefined); navigate("intake"); }}
                 onViewBookings={() => navigate("bookings")}
                 onViewProperty={() => navigate("property")}
-                
                 onOpenNotifications={() => setNotificationsOpen(true)}
-                onEmergency={() => { setSelectedService("emergency"); navigate("intake"); }}
                 onBookAgain={() => navigate("bookings")}
                 onOpenProfile={() => navigate("profile")}
                 onRebook={(id) => { setSelectedService(id); navigate("intake"); }}
@@ -251,7 +257,7 @@ const Index = () => {
 
           {screen === "profile" && (
             <motion.div key="profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ProfileScreen onSwitchMode={() => { setMode("provider"); navigate("provider-home"); }} />
+              <ProfileScreen isProvider={isProvider} />
             </motion.div>
           )}
 
@@ -283,13 +289,7 @@ const Index = () => {
 
           {screen === "provider-profile" && (
             <motion.div key="provider-profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ProfileScreen onSwitchMode={() => { setMode("homeowner"); navigate("home"); }} isProvider />
-            </motion.div>
-          )}
-
-          {screen === "provider-onboarding" && (
-            <motion.div key="provider-onboarding" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ProviderOnboarding onComplete={() => { setMode("provider"); navigate("provider-home"); }} />
+              <ProfileScreen isProvider />
             </motion.div>
           )}
         </AnimatePresence>
@@ -313,174 +313,6 @@ const Index = () => {
           }}
         />
       )}
-    </div>
-  );
-};
-
-// ─── Provider Onboarding ───────────────────────────────────────────────────────
-
-const ALL_SERVICES = [
-  "Lawn Care",
-  "House Cleaning",
-  "Gutter Cleaning",
-  "Roof Cleaning",
-  "Pressure Washing",
-  "Duct Cleaning",
-  "Backwater Testing",
-  "Fence Installation",
-];
-
-const ProviderOnboarding = ({ onComplete }: { onComplete: () => void }) => {
-  const [step, setStep] = useState(1);
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [zipCode, setZipCode] = useState("");
-  const [bio, setBio] = useState("");
-  const [hourlyRate, setHourlyRate] = useState("");
-
-  const toggleService = (s: string) => {
-    setSelectedServices((prev) =>
-      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
-    );
-  };
-
-  const inputCls =
-    "w-full bg-muted rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 border border-transparent";
-
-  return (
-    <div className="px-4 py-6 pb-24 space-y-6">
-      {/* Step indicator */}
-      <div className="flex items-center gap-2">
-        {[1, 2, 3].map((s) => (
-          <div
-            key={s}
-            className={`flex-1 h-1.5 rounded-full transition-colors ${s <= step ? "bg-primary" : "bg-muted"}`}
-          />
-        ))}
-      </div>
-
-      <AnimatePresence mode="wait">
-        {step === 1 && (
-          <motion.div key="step1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
-            <div>
-              <h2 className="font-display text-xl font-bold text-foreground">What services do you offer?</h2>
-              <p className="text-sm text-muted-foreground mt-1">Select all that apply</p>
-            </div>
-            <div className="space-y-2">
-              {ALL_SERVICES.map((s) => {
-                const checked = selectedServices.includes(s);
-                return (
-                  <button
-                    key={s}
-                    onClick={() => toggleService(s)}
-                    className={`w-full flex items-center gap-3 p-3.5 rounded-xl border text-sm font-medium transition-all active:scale-[0.98] ${
-                      checked
-                        ? "bg-primary/10 border-primary text-primary"
-                        : "bg-card border-border text-foreground"
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${checked ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
-                      {checked && <span className="text-white text-[10px] font-bold">✓</span>}
-                    </div>
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              onClick={() => setStep(2)}
-              disabled={selectedServices.length === 0}
-              className="w-full bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm disabled:opacity-50 active:scale-[0.98] transition-transform"
-            >
-              Continue →
-            </button>
-          </motion.div>
-        )}
-
-        {step === 2 && (
-          <motion.div key="step2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
-            <div>
-              <h2 className="font-display text-xl font-bold text-foreground">What's your service area?</h2>
-              <p className="text-sm text-muted-foreground mt-1">We'll match you with nearby jobs</p>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1.5">Primary Zip Code</label>
-                <input
-                  className={inputCls}
-                  placeholder="e.g. 98101"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                  maxLength={5}
-                  type="number"
-                />
-              </div>
-              <div className="bg-muted rounded-xl p-3">
-                <p className="text-xs text-muted-foreground">We'll show you jobs within <span className="font-medium text-foreground">25 miles</span> of your zip code by default. You can adjust this later.</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setStep(1)}
-                className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm active:scale-[0.98] transition-transform"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={() => setStep(3)}
-                disabled={zipCode.length < 5}
-                className="flex-1 bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm disabled:opacity-50 active:scale-[0.98] transition-transform"
-              >
-                Continue →
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {step === 3 && (
-          <motion.div key="step3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
-            <div>
-              <h2 className="font-display text-xl font-bold text-foreground">Tell customers about yourself</h2>
-              <p className="text-sm text-muted-foreground mt-1">A great bio gets more bookings</p>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1.5">Bio</label>
-                <textarea
-                  className={`${inputCls} resize-none h-28`}
-                  placeholder="e.g. Experienced contractor with 10+ years in residential services. Fully licensed and insured."
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1.5">Starting hourly rate ($)</label>
-                <input
-                  className={inputCls}
-                  placeholder="e.g. 65"
-                  type="number"
-                  value={hourlyRate}
-                  onChange={(e) => setHourlyRate(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setStep(2)}
-                className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm active:scale-[0.98] transition-transform"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={onComplete}
-                disabled={!bio.trim() || !hourlyRate.trim()}
-                className="flex-1 bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm disabled:opacity-50 active:scale-[0.98] transition-transform"
-              >
-                Launch My Profile 🎉
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

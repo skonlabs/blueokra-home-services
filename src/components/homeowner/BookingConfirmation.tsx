@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Calendar, MapPin, DollarSign, Clock, Shield, Loader2 } from "lucide-react";
+import { Check, Calendar, MapPin, DollarSign, Clock, Shield, Loader2, AlertCircle } from "lucide-react";
 import type { QuoteData } from "./AIIntakeChat";
 import type { ScheduleData } from "./QuoteView";
 import type { IntakeFormData } from "@/lib/quoteCalculator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 
 interface BookingConfirmationProps {
   quote: QuoteData;
@@ -18,8 +20,10 @@ interface BookingConfirmationProps {
 
 const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, onViewBookings, onHome }: BookingConfirmationProps) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [dbBookingId, setDbBookingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) { setSaving(false); return; }
@@ -45,18 +49,31 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
         if (bookingError) throw bookingError;
         setDbBookingId(bookingData.id);
 
-        // Insert booking_appointment if a date is selected
-        const appointmentDate = scheduleData?.selectedDate ?? scheduleData?.firstServiceDate;
-        if (appointmentDate && bookingData.id) {
+        // Build list of appointment dates to insert
+        const appointmentDates: string[] = [];
+        if (scheduleData?.selectedDates?.length) {
+          appointmentDates.push(...scheduleData.selectedDates);
+        } else if (scheduleData?.firstServiceDate) {
+          appointmentDates.push(scheduleData.firstServiceDate);
+        }
+
+        // Insert one appointment row per selected date
+        for (const date of appointmentDates) {
           await supabase.from("booking_appointment").insert({
             service_id: bookingData.id,
-            appointment_date: appointmentDate,
+            appointment_date: date,
             customer_user_id: user.id,
             appointment_status: "pending",
             customer_amount: quote.low,
           });
         }
+
+        // Refresh the booking history cache so the new booking appears immediately
+        queryClient.invalidateQueries({ queryKey: ["bookings", user.id] });
+
       } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        setSaveError(msg);
         console.error("Booking save failed:", err);
       } finally {
         setSaving(false);
@@ -71,9 +88,18 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
     ? `BK${dbBookingId.replace(/-/g, "").slice(-8).toUpperCase()}`
     : `BK${Date.now().toString(36).toUpperCase()}`;
 
-  const appointmentDate = scheduleData?.selectedDate ?? scheduleData?.firstServiceDate;
-  const appointmentTime = scheduleData?.selectedTime ??
-    (scheduleData?.firstServiceTimeSlots?.[0] ?? null);
+  // Display dates
+  const displayDates = scheduleData?.selectedDates?.length
+    ? scheduleData.selectedDates
+    : scheduleData?.firstServiceDate
+    ? [scheduleData.firstServiceDate]
+    : [];
+
+  const displayTimes = scheduleData?.selectedTimes?.length
+    ? scheduleData.selectedTimes
+    : scheduleData?.firstServiceTimeSlots?.length
+    ? scheduleData.firstServiceTimeSlots
+    : [];
 
   return (
     <motion.div
@@ -85,15 +111,28 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-        className="w-16 h-16 bg-success text-success-foreground rounded-full flex items-center justify-center mx-auto"
+        className={`w-16 h-16 ${saveError ? "bg-destructive/10" : "bg-success"} text-success-foreground rounded-full flex items-center justify-center mx-auto`}
       >
-        {saving ? <Loader2 className="w-8 h-8 animate-spin" /> : <Check className="w-8 h-8" />}
+        {saving ? (
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        ) : saveError ? (
+          <AlertCircle className="w-8 h-8 text-destructive" />
+        ) : (
+          <Check className="w-8 h-8" />
+        )}
       </motion.div>
 
-      <div>
-        <h2 className="font-display text-2xl font-bold text-foreground">Booked!</h2>
-        <p className="text-sm text-muted-foreground mt-1">Your provider will confirm shortly</p>
-      </div>
+      {saveError ? (
+        <div>
+          <h2 className="font-display text-xl font-bold text-foreground">Booking request sent</h2>
+          <p className="text-xs text-destructive mt-1 px-4">Note: Could not save to database — {saveError}</p>
+        </div>
+      ) : (
+        <div>
+          <h2 className="font-display text-2xl font-bold text-foreground">Booked!</h2>
+          <p className="text-sm text-muted-foreground mt-1">Your provider will confirm shortly</p>
+        </div>
+      )}
 
       {/* QR Code — customer shows to provider */}
       <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
@@ -113,21 +152,38 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
 
       {/* Booking details */}
       <div className="bg-card rounded-2xl border border-border p-4 text-left space-y-3">
-        {appointmentDate && (
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-okra-50 flex items-center justify-center">
+        {displayDates.length > 0 && (
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-full bg-okra-50 flex items-center justify-center shrink-0">
               <Calendar className="w-4 h-4 text-okra-500" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium text-foreground">
-                {appointmentDate}{appointmentTime ? ` · ${appointmentTime}` : ""}
+                {displayDates.length === 1
+                  ? format(new Date(displayDates[0] + "T12:00:00"), "EEE, MMM d, yyyy")
+                  : `${displayDates.length} preferred dates`}
               </p>
-              <p className="text-xs text-muted-foreground">
+              {displayDates.length > 1 && (
+                <ul className="mt-0.5 space-y-0.5">
+                  {displayDates.map(d => (
+                    <li key={d} className="text-xs text-muted-foreground">
+                      {format(new Date(d + "T12:00:00"), "EEE, MMM d")}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {displayTimes.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Preferred times: {displayTimes.join(", ")}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {quote.frequency ? `${quote.frequency} · recurring` : "One-time service"}
               </p>
             </div>
           </div>
         )}
+
         {serviceAddress && (
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center">
@@ -138,6 +194,7 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
             </div>
           </div>
         )}
+
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-warm-50 flex items-center justify-center">
             <DollarSign className="w-4 h-4 text-warm-500" />
@@ -173,7 +230,7 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-muted-foreground" />
           <p className="text-xs text-muted-foreground">
-            You'll get a notification when your provider is on their way
+            We will notify you as soon as the provider confirms the date and time.
           </p>
         </div>
       </div>

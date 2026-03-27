@@ -23,9 +23,15 @@ interface NominatimResult {
   address: NominatimAddress;
 }
 
+export interface AddressParts {
+  city?: string;
+  state?: string;
+  zip?: string;
+}
+
 interface AddressInputProps {
   value: string;
-  onChange: (address: string, isWashingtonState?: boolean) => void;
+  onChange: (address: string, isWashingtonState?: boolean, parts?: AddressParts) => void;
   placeholder?: string;
   hasError?: boolean;
 }
@@ -52,6 +58,25 @@ function isWashington(a: NominatimAddress): boolean {
   return code === "WA" || name === "washington";
 }
 
+function getParts(a: NominatimAddress): AddressParts {
+  return {
+    city: a.city ?? a.town ?? a.village,
+    state: a.state,
+    zip: a.postcode,
+  };
+}
+
+// Sort: Washington first, then alphabetical by state
+function sortSuggestions(results: NominatimResult[]): NominatimResult[] {
+  return [...results].sort((a, b) => {
+    const stateA = a.address?.state ?? "";
+    const stateB = b.address?.state ?? "";
+    if (stateA === "Washington" && stateB !== "Washington") return -1;
+    if (stateB === "Washington" && stateA !== "Washington") return 1;
+    return stateA.localeCompare(stateB);
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -70,7 +95,7 @@ const AddressInput = ({ value, onChange, placeholder, hasError }: AddressInputPr
   const containerRef  = useRef<HTMLDivElement>(null);
   const inputRef      = useRef<HTMLInputElement>(null);
 
-  // Sync controlled value from parent (e.g. when saved home is un-selected externally)
+  // Sync controlled value from parent
   useEffect(() => {
     if (value !== inputVal) setInputVal(value);
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -97,14 +122,15 @@ const AddressInput = ({ value, onChange, placeholder, hasError }: AddressInputPr
       const url =
         `https://nominatim.openstreetmap.org/search` +
         `?q=${encodeURIComponent(query)}` +
-        `&format=json&countrycodes=us&limit=6&addressdetails=1`;
+        `&format=json&countrycodes=us&limit=8&addressdetails=1`;
       const res = await fetch(url, {
         headers: { "Accept-Language": "en-US,en" },
       });
       if (!res.ok) throw new Error("network error");
       const data: NominatimResult[] = await res.json();
-      setSuggestions(data);
-      setOpen(data.length > 0);
+      const sorted = sortSuggestions(data);
+      setSuggestions(sorted);
+      setOpen(sorted.length > 0);
     } catch {
       setSuggestions([]);
       setOpen(false);
@@ -131,7 +157,7 @@ const AddressInput = ({ value, onChange, placeholder, hasError }: AddressInputPr
 
     const wa = isWashington(result.address);
     setNotInWA(!wa);
-    onChange(addr, wa);
+    onChange(addr, wa, getParts(result.address));
   };
 
   const handleWaitlist = async () => {
@@ -181,6 +207,7 @@ const AddressInput = ({ value, onChange, placeholder, hasError }: AddressInputPr
           <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-border shadow-xl z-50 overflow-hidden">
             {suggestions.map((s) => {
               const label = formatAddress(s);
+              const stateLabel = s.address?.state ? ` · ${s.address.state}` : "";
               return (
                 <button
                   key={s.place_id}
@@ -190,7 +217,12 @@ const AddressInput = ({ value, onChange, placeholder, hasError }: AddressInputPr
                   className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-start gap-2 border-b border-border/50 last:border-0"
                 >
                   <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                  <span className="leading-tight">{label}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="leading-tight block truncate">{label}</span>
+                    {stateLabel && (
+                      <span className="text-[11px] text-muted-foreground">{s.address?.state}</span>
+                    )}
+                  </div>
                 </button>
               );
             })}

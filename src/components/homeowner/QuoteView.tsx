@@ -4,12 +4,14 @@ import { Shield, Clock, ChevronRight, ChevronLeft, Info, AlertTriangle, Check, M
 import type { QuoteData } from "./AIIntakeChat";
 
 // ---------------------------------------------------------------------------
-// Scheduling data — exported so Index.tsx can use the type
+// Scheduling data — exported so Index.tsx and BookingConfirmation can use it
 // ---------------------------------------------------------------------------
 
 export interface ScheduleData {
-  selectedDate?: string;
-  selectedTime?: string;
+  // One-time: multiple preferred dates and shared preferred times
+  selectedDates?: string[];
+  selectedTimes?: string[];
+  // Recurring
   firstServiceDate?: string;
   firstServiceTimeSlots?: string[];
   recurringEndMonth?: number;
@@ -58,12 +60,12 @@ interface QuoteViewProps {
 const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) => {
   const currentYear = new Date().getFullYear();
 
-  // One-time scheduling
+  // One-time scheduling — multiple dates
   const [calMonth, setCalMonth] = useState<Date>(() =>
     quote.slots[0] ? new Date(quote.slots[0] + "T12:00:00") : new Date()
   );
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
 
   // Recurring scheduling
   const [firstServiceDate, setFirstServiceDate] = useState("");
@@ -71,7 +73,19 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
   const [recurringEndMonth, setRecurringEndMonth] = useState(new Date().getMonth() + 1);
   const [recurringEndYear, setRecurringEndYear] = useState(currentYear + 1);
 
+  const toggleDate = (iso: string) => {
+    setSelectedDates(prev =>
+      prev.includes(iso) ? prev.filter(d => d !== iso) : [...prev, iso]
+    );
+  };
+
   const toggleTimeSlot = (slot: string) => {
+    setSelectedTimes(prev =>
+      prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]
+    );
+  };
+
+  const toggleRecurringTimeSlot = (slot: string) => {
     setFirstServiceTimeSlots(prev =>
       prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]
     );
@@ -87,10 +101,10 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
   const year = calMonth.getFullYear();
   const month = calMonth.getMonth();
   const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfWeek(year, month); // 0 = Sunday
+  const firstDay = getFirstDayOfWeek(year, month);
   const availableSet = new Set(quote.slots);
 
-  // Monday-first offset: Sun=0→6, Mon=0, Tue=1, ..., Sat=6→5
+  // Monday-first offset
   const offset = (firstDay + 6) % 7;
   const calCells: (number | null)[] = [];
   for (let i = 0; i < offset; i++) calCells.push(null);
@@ -104,19 +118,18 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
 
   const prevHas = quote.slots.some(s => s < firstOfMonth);
   const nextHas = quote.slots.some(s => s >= firstOfNext);
-
   const monthName = calMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   const isRecurring = !!quote.frequency;
   const canBook = isRecurring
     ? !!firstServiceDate
-    : (!!selectedDate && !!selectedTime);
+    : selectedDates.length > 0;
 
   const handleBook = () => {
     if (isRecurring) {
       onBook({ firstServiceDate, firstServiceTimeSlots, recurringEndMonth, recurringEndYear });
     } else {
-      onBook({ selectedDate: selectedDate ?? undefined, selectedTime: selectedTime ?? undefined });
+      onBook({ selectedDates, selectedTimes });
     }
   };
 
@@ -228,10 +241,13 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
       {/* Scheduling — calendar (one-time) */}
       {!isRecurring && (
         <div className="bg-card rounded-2xl border border-border p-4">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-1">
             <Clock className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold text-sm">Select Preferred Time</h3>
+            <h3 className="font-semibold text-sm">Select Preferred Date(s)</h3>
           </div>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            Select one or more dates — we'll match with provider availability and confirm.
+          </p>
 
           {/* Month navigation */}
           <div className="flex items-center justify-between mb-2">
@@ -259,18 +275,18 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
             ))}
           </div>
 
-          {/* Day cells */}
+          {/* Day cells — multi-select */}
           <div className="grid grid-cols-7 gap-y-0.5">
             {calCells.map((day, i) => {
               if (!day) return <div key={`e-${i}`} />;
               const iso = `${year}-${pad(month + 1)}-${pad(day)}`;
               const isAvail = availableSet.has(iso);
-              const isSel = selectedDate === iso;
+              const isSel = selectedDates.includes(iso);
               return (
                 <button
                   key={iso}
                   disabled={!isAvail}
-                  onClick={() => { setSelectedDate(iso); setSelectedTime(null); }}
+                  onClick={() => toggleDate(iso)}
                   className={`
                     h-8 w-full flex items-center justify-center text-xs rounded-full transition-all
                     ${isSel
@@ -287,32 +303,40 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
             })}
           </div>
 
-          {/* Time slots */}
-          {selectedDate ? (
-            <div className="mt-4 border-t border-border pt-3 space-y-2">
-              <p className="text-xs text-muted-foreground">Times on {formatDate(selectedDate)}</p>
-              <div className="grid grid-cols-3 gap-2">
-                {quote.timeSlots.map((time) => (
-                  <button
-                    key={time}
-                    onClick={() => setSelectedTime(time)}
-                    className={`text-xs py-2 px-1 rounded-xl border transition-all flex items-center justify-center gap-1 ${
-                      selectedTime === time
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-card text-foreground border-border hover:border-primary/50"
-                    }`}
-                  >
-                    {selectedTime === time && <Check className="w-3 h-3" />}
-                    {time}
-                  </button>
-                ))}
-              </div>
+          {/* Selected dates summary */}
+          {selectedDates.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1">
+              {selectedDates.sort().map(d => (
+                <span
+                  key={d}
+                  className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium"
+                >
+                  {formatDate(d)}
+                </span>
+              ))}
             </div>
-          ) : (
-            <p className="text-[11px] text-muted-foreground mt-2">
-              Tap a highlighted date to see available times
-            </p>
           )}
+
+          {/* Preferred time slots */}
+          <div className="mt-4 border-t border-border pt-3 space-y-2">
+            <p className="text-xs text-muted-foreground font-medium">Preferred time slots (optional)</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {TIME_SLOT_OPTIONS.map((time) => (
+                <button
+                  key={time}
+                  onClick={() => toggleTimeSlot(time)}
+                  className={`text-xs py-1.5 px-1 rounded-xl border transition-all flex items-center justify-center gap-1 ${
+                    selectedTimes.includes(time)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card text-foreground border-border hover:border-primary/50"
+                  }`}
+                >
+                  {selectedTimes.includes(time) && <Check className="w-3 h-3" />}
+                  {time}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -344,7 +368,7 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
                 <button
                   key={slot}
                   type="button"
-                  onClick={() => toggleTimeSlot(slot)}
+                  onClick={() => toggleRecurringTimeSlot(slot)}
                   className={`text-xs py-1.5 px-1 rounded-lg border transition-all ${
                     firstServiceTimeSlots.includes(slot)
                       ? "bg-primary text-primary-foreground border-primary"
@@ -420,7 +444,7 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
         </button>
         {!canBook && (
           <p className="text-[11px] text-center text-muted-foreground">
-            {isRecurring ? "Select a first service date to continue" : "Select a date and time to continue"}
+            {isRecurring ? "Select a first service date to continue" : "Select at least one preferred date to continue"}
           </p>
         )}
         <button

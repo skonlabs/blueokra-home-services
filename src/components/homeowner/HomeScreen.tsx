@@ -1,7 +1,8 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, User, Search, ChevronRight, Shield, Calendar, RotateCcw, Zap, Leaf, Snowflake, Sun } from "lucide-react";
+import { Bell, User, Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun, Wind, Droplets } from "lucide-react";
 import ServiceGrid from "./ServiceGrid";
+import { useBookings } from "@/hooks/useBookings";
+import { format } from "date-fns";
 import blueokraLogo from "@/assets/blueokra-logo.svg";
 
 interface HomeScreenProps {
@@ -11,33 +12,75 @@ interface HomeScreenProps {
   onViewProperty: () => void;
   onOpenProfile: () => void;
   onOpenNotifications: () => void;
-  onEmergency: () => void;
   onBookAgain: () => void;
-  onRebook: (id: string) => void;
+  onRebook: (serviceId: string) => void;
 }
 
-const recentBookings = [
-  { id: "1", service: "Lawn Mowing", date: "Mar 15", status: "completed", price: "$185", icon: "🌿" },
-  { id: "2", service: "HVAC Tune-up", date: "Feb 28", status: "completed", price: "$150", icon: "❄️" },
-];
+const serviceIcons: Record<string, string> = {
+  lawn: "🌿", house_cleaning: "🏠", gutter: "🏗️", roof: "🏠",
+  pressure: "💧", duct: "🌬️", backwater: "🔧", fence: "🏗️",
+};
 
-const seasonalRecs = [
-  { title: "Spring Lawn Care", description: "Time for your first mow of the season", icon: Leaf, color: "text-secondary" },
-  { title: "AC Tune-up", description: "Get ready for summer heat", icon: Snowflake, color: "text-primary" },
-  { title: "Gutter Cleaning", description: "Clear winter debris", icon: Sun, color: "text-accent" },
-];
+// Dynamic seasonal picks based on current month
+function getSeasonalRecs() {
+  const month = new Date().getMonth(); // 0–11
+
+  if (month >= 2 && month <= 4) {
+    // Spring (Mar–May)
+    return [
+      { title: "Spring Lawn Care", description: "First mow of the season — get your yard looking great", serviceId: "lawn", icon: Leaf, color: "text-secondary" },
+      { title: "Gutter Cleaning", description: "Clear winter debris before spring rains", serviceId: "gutter", icon: Droplets, color: "text-primary" },
+      { title: "Pressure Washing", description: "Refresh driveways, siding & decks", serviceId: "pressure", icon: Sun, color: "text-accent" },
+    ];
+  } else if (month >= 5 && month <= 7) {
+    // Summer (Jun–Aug)
+    return [
+      { title: "Lawn Maintenance", description: "Keep your lawn healthy through the summer heat", serviceId: "lawn", icon: Leaf, color: "text-secondary" },
+      { title: "Duct Cleaning", description: "Improve AC efficiency and air quality", serviceId: "duct", icon: Wind, color: "text-primary" },
+      { title: "Fence Installation", description: "Perfect weather for outdoor projects", serviceId: "fence", icon: Sun, color: "text-accent" },
+    ];
+  } else if (month >= 8 && month <= 10) {
+    // Fall (Sep–Nov)
+    return [
+      { title: "Gutter Cleaning", description: "Clear fallen leaves before winter clogs", serviceId: "gutter", icon: Leaf, color: "text-secondary" },
+      { title: "Roof Cleaning", description: "Remove moss & debris before rainy season", serviceId: "roof", icon: Sun, color: "text-accent" },
+      { title: "Duct Cleaning", description: "Prepare your heating system for winter", serviceId: "duct", icon: Snowflake, color: "text-primary" },
+    ];
+  } else {
+    // Winter (Dec–Feb)
+    return [
+      { title: "Backwater Testing", description: "Prevent flooding and comply with local codes", serviceId: "backwater", icon: Snowflake, color: "text-primary" },
+      { title: "Duct Cleaning", description: "Keep heating system clean and efficient", serviceId: "duct", icon: Wind, color: "text-accent" },
+      { title: "House Cleaning", description: "Deep clean and refresh your home", serviceId: "house_cleaning", icon: Sun, color: "text-secondary" },
+    ];
+  }
+}
 
 const HomeScreen = ({
   onServiceSelect,
   onOpenIntake,
   onViewBookings,
-  onViewProperty,
   onOpenProfile,
   onOpenNotifications,
-  onEmergency,
   onBookAgain,
   onRebook,
 }: HomeScreenProps) => {
+  const { data: rawBookings } = useBookings();
+  const seasonalRecs = getSeasonalRecs();
+
+  // Show last 2 bookings from DB, fall back to empty
+  const recentBookings = (rawBookings || []).slice(0, 2).map(b => ({
+    id: b.id,
+    serviceType: b.service_type,
+    service: b.package_name || b.service_type,
+    icon: serviceIcons[b.service_type] || "🔧",
+    date: b.booking_appointment?.[0]?.appointment_date
+      ? format(new Date(b.booking_appointment[0].appointment_date + "T12:00:00"), "MMM d")
+      : format(new Date(b.created_at), "MMM d"),
+    price: b.revenue ? `$${b.revenue}` : "TBD",
+    status: b.booking_status,
+  }));
+
   return (
     <div className="px-4 pt-12 pb-24">
       {/* Header */}
@@ -81,12 +124,6 @@ const HomeScreen = ({
       {/* Quick actions */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-4 px-4">
         <button
-          onClick={onEmergency}
-          className="shrink-0 bg-destructive/10 text-destructive border border-destructive/20 rounded-full px-4 py-2 text-xs font-medium active:scale-[0.97] transition-transform flex items-center gap-1.5"
-        >
-          <Zap className="w-3 h-3" /> Emergency
-        </button>
-        <button
           onClick={onBookAgain}
           className="shrink-0 bg-card border border-border rounded-full px-4 py-2 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1.5"
         >
@@ -127,7 +164,7 @@ const HomeScreen = ({
                   <p className="text-xs text-muted-foreground">{booking.date} · {booking.price}</p>
                 </div>
                 <button
-                  onClick={() => onRebook(booking.id)}
+                  onClick={() => onRebook(booking.serviceType)}
                   className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full font-medium active:scale-[0.97] transition-transform"
                 >
                   Rebook
@@ -144,7 +181,7 @@ const HomeScreen = ({
         <ServiceGrid onSelect={onServiceSelect} />
       </div>
 
-      {/* Seasonal Recommendations */}
+      {/* Seasonal Picks */}
       <div className="mb-6">
         <h2 className="font-display text-lg font-semibold text-foreground mb-3">Seasonal Picks</h2>
         <div className="space-y-2">
@@ -154,7 +191,7 @@ const HomeScreen = ({
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 + i * 0.1 }}
-              onClick={() => onOpenIntake()}
+              onClick={() => onServiceSelect(rec.serviceId)}
               className="w-full flex items-center gap-3 bg-card border border-border rounded-xl p-3 text-left active:scale-[0.99] transition-transform"
             >
               <div className={`w-9 h-9 rounded-full bg-muted flex items-center justify-center ${rec.color}`}>
