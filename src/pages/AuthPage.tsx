@@ -92,10 +92,14 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-okra-50 flex flex-col items-center justify-center px-4 py-10">
       {/* Brand */}
       <div className="mb-8 text-center">
-        <h1 className="font-display text-4xl font-bold tracking-tight text-foreground leading-none mb-2">
-          Blue<span className="text-primary">Okra</span>
-        </h1>
-        <p className="text-muted-foreground text-sm font-body">Home services, simplified</p>
+        <div className="flex items-center justify-center gap-2.5 mb-2">
+          <img src={blueokraLogo} alt="BlueOkra" className="w-10 h-10" />
+          <h1 className="font-display text-4xl font-bold text-gradient-primary">
+            BlueOkra<sup className="text-sm font-normal align-super text-primary">®</sup>
+          </h1>
+          <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">beta</span>
+        </div>
+        <p className="text-muted-foreground text-sm">Home services, simplified</p>
       </div>
 
       {/* Card */}
