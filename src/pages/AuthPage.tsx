@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Shield, Mail, Lock, User, Home, Wrench, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import blueokraLogo from "@/assets/blueokra-logo.svg";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthPageProps {
