@@ -1,16 +1,21 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Camera, X, Video } from "lucide-react";
+import { Send, Camera, X } from "lucide-react";
 import { getServiceById } from "./ServiceGrid";
 import { supabase } from "@/integrations/supabase/client";
+import ServiceIntakeForm from "./ServiceIntakeForm";
+import { calculateQuote, type IntakeFormData } from "@/lib/quoteCalculator";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface Message {
   id: string;
   role: "user" | "ai";
   text: string;
   images?: string[];
-  type?: "text" | "urgency" | "recurring" | "photos-request" | "video-consult" | "followup";
-  consumed?: boolean;
+  isForm?: boolean;
 }
 
 interface AIIntakeProps {
@@ -30,25 +35,61 @@ export interface QuoteData {
   slots: string[];
 }
 
-const getInitialMessage = (serviceId?: string): Message => {
-  const service = serviceId ? getServiceById(serviceId) : null;
-  return {
-    id: "1",
-    role: "ai",
-    text: service
-      ? `I'll help you with ${service.name.toLowerCase()}. Tell me about your situation — you can type, upload photos, or both.`
-      : "What do you need help with today? Describe the issue and I'll find the right service for you.",
-  };
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const SERVICE_NAMES: Record<string, string> = {
+  lawn: "Lawn & Garden",
+  house_cleaning: "House Cleaning",
+  gutter: "Gutter Cleaning",
+  roof: "Roof Cleaning",
+  pressure: "Pressure Washing",
+  electrical: "Electrical",
+  duct: "Duct Cleaning",
+  backwater: "Backwater Testing",
+  fence: "Fence Installation",
 };
 
+function getIntroMessage(serviceId: string): string {
+  const name = SERVICE_NAMES[serviceId] ?? serviceId;
+  return `Got it — **${name}**! Fill in the details below and I'll calculate your quote instantly. No back-and-forth needed.`;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+type Phase = "describe" | "form" | "done";
+
 const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakeProps) => {
-  const [messages, setMessages] = useState<Message[]>([getInitialMessage(initialServiceId)]);
+  const resolvedService = initialServiceId ? getServiceById(initialServiceId) : null;
+
+  const [phase, setPhase] = useState<Phase>(initialServiceId ? "form" : "describe");
+  const [detectedServiceId, setDetectedServiceId] = useState<string | null>(initialServiceId ?? null);
+  const [isTyping, setIsTyping] = useState(false);
   const [input, setInput] = useState("");
   const [images, setImages] = useState<string[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [conversationHistory, setConversationHistory] = useState<
-    { role: "user" | "assistant"; content: string }[]
-  >([]);
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (initialServiceId) {
+      return [
+        {
+          id: "1",
+          role: "ai",
+          text: getIntroMessage(initialServiceId),
+          isForm: true,
+        },
+      ];
+    }
+    return [
+      {
+        id: "1",
+        role: "ai",
+        text: "What do you need help with today? Describe it briefly — or just tell me the service.",
+      },
+    ];
+  });
 
   const fileRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -57,130 +98,79 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
+  const addAIMessage = (text: string, opts: Partial<Message> = {}, delay = 600) => {
+    setIsTyping(true);
+    scrollToBottom();
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now().toString(), role: "ai", text, ...opts },
+        ]);
+        scrollToBottom();
+        resolve();
+      }, delay);
+    });
+  };
+
   const addUserMessage = (text: string, imgs?: string[]) => {
     setMessages((prev) => [
       ...prev,
-      {
-        id: Date.now().toString(),
-        role: "user",
-        text,
-        images: imgs && imgs.length > 0 ? imgs : undefined,
-      },
+      { id: Date.now().toString(), role: "user", text, images: imgs?.length ? imgs : undefined },
     ]);
   };
 
-  const callChatAI = async (userText: string, hadImages: boolean) => {
-    const contextSuffix = hadImages ? " [User has shared photos]" : "";
-    const fullContent = (userText || "(no text, photos shared)") + contextSuffix;
-
-    const updatedHistory: { role: "user" | "assistant"; content: string }[] = [
-      ...conversationHistory,
-      { role: "user", content: fullContent },
-    ];
-    setConversationHistory(updatedHistory);
+  // Single AI call — only for free-text service detection
+  const detectService = async (userText: string, hadImages: boolean) => {
     setIsTyping(true);
     scrollToBottom();
 
     try {
       const { data, error } = await supabase.functions.invoke("chat-ai", {
-        body: {
-          messages: updatedHistory,
-          serviceId: initialServiceId ?? undefined,
-          hasImages: hadImages,
-        },
+        body: { message: userText, hasImages: hadImages },
       });
 
       if (error) throw error;
 
-      const { reply, quoteData, uiHint } = data as {
-        reply: string;
-        quoteData?: QuoteData;
-        uiHint?: "urgency" | "recurring";
-      };
-
-      setConversationHistory((prev) => [
-        ...prev,
-        { role: "assistant", content: reply },
-      ]);
-
-      const msgType =
-        uiHint === "urgency" ? "urgency" :
-        uiHint === "recurring" ? "recurring" :
-        undefined;
-
+      const { serviceId, reply } = data as { serviceId: string; reply: string };
+      const sid = serviceId ?? "lawn";
+      setDetectedServiceId(sid);
       setIsTyping(false);
+
       setMessages((prev) => [
         ...prev,
-        {
-          id: Date.now().toString(),
-          role: "ai",
-          text: reply,
-          type: msgType,
-        },
+        { id: Date.now().toString(), role: "ai", text: reply },
       ]);
       scrollToBottom();
 
-      if (quoteData) {
-        setTimeout(() => onQuoteReady(quoteData), 1200);
-      }
+      // Brief pause then show the form
+      await addAIMessage(getIntroMessage(sid), { isForm: true }, 700);
+      setPhase("form");
     } catch {
       setIsTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          role: "ai",
-          text: "I'm having trouble connecting right now. Please try again.",
-        },
-      ]);
-      scrollToBottom();
+      await addAIMessage("I couldn't connect right now. Please try again.", {}, 200);
     }
   };
 
   const sendMessage = () => {
+    if (phase !== "describe") return;
     if (!input.trim() && images.length === 0) return;
 
     const sentText = input.trim();
     const sentImages = [...images];
-    addUserMessage(sentText, sentImages);
+    addUserMessage(sentText || "(photos shared)", sentImages);
     setInput("");
     setImages([]);
-    callChatAI(sentText, sentImages.length > 0);
+    detectService(sentText, sentImages.length > 0);
   };
 
-  const handleUrgencySelect = (msgId: string, value: string) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === msgId ? { ...m, consumed: true } : m)),
-    );
-    const labels: Record<string, string> = {
-      emergency: "Emergency (same day)",
-      soon: "This week",
-      flexible: "Flexible (anytime)",
-    };
-    const labelText = labels[value] ?? value;
-    addUserMessage(labelText);
-    callChatAI(labelText, false);
-  };
-
-  const handleRecurringSelect = (msgId: string, value: string) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === msgId ? { ...m, consumed: true } : m)),
-    );
-    const labels: Record<string, string> = {
-      "one-time": "One-time",
-      weekly: "Weekly",
-      biweekly: "Bi-weekly",
-      monthly: "Monthly",
-      seasonal: "Seasonal / quarterly",
-    };
-    const labelText = labels[value] ?? value;
-    addUserMessage(labelText);
-    callChatAI(labelText, false);
-  };
-
-  const handleVideoConsult = () => {
-    addUserMessage("I'd like a video consultation");
-    callChatAI("I'd like a video consultation instead of uploading photos", false);
+  const handleFormSubmit = (formData: IntakeFormData) => {
+    const quote = calculateQuote(formData);
+    setPhase("done");
+    addAIMessage("Your quote is ready!", {}, 300).then(() => {
+      setTimeout(() => onQuoteReady(quote), 600);
+    });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,11 +197,11 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              <div className="max-w-[85%] space-y-2">
+              <div className="max-w-[92%] space-y-2 w-full">
                 <div
                   className={`rounded-2xl px-4 py-2.5 text-sm ${
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      ? "bg-primary text-primary-foreground rounded-br-md inline-block max-w-[85%] ml-auto"
                       : "bg-muted text-foreground rounded-bl-md"
                   }`}
                 >
@@ -222,7 +212,6 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
                       ))}
                     </div>
                   )}
-                  {/* Render **bold** markdown inline */}
                   {msg.text.includes("**") ? (
                     <span
                       dangerouslySetInnerHTML={{
@@ -234,62 +223,12 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
                   )}
                 </div>
 
-                {/* Urgency options */}
-                {msg.type === "urgency" && msg.role === "ai" && !msg.consumed && (
-                  <div className="flex gap-2 flex-wrap">
-                    {[
-                      { label: "🚨 Emergency (same day)", value: "emergency" },
-                      { label: "⏰ This week", value: "soon" },
-                      { label: "📅 Flexible (anytime)", value: "flexible" },
-                    ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => handleUrgencySelect(msg.id, opt.value)}
-                        className="bg-card border border-border rounded-full px-3 py-1.5 text-xs font-medium text-foreground active:scale-[0.97] transition-transform hover:border-primary/50"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Recurring options */}
-                {msg.type === "recurring" && msg.role === "ai" && !msg.consumed && (
-                  <div className="flex gap-2 flex-wrap">
-                    {[
-                      { label: "One-time", value: "one-time" },
-                      { label: "Weekly", value: "weekly" },
-                      { label: "Bi-weekly", value: "biweekly" },
-                      { label: "Monthly", value: "monthly" },
-                      { label: "Seasonal", value: "seasonal" },
-                    ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => handleRecurringSelect(msg.id, opt.value)}
-                        className="bg-card border border-border rounded-full px-3 py-1.5 text-xs font-medium text-foreground active:scale-[0.97] transition-transform hover:border-primary/50"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Photo request options */}
-                {msg.type === "photos-request" && msg.role === "ai" && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => fileRef.current?.click()}
-                      className="bg-primary/10 text-primary border border-primary/20 rounded-full px-3 py-1.5 text-xs font-medium active:scale-[0.97] transition-transform flex items-center gap-1"
-                    >
-                      <Camera className="w-3 h-3" /> Upload Photo
-                    </button>
-                    <button
-                      onClick={handleVideoConsult}
-                      className="bg-card border border-border rounded-full px-3 py-1.5 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1"
-                    >
-                      <Video className="w-3 h-3" /> Video Consult
-                    </button>
-                  </div>
+                {/* Inline form rendered below the AI intro message */}
+                {msg.isForm && msg.role === "ai" && phase === "form" && (
+                  <ServiceIntakeForm
+                    serviceId={detectedServiceId ?? "lawn"}
+                    onSubmit={handleFormSubmit}
+                  />
                 )}
               </div>
             </motion.div>
@@ -332,34 +271,36 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady }: AIIntakePro
         </div>
       )}
 
-      {/* Input */}
-      <div className="px-4 pb-4 pt-2 border-t border-border bg-background">
-        <div className="flex items-end gap-2">
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          >
-            <Camera className="w-4 h-4" />
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={handleImageUpload} />
-          <div className="flex-1">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="Describe your issue..."
-              className="w-full bg-muted rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
-            />
+      {/* Input bar — only shown during describe phase */}
+      {phase === "describe" && (
+        <div className="px-4 pb-4 pt-2 border-t border-border bg-background">
+          <div className="flex items-end gap-2">
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={handleImageUpload} />
+            <div className="flex-1">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                placeholder="Describe what you need…"
+                className="w-full bg-muted rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+              />
+            </div>
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim() && images.length === 0}
+              className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 active:scale-95 transition-transform disabled:opacity-40"
+            >
+              <Send className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={sendMessage}
-            disabled={!input.trim() && images.length === 0}
-            className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 active:scale-95 transition-transform disabled:opacity-40"
-          >
-            <Send className="w-4 h-4" />
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };
