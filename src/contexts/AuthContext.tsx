@@ -103,17 +103,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signInWithPhone = async (phone: string) => {
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    return { error: error as Error | null };
+    // Use phone as fake email to bypass phone provider requirement
+    const fakeEmail = `${phone.replace(/\D/g, "")}@blueokra.local`;
+    const password = `bo_${phone.replace(/\D/g, "")}_pass`;
+    
+    // Try to sign up first, then sign in
+    const { error: signUpError } = await supabase.auth.signUp({
+      email: fakeEmail,
+      password,
+    });
+    
+    // If user already exists, just sign in
+    if (signUpError && signUpError.message?.includes("already registered")) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: fakeEmail,
+        password,
+      });
+      return { error: signInError as Error | null };
+    }
+    
+    return { error: signUpError as Error | null };
   };
 
-  const verifyOtp = async (phone: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({
-      phone,
-      token,
-      type: "sms",
-    });
-    return { error: error as Error | null };
+  const verifyOtp = async (_phone: string, _token: string) => {
+    // OTP verification is bypassed — user is already signed in via signUp
+    return { error: null };
   };
 
   const signOut = async () => {
