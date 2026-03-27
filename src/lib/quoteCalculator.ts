@@ -71,14 +71,37 @@ const BULK_EXEMPT = new Set(["gutter", "roof", "fence"]);
 // Services that never charge the first-time setup surcharge
 const FIRST_TIME_EXEMPT = new Set(["gutter", "roof", "electrical", "duct", "backwater", "fence"]);
 
-function getSlots(urgency: string): string[] {
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Returns available booking dates as ISO strings plus time options. */
+function getSlots(urgency: string): { slots: string[]; timeSlots: string[] } {
+  const today = new Date();
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  const add = (n: number) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + n);
+    return d;
+  };
+
   if (urgency === "emergency") {
-    return ["Today 10am", "Today 1pm", "Today 4pm", "Tomorrow 8am", "Tomorrow 11am", "Tomorrow 2pm"];
+    return {
+      slots: [fmt(today), fmt(add(1))],
+      timeSlots: ["8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"],
+    };
   }
   if (urgency === "soon") {
-    return ["Tomorrow 9am", "Tomorrow 1pm", "Wed 9am", "Wed 1pm", "Thu 10am", "Fri 9am"];
+    return {
+      slots: Array.from({ length: 7 }, (_, i) => fmt(add(i + 1))),
+      timeSlots: ["9:00 AM", "11:00 AM", "1:00 PM", "3:00 PM", "5:00 PM"],
+    };
   }
-  return ["Sat 9am", "Sat 1pm", "Sun 10am", "Mon 9am", "Tue 10am", "Wed 9am"];
+  // flexible
+  return {
+    slots: Array.from({ length: 21 }, (_, i) => fmt(add(i + 2))),
+    timeSlots: ["9:00 AM", "11:00 AM", "1:00 PM", "3:00 PM", "5:00 PM"],
+  };
 }
 
 /** Per-visit price for 2nd+ bookings — no first-time surcharge, with bulk discount. */
@@ -142,7 +165,7 @@ function calcLawn(d: IntakeFormData): QuoteData {
     breakdown.push({ label: `Weed surcharge (${d.weedLevel})`, amount: `$${weedAmt}` });
   }
 
-  // First-time surcharge — always applied for lawn (Fix 1 & 7)
+  // First-time surcharge — always applied for lawn (not in FIRST_TIME_EXEMPT)
   const firstTimeSurcharge = Math.round(base * 0.5);
   breakdown.push({ label: "First-time setup fee (+50% on base)", amount: `$${firstTimeSurcharge}` });
 
@@ -173,7 +196,7 @@ function calcLawn(d: IntakeFormData): QuoteData {
     low: total, high: total, confidence: 92,
     breakdown,
     factors: ["Upfront payment saves 5% at checkout"],
-    slots: getSlots(d.urgency),
+    ...getSlots(d.urgency),
     recurringPerVisit,
     frequency: d.frequency !== "one-time" ? d.frequency : undefined,
   };
@@ -202,7 +225,7 @@ function calcHouseCleaning(d: IntakeFormData): QuoteData {
     breakdown.push({ label: `${bonusRooms} bonus room${bonusRooms !== 1 ? "s" : ""} × $${rates.bonus_room}`, amount: `$${bonusRooms * rates.bonus_room}` });
   }
 
-  // First-time surcharge — always applied for house cleaning (Fix 1)
+  // First-time surcharge — always applied for house cleaning
   const firstTimeSurcharge = Math.round(roomTotal * 0.5);
   breakdown.push({ label: "First-time setup fee (+50% on base)", amount: `$${firstTimeSurcharge}` });
 
@@ -232,7 +255,7 @@ function calcHouseCleaning(d: IntakeFormData): QuoteData {
     low: total, high: total, confidence: 95,
     breakdown,
     factors: ["Upfront payment saves 5% at checkout"],
-    slots: getSlots(d.urgency),
+    ...getSlots(d.urgency),
     recurringPerVisit,
     frequency: d.frequency !== "one-time" ? d.frequency : undefined,
   };
@@ -258,15 +281,15 @@ function calcGutter(d: IntakeFormData): QuoteData {
   }
 
   for (const addOn of d.addOns ?? []) {
-    if (addOn === "downspout")    { breakdown.push({ label: "Downspout cleaning",       amount: "$25"  }); total += 25; }
-    if (addOn === "gutter_guard") { breakdown.push({ label: "Gutter guard installation",amount: "$100" }); total += 100; }
-    if (addOn === "minor_repairs"){ breakdown.push({ label: "Minor repairs",            amount: "$75"  }); total += 75; }
+    if (addOn === "downspout")    { breakdown.push({ label: "Downspout cleaning",        amount: "$25"  }); total += 25; }
+    if (addOn === "gutter_guard") { breakdown.push({ label: "Gutter guard installation", amount: "$100" }); total += 100; }
+    if (addOn === "minor_repairs"){ breakdown.push({ label: "Minor repairs",             amount: "$75"  }); total += 75; }
   }
 
   return {
     serviceId: "gutter", serviceName: "Gutter Cleaning", type: "fixed",
     low: total, high: total, confidence: 90,
-    breakdown, factors: ["Final scope confirmed on arrival"], slots: getSlots(d.urgency),
+    breakdown, factors: ["Final scope confirmed on arrival"], ...getSlots(d.urgency),
   };
 }
 
@@ -305,7 +328,7 @@ function calcRoof(d: IntakeFormData): QuoteData {
   return {
     serviceId: "roof", serviceName: "Roof Cleaning", type: "fixed",
     low: total, high: total, confidence: 85,
-    breakdown, factors, slots: getSlots(d.urgency),
+    breakdown, factors, ...getSlots(d.urgency),
   };
 }
 
@@ -325,7 +348,7 @@ function calcPressure(d: IntakeFormData): QuoteData {
     { label: `Home size (${homeSizeLabels[d.homeSize ?? "s1000_2000"]}, ×${mult})`, amount: `$${baseTotal}` },
   ];
 
-  // First-time surcharge — always applied for pressure washing (Fix 1)
+  // First-time surcharge — always applied for pressure washing
   const firstTimeSurcharge = Math.round(baseTotal * 0.5);
   breakdown.push({ label: "First-time setup fee (+50%)", amount: `$${firstTimeSurcharge}` });
 
@@ -339,7 +362,7 @@ function calcPressure(d: IntakeFormData): QuoteData {
     low: total, high: total, confidence: 88,
     breakdown,
     factors: ["Upfront payment saves 5% at checkout"],
-    slots: getSlots(d.urgency),
+    ...getSlots(d.urgency),
     recurringPerVisit,
     frequency: d.frequency !== "one-time" ? d.frequency : undefined,
   };
@@ -356,7 +379,7 @@ function calcElectrical(d: IntakeFormData): QuoteData {
   const mult = multipliers[d.homeSize ?? "s1000_2000"];
   const total = Math.round(base * mult);
 
-  // Fix 7: range should scale with selected home size, not hardcoded base
+  // Range scales with actual total (not just base), so home size affects the range
   return {
     serviceId: "electrical", serviceName: "Electrical", type: "range",
     low: Math.round(total * 0.85), high: Math.round(total * 1.3), confidence: 72,
@@ -365,7 +388,7 @@ function calcElectrical(d: IntakeFormData): QuoteData {
       { label: `Home size (${homeSizeLabels[d.homeSize ?? "s1000_2000"]}, ×${mult})`, amount: `$${total}` },
     ],
     factors: ["Full scope determined after on-site assessment", "Permits may add cost"],
-    slots: getSlots(d.urgency),
+    ...getSlots(d.urgency),
   };
 }
 
@@ -387,10 +410,7 @@ function calcDuct(d: IntakeFormData): QuoteData {
     ventTotal += 100;
   }
 
-  // 1st visit = no surcharge (duct is FIRST_TIME_EXEMPT)
   const total = ventTotal;
-
-  // 2nd+ visits: with bulk discount
   const recurringPerVisit = toRecurringPerVisit(ventTotal, "duct", d.frequency);
 
   return {
@@ -398,7 +418,7 @@ function calcDuct(d: IntakeFormData): QuoteData {
     low: total, high: total, confidence: 95,
     breakdown,
     factors: ["Upfront payment saves 5% at checkout"],
-    slots: getSlots(d.urgency),
+    ...getSlots(d.urgency),
     recurringPerVisit,
     frequency: d.frequency !== "one-time" ? d.frequency : undefined,
   };
@@ -427,58 +447,61 @@ function calcBackwater(d: IntakeFormData): QuoteData {
   return {
     serviceId: "backwater", serviceName: "Backwater Testing", type: "fixed",
     low: total, high: total, confidence: 95,
-    breakdown, factors: [], slots: getSlots(d.urgency),
+    breakdown, factors: [], ...getSlots(d.urgency),
   };
 }
 
 function calcFence(d: IntakeFormData): QuoteData {
-  // Standard-tier rate per linear foot
-  const ratePerFt = 50;
   const linearFeet = d.linearFeet ?? 50;
+  const breakdown: { label: string; amount: string }[] = [];
+  let total = 0;
 
-  let perFtTotal = ratePerFt;
-  if (d.fenceHeight === "eight_ft") perFtTotal += 10;
-  if (d.terrain === "steep")  perFtTotal += 10;
-  if (d.terrain === "rocky")  perFtTotal += 20;
+  if (d.isRepair) {
+    // Repair: $50 per 10 linear ft (= $5/ft flat rate, no height/terrain adders)
+    const groups = Math.ceil(linearFeet / 10);
+    const repairBase = groups * 50;
+    breakdown.push({ label: `${linearFeet} linear ft repair (${groups} × $50/10 ft)`, amount: `$${repairBase}` });
+    total = repairBase;
+  } else {
+    // Installation: base $50/ft + height and terrain adders
+    const ratePerFt = 50;
+    let perFtTotal = ratePerFt;
+    if (d.fenceHeight === "eight_ft") perFtTotal += 10;
+    if (d.terrain === "steep")  perFtTotal += 10;
+    if (d.terrain === "rocky")  perFtTotal += 20;
 
-  const perFtDesc = [
-    `$${ratePerFt}/ft base`,
-    d.fenceHeight === "eight_ft" ? "+$10 (8 ft height)" : null,
-    d.terrain === "steep"  ? "+$10 (steep terrain)" : null,
-    d.terrain === "rocky"  ? "+$20 (rocky terrain)" : null,
-  ].filter(Boolean).join(", ");
+    const perFtDesc = [
+      `$${ratePerFt}/ft base`,
+      d.fenceHeight === "eight_ft" ? "+$10 (8 ft height)" : null,
+      d.terrain === "steep"  ? "+$10 (steep terrain)" : null,
+      d.terrain === "rocky"  ? "+$20 (rocky terrain)" : null,
+    ].filter(Boolean).join(", ");
 
-  let subtotal = linearFeet * perFtTotal;
-  const breakdown: { label: string; amount: string }[] = [
-    { label: `${linearFeet} linear ft × $${perFtTotal}/ft (${perFtDesc})`, amount: `$${subtotal}` },
-  ];
+    const subtotal = linearFeet * perFtTotal;
+    breakdown.push({ label: `${linearFeet} linear ft × $${perFtTotal}/ft (${perFtDesc})`, amount: `$${subtotal}` });
+    total = subtotal;
+  }
 
   const doors = d.doorCount ?? 0;
   if (doors > 0) {
     const doorAmt = doors * 50;
     breakdown.push({ label: `${doors} gate${doors !== 1 ? "s" : ""} × $50`, amount: `$${doorAmt}` });
-    subtotal += doorAmt;
-  }
-
-  // Fix 7: repair discount BEFORE weatherproof (correct order)
-  if (d.isRepair) {
-    const saved = Math.round(subtotal * 0.5);
-    breakdown.push({ label: "Repair job discount (−50%)", amount: `-$${saved}` });
-    subtotal = subtotal * 0.5;
+    total += doorAmt;
   }
 
   if (d.weatherproofCoating) {
     breakdown.push({ label: "Weatherproof coating", amount: "$100" });
-    subtotal += 100;
+    total += 100;
   }
 
-  const total = Math.round(subtotal);
+  const factors = d.isRepair
+    ? ["Final measurements confirmed on-site"]
+    : ["Final measurements confirmed on-site", "Terrain may affect scope"];
+
   return {
     serviceId: "fence", serviceName: "Fence Installation", type: "range",
     low: Math.round(total * 0.9), high: Math.round(total * 1.1), confidence: 78,
-    breakdown,
-    factors: ["Final measurements confirmed on-site", "Terrain may affect scope"],
-    slots: getSlots(d.urgency),
+    breakdown, factors, ...getSlots(d.urgency),
   };
 }
 

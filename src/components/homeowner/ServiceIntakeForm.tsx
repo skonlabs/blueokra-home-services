@@ -439,7 +439,9 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
         return (
           <>
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Linear feet of fencing</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                {isRepair ? "Linear feet to repair" : "Linear feet of fencing"}
+              </p>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -452,18 +454,22 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
                 <span className="text-xs text-muted-foreground">linear ft</span>
               </div>
             </div>
-            <ChipRow label="Fence height" value={fenceHeight} onChange={setFenceHeight} options={[
-              { value: "standard", label: "Standard (6 ft)" },
-              { value: "eight_ft", label: "8 ft (+$10/ft)" },
-            ]} />
-            <ChipRow label="Terrain" value={terrain} onChange={setTerrain} options={[
-              { value: "flat",  label: "Flat" },
-              { value: "steep", label: "Steep (+$10/ft)" },
-              { value: "rocky", label: "Rocky (+$20/ft)" },
-            ]} />
+            <Toggle label="Repair job?" sublabel="$50 per 10 linear ft (repair rate)" value={isRepair} onChange={setIsRepair} />
+            {!isRepair && (
+              <>
+                <ChipRow label="Fence height" value={fenceHeight} onChange={setFenceHeight} options={[
+                  { value: "standard", label: "Standard (6 ft)" },
+                  { value: "eight_ft", label: "8 ft (+$10/ft)" },
+                ]} />
+                <ChipRow label="Terrain" value={terrain} onChange={setTerrain} options={[
+                  { value: "flat",  label: "Flat" },
+                  { value: "steep", label: "Steep (+$10/ft)" },
+                  { value: "rocky", label: "Rocky (+$20/ft)" },
+                ]} />
+              </>
+            )}
             <Stepper label="Number of gates / doors" value={doorCount} min={0} max={10} onChange={setDoorCount} />
             <p className="text-[11px] text-muted-foreground -mt-1">+$50 per gate</p>
-            <Toggle label="Repair job?" sublabel="50% discount on all costs" value={isRepair} onChange={setIsRepair} />
             <Toggle label="Weatherproof coating?" sublabel="+$100" value={weatherproofCoating} onChange={setWeatherproofCoating} />
           </>
         );

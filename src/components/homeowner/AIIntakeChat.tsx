@@ -35,6 +35,7 @@ export interface QuoteData {
   breakdown: { label: string; amount: string }[];
   factors: string[];
   slots: string[];
+  timeSlots: string[];        // available times for each date (e.g. "9:00 AM")
   recurringPerVisit?: number; // per-visit price for 2nd+ bookings
   frequency?: string;         // "weekly" | "biweekly" | etc. (undefined = one-time)
 }

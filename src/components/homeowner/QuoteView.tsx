@@ -1,7 +1,28 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, Clock, ChevronRight, Info, AlertTriangle, Check, Percent } from "lucide-react";
+import { Shield, Clock, ChevronRight, ChevronLeft, Info, AlertTriangle, Check, Percent } from "lucide-react";
 import type { QuoteData } from "./AIIntakeChat";
+
+// ---------------------------------------------------------------------------
+// Calendar helpers
+// ---------------------------------------------------------------------------
+
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function getFirstDayOfWeek(year: number, month: number) {
+  return new Date(year, month, 1).getDay(); // 0 = Sunday
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 interface QuoteViewProps {
   quote: QuoteData;
@@ -10,13 +31,11 @@ interface QuoteViewProps {
 }
 
 const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
-  const [selectedSlots, setSelectedSlots] = useState<string[]>([quote.slots[0]]);
-
-  const toggleSlot = (slot: string) => {
-    setSelectedSlots((prev) =>
-      prev.includes(slot) ? prev.filter((s) => s !== slot) : [...prev, slot]
-    );
-  };
+  const [calMonth, setCalMonth] = useState<Date>(() =>
+    quote.slots[0] ? new Date(quote.slots[0] + "T12:00:00") : new Date()
+  );
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
   const confidenceColor = quote.confidence >= 85 ? "text-secondary bg-okra-50" :
     quote.confidence >= 70 ? "text-primary bg-blue-50" : "text-accent bg-warm-50";
@@ -27,6 +46,30 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
   const typeLabel = quote.type === "fixed" ? "Fixed Price" :
     quote.type === "range" ? "Price Range" :
     quote.type === "diagnostic" ? "Diagnostic + Repair" : "Inspection Required";
+
+  // Calendar variables
+  const year = calMonth.getFullYear();
+  const month = calMonth.getMonth();
+  const daysInMonth = getDaysInMonth(year, month);
+  const firstDay = getFirstDayOfWeek(year, month); // 0 = Sunday
+  const availableSet = new Set(quote.slots);
+
+  // Monday-first offset: Sun=0→6, Mon=0, Tue=1, ..., Sat=6→5
+  const offset = (firstDay + 6) % 7;
+  const calCells: (number | null)[] = [];
+  for (let i = 0; i < offset; i++) calCells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) calCells.push(d);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const firstOfMonth = `${year}-${pad(month + 1)}-01`;
+  const firstOfNext = month === 11
+    ? `${year + 1}-01-01`
+    : `${year}-${pad(month + 2)}-01`;
+
+  const prevHas = quote.slots.some(s => s < firstOfMonth);
+  const nextHas = quote.slots.some(s => s >= firstOfNext);
+
+  const monthName = calMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
     <motion.div
@@ -70,9 +113,7 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
 
       {/* Breakdown */}
       <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-        <h3 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
-          Price Breakdown
-        </h3>
+        <h3 className="font-semibold text-sm text-foreground">Price Breakdown</h3>
         <div className="space-y-2 text-sm">
           {quote.breakdown.map((item, i) => (
             <div key={i} className="flex justify-between">
@@ -122,29 +163,93 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
         </div>
       </div>
 
-      {/* Scheduling */}
+      {/* Scheduling — calendar */}
       <div className="bg-card rounded-2xl border border-border p-4">
         <div className="flex items-center gap-2 mb-3">
           <Clock className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold text-sm">Select Preferred Times</h3>
+          <h3 className="font-semibold text-sm">Select Preferred Time</h3>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {quote.slots.map((slot) => (
-            <button
-              key={slot}
-              onClick={() => toggleSlot(slot)}
-              className={`text-xs py-2 px-2 rounded-xl border transition-all flex items-center justify-center gap-1 ${
-                selectedSlots.includes(slot)
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card text-foreground border-border hover:border-primary/50"
-              }`}
-            >
-              {selectedSlots.includes(slot) && <Check className="w-3 h-3" />}
-              {slot}
-            </button>
+
+        {/* Month navigation */}
+        <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={() => setCalMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+            disabled={!prevHas}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-25 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-xs font-semibold">{monthName}</span>
+          <button
+            onClick={() => setCalMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+            disabled={!nextHas}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-25 transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Day-of-week headers */}
+        <div className="grid grid-cols-7 mb-1">
+          {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
+            <div key={d} className="text-[10px] text-muted-foreground text-center py-1">{d}</div>
           ))}
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2">Select multiple — provider picks the best match</p>
+
+        {/* Day cells */}
+        <div className="grid grid-cols-7 gap-y-0.5">
+          {calCells.map((day, i) => {
+            if (!day) return <div key={`e-${i}`} />;
+            const iso = `${year}-${pad(month + 1)}-${pad(day)}`;
+            const isAvail = availableSet.has(iso);
+            const isSel = selectedDate === iso;
+            return (
+              <button
+                key={iso}
+                disabled={!isAvail}
+                onClick={() => { setSelectedDate(iso); setSelectedTime(null); }}
+                className={`
+                  h-8 w-full flex items-center justify-center text-xs rounded-full transition-all
+                  ${isSel
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : isAvail
+                    ? "text-foreground hover:bg-primary/10 border border-primary/30"
+                    : "text-muted-foreground/30 cursor-default"
+                  }
+                `}
+              >
+                {day}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Time slots — shown after a date is selected */}
+        {selectedDate ? (
+          <div className="mt-4 border-t border-border pt-3 space-y-2">
+            <p className="text-xs text-muted-foreground">Times on {formatDate(selectedDate)}</p>
+            <div className="grid grid-cols-3 gap-2">
+              {quote.timeSlots.map((time) => (
+                <button
+                  key={time}
+                  onClick={() => setSelectedTime(time)}
+                  className={`text-xs py-2 px-1 rounded-xl border transition-all flex items-center justify-center gap-1 ${
+                    selectedTime === time
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card text-foreground border-border hover:border-primary/50"
+                  }`}
+                >
+                  {selectedTime === time && <Check className="w-3 h-3" />}
+                  {time}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Tap a highlighted date to see available times
+          </p>
+        )}
       </div>
 
       {/* Pay after service badge */}
@@ -171,7 +276,7 @@ const QuoteView = ({ quote, onBook, onBack }: QuoteViewProps) => {
       <div className="space-y-2 pt-1">
         <button
           onClick={onBook}
-          disabled={selectedSlots.length === 0}
+          disabled={!selectedDate || !selectedTime}
           className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40"
         >
           Book Now
