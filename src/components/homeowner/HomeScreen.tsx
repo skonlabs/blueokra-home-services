@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, User, Search, ChevronRight, Shield, Calendar, RotateCcw, Zap, Leaf, Snowflake, Sun } from "lucide-react";
 import ServiceGrid from "./ServiceGrid";
+import blueokraLogo from "@/assets/blueokra-logo.svg";
 
 interface HomeScreenProps {
   onServiceSelect: (serviceId: string) => void;
@@ -43,9 +44,13 @@ const HomeScreen = ({
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-sm text-muted-foreground">Welcome back 👋</p>
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            Blue<span className="text-primary">Okra</span>
-          </h1>
+          <div className="flex items-center gap-2">
+            <img src={blueokraLogo} alt="BlueOkra" className="w-8 h-8" />
+            <h1 className="font-display text-2xl font-bold text-primary">
+              BlueOkra<sup className="text-xs font-normal align-super">®</sup>
+            </h1>
+            <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">beta</span>
+          </div>
         </div>
         <div className="flex gap-2">
           <button
