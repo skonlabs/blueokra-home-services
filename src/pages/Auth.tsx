@@ -67,8 +67,8 @@ const Auth = () => {
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2.5">
             <img src={blueokraLogo} alt="BlueOkra" className="w-10 h-10" />
-            <h1 className="font-display text-4xl font-bold text-primary">
-              BlueOkra<sup className="text-sm font-normal align-super">®</sup>
+            <h1 className="font-display text-4xl font-bold text-gradient-primary">
+              BlueOkra<sup className="text-sm font-normal align-super text-primary">®</sup>
             </h1>
             <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">beta</span>
           </div>
