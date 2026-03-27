@@ -127,23 +127,27 @@ const serviceQuotes: Record<string, QuoteData> = {
 
 const serviceNames: Record<string, string> = {
   lawn: "Lawn & Garden",
-  hvac: "HVAC",
-  plumbing: "Plumbing",
-  pressure: "Pressure Washing",
+  house_cleaning: "House Cleaning",
+  gutter: "Gutter Cleaning",
   roof: "Roof Cleaning",
+  pressure: "Pressure Washing",
   electrical: "Electrical",
-  handyman: "Handyman",
+  duct: "Duct Cleaning",
+  backwater: "Backwater Testing",
+  fence: "Fence Installation",
 };
 
 const detectServiceFromText = (text: string): string | null => {
   const lower = text.toLowerCase();
-  if (/lawn|grass|mow|yard/.test(lower)) return "lawn";
-  if (/hvac|ac\b|heat|furnace|cool/.test(lower)) return "hvac";
-  if (/plumb|pipe|leak|drain|toilet/.test(lower)) return "plumbing";
-  if (/pressure|wash|driveway|patio/.test(lower)) return "pressure";
-  if (/roof|moss|gutter|shingle/.test(lower)) return "roof";
+  if (/lawn|grass|mow|yard|garden/.test(lower)) return "lawn";
+  if (/clean.*house|house.*clean|maid|deep clean|move.?out/.test(lower)) return "house_cleaning";
+  if (/gutter/.test(lower)) return "gutter";
+  if (/roof|moss|shingle/.test(lower)) return "roof";
+  if (/pressure|wash|driveway|patio|siding/.test(lower)) return "pressure";
   if (/electric|outlet|breaker|wiring/.test(lower)) return "electrical";
-  if (/fix|repair|install|build|handyman/.test(lower)) return "handyman";
+  if (/duct|vent|air quality|hvac|ac\b|heat|furnace/.test(lower)) return "duct";
+  if (/backwater|backflow|sewer|test.*device/.test(lower)) return "backwater";
+  if (/fence|fenc/.test(lower)) return "fence";
   return null;
 };
 
