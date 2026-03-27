@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, ArrowRight, Shield, Loader2 } from "lucide-react";
+import blueokraLogo from "@/assets/blueokra-logo.svg";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -64,9 +65,13 @@ const Auth = () => {
       >
         {/* Logo */}
         <div className="text-center space-y-2">
-          <h1 className="font-display text-4xl font-bold text-foreground">
-            Blue<span className="text-primary">Okra</span>
-          </h1>
+          <div className="flex items-center justify-center gap-2.5">
+            <img src={blueokraLogo} alt="BlueOkra" className="w-10 h-10" />
+            <h1 className="font-display text-4xl font-bold text-primary">
+              BlueOkra<sup className="text-sm font-normal align-super">®</sup>
+            </h1>
+            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">beta</span>
+          </div>
           <p className="text-sm text-muted-foreground">
             Home services, simplified.
           </p>
