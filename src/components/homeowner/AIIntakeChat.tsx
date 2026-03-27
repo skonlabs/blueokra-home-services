@@ -153,32 +153,38 @@ const detectServiceFromText = (text: string): string | null => {
 
 const photoObservations: Record<string, string> = {
   lawn: "I can see the lawn area clearly. The grass appears overgrown in sections with some uneven edges along the borders.",
-  hvac: "I can see the HVAC unit. There's visible dust buildup on the coils and the filter housing looks like it needs attention.",
-  plumbing: "I can see the affected area. There are signs of moisture and potential pipe corrosion that will need assessment.",
+  house_cleaning: "I can see the space. Looks like it needs a thorough cleaning — I'll factor in the rooms and any extras.",
+  gutter: "I can see the gutters. There's visible debris buildup that needs clearing.",
   pressure: "I can see the surface clearly. There's significant buildup of grime, algae staining, and weathering across the area.",
   roof: "I can see the roof surface. There's notable moss growth concentrated near the ridge and debris accumulation in the valleys.",
   electrical: "I can see the panel/outlet area. There are signs of wear and the wiring configuration will need a closer look by a technician.",
-  handyman: "I can see the area that needs work. The scope looks manageable and I can get a good estimate from what's visible.",
+  duct: "I can see the vent area. There's visible dust buildup that suggests the ducts need cleaning.",
+  backwater: "I can see the backwater device area. I'll need to assess the condition for testing.",
+  fence: "I can see the area for the fence. The terrain and layout look workable.",
 };
 
 const followUpQuestions: Record<string, string> = {
-  lawn: "Is this the front yard, backyard, or both? And approximately how large is the lawn?",
-  hvac: "Is this for heating, cooling, or both? And what's the make/model of your system if you know it?",
-  plumbing: "Where is the issue located — kitchen, bathroom, basement, or outside?",
-  pressure: "What surfaces need washing? (driveway, patio, siding, deck)",
-  roof: "Have you noticed any active leaks inside? And roughly how old is your roof?",
-  electrical: "Is this an emergency situation (no power, sparks, burning smell)? Or a non-urgent issue?",
-  handyman: "How many tasks need to be done, and what's the top priority item?",
+  lawn: "How large is the yard approximately? (under 1000, 1000-3000, 3000-5000, or over 5000 sq ft)",
+  house_cleaning: "How many bedrooms, bathrooms, and bonus rooms? And would you like Standard, Premium, or Ultimate cleaning?",
+  gutter: "How many stories is your home? And are the gutters moderately or heavily clogged?",
+  pressure: "What's the approximate size of your home? (under 1000, 1000-2000, 2000-3000, or over 3000 sq ft)",
+  roof: "What's the approximate roof size in sq ft? And do you see any moss or algae?",
+  electrical: "What's the approximate size of your home? And is this an emergency?",
+  duct: "How many vents do you have? (approximately) And would you like dryer vent cleaning too?",
+  backwater: "How many backwater devices do you have? And do any need repair?",
+  fence: "How many linear feet of fencing do you need? And would you like Standard, Premium, or Ultimate materials?",
 };
 
 const quoteReasonByService: Record<string, string> = {
-  lawn: "yard size and grass condition vary until we're on-site",
-  hvac: "parts and labor depend on what the diagnostic uncovers",
-  plumbing: "pipe accessibility and materials won't be fully known until we open things up",
+  lawn: "yard size, grass height, and weed conditions vary until we're on-site",
+  house_cleaning: "the number of rooms and condition affect the final price",
+  gutter: "clog severity and repair needs are assessed on arrival",
   pressure: "surface area and stain severity are assessed on arrival",
-  roof: "pitch, moss coverage, and access complexity affect the final price",
-  electrical: "the full scope of work can only be determined after a diagnostic",
-  handyman: "materials and task complexity may vary from the initial description",
+  roof: "roof size, moss coverage, and access complexity affect the final price",
+  electrical: "the full scope of work can only be determined after assessment",
+  duct: "the number of vents and system condition affect the final price",
+  backwater: "device condition and repair needs are assessed on-site",
+  fence: "terrain, height, and material choices affect the final price",
 };
 
 const getInitialMessage = (serviceId?: string): Message => {
