@@ -232,7 +232,8 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
     }
   }, [homes?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isSavedHomeSelected = !usingNewAddress && !!serviceAddress;
+  const isSavedHomeSelected = !usingNewAddress && !!serviceAddress &&
+    !!homes?.some(h => h.address === serviceAddress);
 
   // Lawn
   const [yardSize,    setYardSize]    = useState<IntakeFormData["yardSize"]>(iv.yardSize    ?? "lt3000");
