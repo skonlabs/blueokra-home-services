@@ -34,8 +34,8 @@ const BlueOkraLogo = () => (
     aria-label="BlueOkra"
   >
     <img src={blueokraLogo} alt="" className="w-6 h-6" aria-hidden="true" />
-    <span className="font-display text-sm font-semibold tracking-tight text-primary">
-      BlueOkra<sup className="text-[8px]">®</sup>
+    <span className="font-display text-sm font-semibold tracking-tight text-gradient-primary">
+      BlueOkra<sup className="text-[8px] text-primary">®</sup>
     </span>
   </motion.div>
 );

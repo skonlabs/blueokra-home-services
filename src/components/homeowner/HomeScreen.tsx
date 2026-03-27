@@ -46,8 +46,8 @@ const HomeScreen = ({
           <p className="text-sm text-muted-foreground">Welcome back 👋</p>
           <div className="flex items-center gap-2">
             <img src={blueokraLogo} alt="BlueOkra" className="w-8 h-8" />
-            <h1 className="font-display text-2xl font-bold text-primary">
-              BlueOkra<sup className="text-xs font-normal align-super">®</sup>
+            <h1 className="font-display text-2xl font-bold text-gradient-primary">
+              BlueOkra<sup className="text-xs font-normal align-super text-primary">®</sup>
             </h1>
             <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">beta</span>
           </div>
