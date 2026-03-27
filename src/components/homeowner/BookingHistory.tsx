@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
-import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Download } from "lucide-react";
+import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Loader2, Download } from "lucide-react";
 import { useState } from "react";
+import { useBookings } from "@/hooks/useBookings";
+import { format } from "date-fns";
 
 interface BookingHistoryProps {
   onPaymentFlow: () => void;
@@ -13,7 +15,7 @@ type BookingStatus = "upcoming" | "in_progress" | "completed" | "disputed";
 
 interface Booking {
   id: string;
-  serviceId: string;
+  serviceType: string;
   service: string;
   icon: string;
   provider: string;
@@ -23,13 +25,20 @@ interface Booking {
   rating?: number;
 }
 
-const mockBookings: Booking[] = [
-  { id: "1", serviceId: "lawn", service: "Lawn Mowing", icon: "🌿", provider: "Mike's Lawn Care", date: "Today, 2:00 PM", price: "$185", status: "in_progress" },
-  { id: "2", serviceId: "hvac", service: "HVAC Tune-up", icon: "❄️", provider: "Cool Air Pros", date: "Mar 15, 10:00 AM", price: "$150", status: "completed", rating: 5 },
-  { id: "3", serviceId: "pressure", service: "Pressure Wash", icon: "💧", provider: "SparkleClean", date: "Mar 8, 9:00 AM", price: "$320", status: "completed", rating: 4 },
-  { id: "4", serviceId: "plumbing", service: "Plumbing Repair", icon: "🔧", provider: "QuickFix Plumbing", date: "Feb 20, 11:00 AM", price: "$275", status: "completed", rating: 5 },
-  { id: "5", serviceId: "roof", service: "Gutter Cleaning", icon: "🏠", provider: "Roof Pros NW", date: "Feb 5, 8:00 AM", price: "$180", status: "completed" },
-];
+const serviceIcons: Record<string, string> = {
+  lawn: "🌿", hvac: "❄️", plumbing: "🔧", pressure: "💧",
+  roof: "🏠", electrical: "⚡", handyman: "🛠️",
+};
+
+const mapStatus = (status: string): BookingStatus => {
+  switch (status) {
+    case "purchased": case "pending": case "scheduled": return "upcoming";
+    case "in_progress": return "in_progress";
+    case "completed": return "completed";
+    case "disputed": return "disputed";
+    default: return "upcoming";
+  }
+};
 
 const statusColors: Record<BookingStatus, string> = {
   upcoming: "bg-blue-50 text-blue-500",
@@ -39,139 +48,105 @@ const statusColors: Record<BookingStatus, string> = {
 };
 
 const statusLabels: Record<BookingStatus, string> = {
-  upcoming: "Upcoming",
-  in_progress: "In Progress",
-  completed: "Completed",
-  disputed: "Disputed",
+  upcoming: "Upcoming", in_progress: "In Progress", completed: "Completed", disputed: "Disputed",
 };
 
 const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: BookingHistoryProps) => {
   const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "completed">("all");
-  const [activeBooking, setActiveBooking] = useState<string | null>(null);
+  const { data: rawBookings, isLoading } = useBookings();
 
-  const filtered = activeTab === "all" ? mockBookings :
-    activeTab === "upcoming" ? mockBookings.filter(b => b.status === "upcoming" || b.status === "in_progress") :
-    mockBookings.filter(b => b.status === "completed");
+  const bookings: Booking[] = (rawBookings || []).map((b) => ({
+    id: b.id,
+    serviceType: b.service_type,
+    service: b.package_name || b.service_type,
+    icon: serviceIcons[b.service_type] || "🔧",
+    provider: "Assigned Provider",
+    date: b.booking_appointment?.[0]?.appointment_date
+      ? format(new Date(b.booking_appointment[0].appointment_date), "MMM d, h:mm a")
+      : format(new Date(b.created_at), "MMM d"),
+    price: b.revenue ? `$${b.revenue}` : "TBD",
+    status: mapStatus(b.booking_status),
+  }));
 
-  const handleDownloadReceipt = (booking: Booking) => {
-    console.log(`Downloading receipt for booking ${booking.id}: ${booking.service}`);
-    // Show a simple inline toast via state or just log for now
-    alert("Receipt saved to device");
-  };
-
-  const handleReview = (booking: Booking) => {
-    setActiveBooking(booking.id);
-    onReview(booking);
-  };
-
-  const handleDispute = (booking: Booking) => {
-    setActiveBooking(booking.id);
-    onDispute();
-  };
+  const filtered = activeTab === "all" ? bookings :
+    activeTab === "upcoming" ? bookings.filter(b => b.status === "upcoming" || b.status === "in_progress") :
+    bookings.filter(b => b.status === "completed");
 
   return (
     <div className="px-4 py-4 pb-24 space-y-4">
-      {/* Tabs */}
       <div className="flex gap-1 bg-muted rounded-xl p-1">
         {(["all", "upcoming", "completed"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
-              activeTab === tab ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
-            }`}
-          >
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${activeTab === tab ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
-
-      {/* Bookings */}
-      <div className="space-y-3">
-        {filtered.map((booking, i) => (
-          <motion.div
-            key={booking.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="bg-card rounded-2xl border border-border p-4 space-y-3"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{booking.icon}</span>
-                <div>
-                  <p className="font-semibold text-sm text-foreground">{booking.service}</p>
-                  <p className="text-xs text-muted-foreground">{booking.provider}</p>
+      {isLoading ? (
+        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-2xl mb-2">📋</p>
+          <p className="text-sm text-muted-foreground">No bookings yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Book a service from the home screen to get started</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((booking, i) => (
+            <motion.div key={booking.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              className="bg-card rounded-2xl border border-border p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{booking.icon}</span>
+                  <div>
+                    <p className="font-semibold text-sm text-foreground">{booking.service}</p>
+                    <p className="text-xs text-muted-foreground">{booking.provider}</p>
+                  </div>
                 </div>
+                <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${statusColors[booking.status]}`}>
+                  {statusLabels[booking.status]}
+                </span>
               </div>
-              <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${statusColors[booking.status]}`}>
-                {statusLabels[booking.status]}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{booking.date}</span>
-              <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{booking.price}</span>
-            </div>
-
-            {/* Rating */}
-            {booking.rating && (
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star key={s} className={`w-3.5 h-3.5 ${s <= booking.rating! ? "fill-warm-500 text-warm-500" : "text-muted"}`} />
-                ))}
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{booking.date}</span>
+                <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{booking.price}</span>
               </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              {booking.status === "in_progress" && (
-                <button
-                  onClick={onPaymentFlow}
-                  className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
-                >
-                  <QrCode className="w-3.5 h-3.5" /> Confirm &amp; Pay
-                </button>
+              {booking.rating && (
+                <div className="flex items-center gap-1">
+                  {[1,2,3,4,5].map((s) => <Star key={s} className={`w-3.5 h-3.5 ${s <= booking.rating! ? "fill-warm-500 text-warm-500" : "text-muted"}`} />)}
+                </div>
               )}
-              {booking.status === "completed" && !booking.rating && (
-                <button
-                  onClick={() => handleReview(booking)}
-                  className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
-                >
-                  <Star className="w-3.5 h-3.5" /> Leave Review
-                </button>
-              )}
+              <div className="flex gap-2">
+                {booking.status === "in_progress" && (
+                  <button onClick={onPaymentFlow} className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
+                    <QrCode className="w-3.5 h-3.5" /> Confirm &amp; Pay
+                  </button>
+                )}
+                {booking.status === "completed" && !booking.rating && (
+                  <button onClick={() => onReview(booking)} className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
+                    <Star className="w-3.5 h-3.5" /> Leave Review
+                  </button>
+                )}
+                {booking.status === "completed" && (
+                  <>
+                    <button onClick={() => onRebook(booking.serviceType)} className="flex-1 bg-muted text-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
+                      <RotateCcw className="w-3.5 h-3.5" /> Rebook
+                    </button>
+                    <button onClick={onDispute} className="w-10 bg-muted text-muted-foreground rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
               {booking.status === "completed" && (
-                <>
-                  <button
-                    onClick={() => onRebook(booking.serviceId)}
-                    className="flex-1 bg-muted text-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" /> Rebook
-                  </button>
-                  <button
-                    onClick={() => handleDispute(booking)}
-                    className="w-10 bg-muted text-muted-foreground rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform"
-                  >
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                  </button>
-                </>
+                <button onClick={() => alert("Receipt saved to device")} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <Download className="w-3 h-3" /> Download Receipt
+                </button>
               )}
-            </div>
-
-            {/* Download Receipt (completed bookings only) */}
-            {booking.status === "completed" && (
-              <button
-                onClick={() => handleDownloadReceipt(booking)}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Download className="w-3 h-3" />
-                Download Receipt
-              </button>
-            )}
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

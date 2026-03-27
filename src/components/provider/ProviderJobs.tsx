@@ -1,67 +1,73 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, MessageSquare, Inbox } from "lucide-react";
+import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, Loader2, MessageSquare, Inbox } from "lucide-react";
+import { useProviderJobs } from "@/hooks/useBookings";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 export interface Job {
   id: string;
   service: string;
+  icon: string;
   customer: string;
   address: string;
-  time: string;
+  date: string;
   price: string;
-  status: "pending" | "accepted" | "in_progress" | "completed";
-  icon: string;
-  description?: string;
-  images?: number;
-  distance?: string;
-  duration?: string;
+  status: string;
 }
 
-const mockJobs: Job[] = [
-  { id: "1", service: "Lawn Mowing", customer: "Sarah M.", address: "123 Main St", time: "2:00 PM", price: "$185", status: "pending", icon: "🌿", description: "Front and backyard, edge trimming needed", images: 2, distance: "3.2 mi", duration: "1.5 hrs" },
-  { id: "2", service: "Pressure Wash", customer: "James L.", address: "456 Oak Ave", time: "4:30 PM", price: "$320", status: "accepted", icon: "💧", description: "Driveway and patio, moderate staining", distance: "5.1 mi", duration: "2 hrs" },
-  { id: "3", service: "HVAC Tune-up", customer: "Amy R.", address: "789 Pine Rd", time: "Tomorrow 9am", price: "$150", status: "accepted", icon: "❄️", description: "Annual maintenance, Carrier system", distance: "2.8 mi", duration: "1 hr" },
-  { id: "4", service: "Lawn Mowing", customer: "David K.", address: "321 Elm St", time: "Tomorrow 2pm", price: "$165", status: "pending", icon: "🌿", description: "Regular weekly mow, small yard", distance: "1.5 mi", duration: "1 hr" },
-];
+const serviceIcons: Record<string, string> = {
+  lawn: "🌿", hvac: "❄️", plumbing: "🔧", pressure: "💧",
+  roof: "🏠", electrical: "⚡", handyman: "🛠️",
+};
 
 interface ProviderJobsProps {
   onCompleteJob: (job: Job) => void;
 }
 
 const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
-  const [jobs, setJobs] = useState(mockJobs);
+  const { data: rawJobs, isLoading } = useProviderJobs();
 
-  const handleAccept = (id: string) => {
-    setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, status: "accepted" } : j)));
-  };
+  const jobs: Job[] = (rawJobs || []).map((j) => {
+    const service = j.booking_service as any;
+    return {
+      id: j.id,
+      service: service?.package_name || service?.service_type || "Service",
+      icon: serviceIcons[service?.service_type] || "🔧",
+      customer: "Customer",
+      address: "123 Main St",
+      date: format(new Date(j.appointment_date), "MMM d, h:mm a"),
+      price: service?.revenue ? `$${service.revenue}` : "TBD",
+      status: j.appointment_status as string,
+    };
+  });
 
-  const handleDecline = (id: string) => {
-    setJobs((prev) => prev.filter((j) => j.id !== id));
-  };
-
-  const pendingJobs = jobs.filter((j) => j.status === "pending");
-  const activeJobs = jobs.filter((j) => j.status === "accepted" || j.status === "in_progress");
+  const pendingJobs = jobs.filter((j) => j.status === "scheduled" || j.status === "new" || j.status === "pending");
+  const activeJobs = jobs.filter((j) => j.status === "confirmed" || j.status === "in_progress");
   const completedJobs = jobs.filter((j) => j.status === "completed");
 
-  const noJobs = pendingJobs.length + activeJobs.length === 0;
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (jobs.length === 0) {
+    return (
+      <div className="px-4 py-12 text-center flex flex-col items-center gap-3">
+        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+          <Inbox className="w-7 h-7 text-muted-foreground" />
+        </div>
+        <p className="font-display font-semibold text-foreground text-base">No new requests</p>
+        <p className="text-xs text-muted-foreground max-w-[240px]">New jobs will appear here when customers book services in your area</p>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-4 pb-24 space-y-5">
-      {/* Empty state */}
-      {noJobs && completedJobs.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
-            <Inbox className="w-7 h-7 text-muted-foreground" />
-          </div>
-          <p className="font-display font-semibold text-foreground text-base">No new requests</p>
-          <p className="text-xs text-muted-foreground max-w-[240px]">
-            New jobs will appear here when customers book services in your area
-          </p>
-        </div>
-      )}
-
-      {/* Pending */}
       {pendingJobs.length > 0 && (
         <div>
           <h3 className="font-display text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
@@ -69,33 +75,23 @@ const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
             <span className="bg-accent text-accent-foreground text-[10px] px-1.5 py-0.5 rounded-full">{pendingJobs.length}</span>
           </h3>
           <div className="space-y-3">
-            {pendingJobs.map((job, i) => (
-              <JobCard key={job.id} job={job} index={i} onAccept={handleAccept} onDecline={handleDecline} />
-            ))}
+            {pendingJobs.map((job, i) => <JobCard key={job.id} job={job} index={i} />)}
           </div>
         </div>
       )}
-
-      {/* Active */}
       {activeJobs.length > 0 && (
         <div>
           <h3 className="font-display text-sm font-semibold text-foreground mb-2">Today's Jobs</h3>
           <div className="space-y-3">
-            {activeJobs.map((job, i) => (
-              <JobCard key={job.id} job={job} index={i} onComplete={() => onCompleteJob(job)} />
-            ))}
+            {activeJobs.map((job, i) => <JobCard key={job.id} job={job} index={i} onComplete={() => onCompleteJob(job)} />)}
           </div>
         </div>
       )}
-
-      {/* Completed */}
       {completedJobs.length > 0 && (
         <div>
           <h3 className="font-display text-sm font-semibold text-foreground mb-2">Completed</h3>
           <div className="space-y-3">
-            {completedJobs.map((job, i) => (
-              <JobCard key={job.id} job={job} index={i} />
-            ))}
+            {completedJobs.map((job, i) => <JobCard key={job.id} job={job} index={i} />)}
           </div>
         </div>
       )}
@@ -106,25 +102,21 @@ const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
 interface JobCardProps {
   job: Job;
   index: number;
-  onAccept?: (id: string) => void;
-  onDecline?: (id: string) => void;
   onComplete?: () => void;
 }
 
-const JobCard = ({ job, index, onAccept, onDecline, onComplete }: JobCardProps) => {
+const JobCard = ({ job, index, onComplete }: JobCardProps) => {
   const { toast } = useToast();
+  const isPending = job.status === "scheduled" || job.status === "new" || job.status === "pending";
+  const isActive = job.status === "confirmed" || job.status === "in_progress";
+  const isCompleted = job.status === "completed";
 
-  const estimatedNet = job.status === "pending"
-    ? `(~$${(parseFloat(job.price.replace("$", "")) * 0.88).toFixed(0)} after fees)`
-    : null;
+  const rawPrice = parseFloat(job.price.replace(/[^0-9.]/g, ""));
+  const netEarnings = !isNaN(rawPrice) ? `(~$${Math.round(rawPrice * 0.88)} after fees)` : null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className="bg-card rounded-2xl border border-border p-4 space-y-3"
-    >
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
+      className="bg-card rounded-2xl border border-border p-4 space-y-3">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <span className="text-2xl">{job.icon}</span>
@@ -133,58 +125,22 @@ const JobCard = ({ job, index, onAccept, onDecline, onComplete }: JobCardProps) 
             <p className="text-xs text-muted-foreground">{job.customer}</p>
           </div>
         </div>
-        <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${
-          job.status === "pending" ? "bg-warm-50 text-warm-500" :
-          job.status === "completed" ? "bg-okra-50 text-okra-600" :
-          "bg-blue-50 text-blue-500"
-        }`}>
-          {job.status === "pending" ? "New" : job.status === "completed" ? "Done" : "Active"}
+        <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${isPending ? "bg-warm-50 text-warm-500" : isCompleted ? "bg-okra-50 text-okra-600" : "bg-blue-50 text-blue-500"}`}>
+          {isPending ? "New" : isCompleted ? "Done" : "Active"}
         </span>
       </div>
 
-      {job.description && (
-        <p className="text-xs text-muted-foreground bg-muted rounded-lg p-2">{job.description}</p>
-      )}
-
-      {/* Pending extras: photo badge + estimated net */}
-      {job.status === "pending" && (
-        <div className="flex items-center gap-2 flex-wrap">
-          {job.images != null && job.images > 0 && (
-            <span className="text-[11px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
-              📸 {job.images} photo{job.images !== 1 ? "s" : ""}
-            </span>
-          )}
-          {estimatedNet && (
-            <span className="text-[11px] text-muted-foreground">{estimatedNet}</span>
-          )}
-        </div>
+      {isPending && netEarnings && (
+        <p className="text-[11px] text-muted-foreground">{netEarnings}</p>
       )}
 
       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{job.time}</span>
-        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.distance || job.address}</span>
+        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{job.date}</span>
+        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.address}</span>
         <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{job.price}</span>
-        {job.duration && <span className="flex items-center gap-1">⏱ {job.duration}</span>}
       </div>
 
-      {/* Actions */}
-      {job.status === "pending" && onAccept && (
-        <div className="flex gap-2">
-          <button
-            onClick={() => onAccept(job.id)}
-            className="flex-1 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
-          >
-            <Check className="w-4 h-4" /> Accept
-          </button>
-          <button
-            onClick={() => onDecline?.(job.id)}
-            className="w-12 bg-muted text-muted-foreground rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-      {(job.status === "accepted" || job.status === "in_progress") && (
+      {isActive && onComplete && (
         <div className="flex gap-2">
           <button
             onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(job.address)}`, '_blank')}
@@ -207,7 +163,8 @@ const JobCard = ({ job, index, onAccept, onDecline, onComplete }: JobCardProps) 
           </button>
         </div>
       )}
-      {job.status === "completed" && (
+
+      {isCompleted && (
         <div className="flex items-center gap-2 bg-okra-50 rounded-xl p-2.5">
           <Check className="w-4 h-4 text-okra-600" />
           <p className="text-xs text-okra-600 font-medium">Payment of {job.price} captured</p>
