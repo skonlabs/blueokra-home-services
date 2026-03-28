@@ -83,7 +83,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
   const selectedBooking = selectedId ? bookings.find(b => b.id === selectedId) : null;
 
   return (
-    <div className="px-4 py-4 pb-24 space-y-4">
+    <div className="px-4 py-4 pb-24 space-y-4 relative">
       <div className="flex gap-1 bg-muted rounded-xl p-1">
         {(["all", "upcoming", "completed"] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
