@@ -18,7 +18,7 @@ const ChipRow = forwardRef<HTMLDivElement, {
   label: string;
   options: { value: string; label: string }[];
   value: string | undefined;
-  onChange: ((v: string) => void);
+  onChange: (v: any) => void;
 }>(function ChipRow({ label, options, value, onChange }, ref) {
   return (
     <div ref={ref} className="space-y-1.5">
