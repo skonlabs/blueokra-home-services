@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Loader2, Download } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Loader2, Download, X, MapPin, Calendar, Hash, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useBookings } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,6 +30,8 @@ interface Booking {
 const serviceIcons: Record<string, string> = {
   lawn: "🌿", hvac: "❄️", plumbing: "🔧", pressure: "💧",
   roof: "🏠", electrical: "⚡", handyman: "🛠️",
+  house_cleaning: "🧹", gutter: "🏗️", backwater: "💦",
+  duct: "🌀", fence: "🪵",
 };
 
 const mapStatus = (status: string): BookingStatus => {
@@ -55,6 +57,7 @@ const statusLabels: Record<BookingStatus, string> = {
 
 const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: BookingHistoryProps) => {
   const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "completed">("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const { user } = useAuth();
   const { data: rawBookings, isLoading, error: bookingsError } = useBookings();
 
@@ -76,6 +79,9 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
     activeTab === "upcoming" ? bookings.filter(b => b.status === "upcoming" || b.status === "in_progress") :
     bookings.filter(b => b.status === "completed");
 
+  const selectedRaw = selectedId ? (rawBookings || []).find(b => b.id === selectedId) : null;
+  const selectedBooking = selectedId ? bookings.find(b => b.id === selectedId) : null;
+
   return (
     <div className="px-4 py-4 pb-24 space-y-4">
       <div className="flex gap-1 bg-muted rounded-xl p-1">
@@ -88,7 +94,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
       </div>
       {bookingsError && (
         <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
-          <p className="text-xs font-semibold text-destructive mb-1">Failed to load bookings — copy and send to support:</p>
+          <p className="text-xs font-semibold text-destructive mb-1">Failed to load bookings:</p>
           <p className="text-xs text-destructive font-mono break-all">{JSON.stringify(bookingsError)}</p>
         </div>
       )}
@@ -105,7 +111,8 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
         <div className="space-y-3">
           {filtered.map((booking, i) => (
             <motion.div key={booking.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="bg-card rounded-2xl border border-border p-4 space-y-3">
+              className="bg-card rounded-2xl border border-border p-4 space-y-3 cursor-pointer active:scale-[0.98] transition-transform"
+              onClick={() => setSelectedId(booking.id)}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{booking.icon}</span>
@@ -127,37 +134,116 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
                   {[1,2,3,4,5].map((s) => <Star key={s} className={`w-3.5 h-3.5 ${s <= booking.rating! ? "fill-warm-500 text-warm-500" : "text-muted"}`} />)}
                 </div>
               )}
-              <div className="flex gap-2">
-                {booking.status === "in_progress" && (
-                  <button onClick={onPaymentFlow} className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
-                    <QrCode className="w-3.5 h-3.5" /> Confirm &amp; Pay
-                  </button>
-                )}
-                {booking.status === "completed" && !booking.rating && (
-                  <button onClick={() => onReview(booking)} className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
-                    <Star className="w-3.5 h-3.5" /> Leave Review
-                  </button>
-                )}
-                {booking.status === "completed" && (
-                  <>
-                    <button onClick={() => onRebook(booking.serviceType)} className="flex-1 bg-muted text-foreground text-xs font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
-                      <RotateCcw className="w-3.5 h-3.5" /> Rebook
-                    </button>
-                    <button onClick={onDispute} className="w-10 bg-muted text-muted-foreground rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform">
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                    </button>
-                  </>
-                )}
-              </div>
-              {booking.status === "completed" && (
-                <button onClick={() => alert("Receipt saved to device")} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                  <Download className="w-3 h-3" /> Download Receipt
-                </button>
-              )}
             </motion.div>
           ))}
         </div>
       )}
+
+      {/* Booking Detail Sheet */}
+      <AnimatePresence>
+        {selectedBooking && selectedRaw && (
+          <>
+            <motion.div className="fixed inset-0 bg-black/40 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setSelectedId(null)} />
+            <motion.div className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 300 }}>
+              <div className="p-5 space-y-5">
+                {/* Handle + header */}
+                <div className="w-10 h-1 bg-muted rounded-full mx-auto" />
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{selectedBooking.icon}</span>
+                    <div>
+                      <p className="font-bold text-base text-foreground">{selectedBooking.service}</p>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${statusColors[selectedBooking.status]}`}>
+                        {statusLabels[selectedBooking.status]}
+                      </span>
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedId(null)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Details grid */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Hash className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Booking ID</span>
+                    <span className="ml-auto font-mono text-xs">BK{selectedRaw.id.replace(/-/g, "").slice(-8).toUpperCase()}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Price</span>
+                    <span className="ml-auto font-semibold">{selectedBooking.price}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <RefreshCw className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Frequency</span>
+                    <span className="ml-auto capitalize">{selectedRaw.frequency || "One-time"}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Booked on</span>
+                    <span className="ml-auto">{format(new Date(selectedRaw.created_at), "MMM d, yyyy")}</span>
+                  </div>
+                  {selectedRaw.notes && (
+                    <div className="flex items-start gap-3 text-sm">
+                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">Address</span>
+                      <span className="ml-auto text-right max-w-[60%]">{selectedRaw.notes}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Appointments */}
+                {selectedRaw.booking_appointment?.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Appointments</p>
+                    {selectedRaw.booking_appointment.map((appt: { id: string; appointment_date: string; appointment_status: string }) => (
+                      <div key={appt.id} className="flex items-center justify-between bg-muted rounded-xl px-3 py-2.5">
+                        <span className="text-sm">{format(new Date(appt.appointment_date), "EEE, MMM d, yyyy")}</span>
+                        <span className="text-xs text-muted-foreground capitalize">{appt.appointment_status}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-1">
+                  {selectedBooking.status === "in_progress" && (
+                    <button onClick={() => { setSelectedId(null); onPaymentFlow(); }}
+                      className="flex-1 bg-primary text-primary-foreground text-sm font-medium py-3 rounded-xl flex items-center justify-center gap-2 active:scale-[0.97] transition-transform">
+                      <QrCode className="w-4 h-4" /> Confirm &amp; Pay
+                    </button>
+                  )}
+                  {selectedBooking.status === "completed" && !selectedBooking.rating && (
+                    <button onClick={() => { setSelectedId(null); onReview(selectedBooking); }}
+                      className="flex-1 bg-primary text-primary-foreground text-sm font-medium py-3 rounded-xl flex items-center justify-center gap-2 active:scale-[0.97] transition-transform">
+                      <Star className="w-4 h-4" /> Leave Review
+                    </button>
+                  )}
+                  {selectedBooking.status === "completed" && (
+                    <button onClick={() => { setSelectedId(null); onRebook(selectedBooking.serviceType); }}
+                      className="flex-1 bg-muted text-foreground text-sm font-medium py-3 rounded-xl flex items-center justify-center gap-2 active:scale-[0.97] transition-transform">
+                      <RotateCcw className="w-4 h-4" /> Rebook
+                    </button>
+                  )}
+                  <button onClick={() => { setSelectedId(null); onDispute(); }}
+                    className="w-12 bg-muted text-muted-foreground rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform">
+                    <AlertTriangle className="w-4 h-4" />
+                  </button>
+                </div>
+                {selectedBooking.status === "completed" && (
+                  <button onClick={() => alert("Receipt saved to device")} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    <Download className="w-3 h-3" /> Download Receipt
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
