@@ -31,7 +31,7 @@ import type { Job } from "@/components/provider/ProviderJobs";
 
 type Screen =
   | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile"
-  | "provider-home" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-profile";
+  | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-profile";
 
 const Index = () => {
   const { user, loading, roles, refreshProfile } = useAuth();
@@ -138,6 +138,10 @@ const Index = () => {
         return { title: "My Property" };
       case "profile":
         return { title: "Profile" };
+      case "provider-home":
+        return null;
+      case "provider-jobs":
+        return { title: "Jobs" };
       case "provider-completion":
         return { title: "Complete Job", onBack: () => navigate("provider-home") };
       case "provider-schedule":
