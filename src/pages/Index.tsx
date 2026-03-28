@@ -271,6 +271,12 @@ const Index = () => {
 
           {screen === "provider-home" && (
             <motion.div key="provider-home" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <ProviderHome onNavigate={handleNavigation} />
+            </motion.div>
+          )}
+
+          {screen === "provider-jobs" && (
+            <motion.div key="provider-jobs" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <ProviderJobs
                 onCompleteJob={(job) => { setSelectedJobForCompletion(job); navigate("provider-completion"); }}
               />
