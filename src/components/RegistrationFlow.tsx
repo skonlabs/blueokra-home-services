@@ -117,7 +117,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col px-6 py-12">
+    <div ref={ref} className="min-h-screen bg-background flex flex-col px-6 py-12">
       <div className="flex items-center gap-2.5 mb-8">
         <img src={blueokraLogo} alt="BlueOkra" className="w-8 h-8" />
         <h1 className="font-display text-2xl font-bold text-gradient-primary">BlueOkra<sup className="text-xs font-normal align-super text-primary">®</sup></h1>
