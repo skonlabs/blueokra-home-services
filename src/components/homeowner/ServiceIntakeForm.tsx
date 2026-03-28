@@ -195,7 +195,7 @@ const NO_FREQUENCY = new Set(["gutter", "roof", "fence", "backwater"]);
 // Main component
 // ---------------------------------------------------------------------------
 
-const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntakeFormProps) => {
+const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ serviceId, onSubmit, initialValues }, ref) => {
   const iv = initialValues ?? {};
 
   const [urgency,   setUrgency]   = useState<"emergency" | "soon" | "flexible">(iv.urgency   ?? "flexible");
@@ -638,6 +638,8 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
       </button>
     </div>
   );
-};
+});
+
+ServiceIntakeForm.displayName = "ServiceIntakeForm";
 
 export default ServiceIntakeForm;
