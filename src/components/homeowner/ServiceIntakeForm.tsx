@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { ChevronRight, Minus, Plus, MapPin } from "lucide-react";
 import type { IntakeFormData } from "@/lib/quoteCalculator";
 import AddressInput from "./AddressInput";
@@ -14,16 +14,14 @@ interface ServiceIntakeFormProps {
 // Small reusable primitives
 // ---------------------------------------------------------------------------
 
-function ChipRow<T extends string>({
-  label, options, value, onChange,
-}: {
+const ChipRow = forwardRef<HTMLDivElement, {
   label: string;
-  options: { value: T; label: string }[];
-  value: T | undefined;
-  onChange: React.Dispatch<React.SetStateAction<T>> | ((v: T) => void);
-}) {
+  options: { value: string; label: string }[];
+  value: string | undefined;
+  onChange: (v: any) => void;
+}>(function ChipRow({ label, options, value, onChange }, ref) {
   return (
-    <div className="space-y-1.5">
+    <div ref={ref} className="space-y-1.5">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <div className="flex flex-wrap gap-1.5">
         {options.map((o) => (
@@ -43,7 +41,7 @@ function ChipRow<T extends string>({
       </div>
     </div>
   );
-}
+});
 
 function Stepper({
   label, value, min = 0, max = 20, onChange, sublabel,
@@ -111,17 +109,12 @@ function Toggle({
   );
 }
 
-function CheckList({
-  label,
-  options,
-  values,
-  onChange,
-}: {
+const CheckList = forwardRef<HTMLDivElement, {
   label: string;
   options: { value: string; label: string; price: string }[];
   values: string[];
   onChange: (v: string[]) => void;
-}) {
+}>(function CheckList({ label, options, values, onChange }, ref) {
   const toggle = (v: string) => {
     onChange(values.includes(v) ? values.filter((x) => x !== v) : [...values, v]);
   };
@@ -160,7 +153,7 @@ function CheckList({
       </div>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Pricing tables for add-on display (mirrors quoteCalculator.ts)
@@ -202,7 +195,7 @@ const NO_FREQUENCY = new Set(["gutter", "roof", "fence", "backwater"]);
 // Main component
 // ---------------------------------------------------------------------------
 
-const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntakeFormProps) => {
+const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ serviceId, onSubmit, initialValues }, ref) => {
   const iv = initialValues ?? {};
 
   const [urgency,   setUrgency]   = useState<"emergency" | "soon" | "flexible">(iv.urgency   ?? "flexible");
@@ -645,6 +638,8 @@ const ServiceIntakeForm = ({ serviceId, onSubmit, initialValues }: ServiceIntake
       </button>
     </div>
   );
-};
+});
+
+ServiceIntakeForm.displayName = "ServiceIntakeForm";
 
 export default ServiceIntakeForm;

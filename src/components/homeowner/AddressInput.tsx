@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, forwardRef } from "react";
 import { MapPin, Mail, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -81,7 +81,7 @@ function sortSuggestions(results: NominatimResult[]): NominatimResult[] {
 // Component
 // ---------------------------------------------------------------------------
 
-const AddressInput = ({ value, onChange, placeholder, hasError }: AddressInputProps) => {
+const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onChange, placeholder, hasError }, _ref) => {
   const [inputVal, setInputVal]         = useState(value);
   const [suggestions, setSuggestions]   = useState<NominatimResult[]>([]);
   const [loading, setLoading]           = useState(false);
@@ -272,6 +272,8 @@ const AddressInput = ({ value, onChange, placeholder, hasError }: AddressInputPr
       )}
     </div>
   );
-};
+});
+
+AddressInput.displayName = "AddressInput";
 
 export default AddressInput;

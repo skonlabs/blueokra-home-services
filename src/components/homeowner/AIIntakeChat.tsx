@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Camera, X } from "lucide-react";
 import { getServiceById } from "./ServiceGrid";
@@ -72,7 +72,7 @@ function getIntroMessage(serviceId: string): string {
 
 type Phase = "describe" | "form" | "done";
 
-const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady, initialFormData, onIntakeDataSaved }: AIIntakeProps) => {
+const AIIntakeChat = forwardRef<HTMLDivElement, AIIntakeProps>(({ serviceId: initialServiceId, onQuoteReady, initialFormData, onIntakeDataSaved }, ref) => {
   const resolvedService = initialServiceId ? getServiceById(initialServiceId) : null;
 
   const [phase, setPhase] = useState<Phase>(initialServiceId ? "form" : "describe");
@@ -209,7 +209,7 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady, initialFormDa
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div ref={ref} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         <AnimatePresence>
           {messages.map((msg) => (
@@ -333,6 +333,8 @@ const AIIntakeChat = ({ serviceId: initialServiceId, onQuoteReady, initialFormDa
       )}
     </div>
   );
-};
+});
+
+AIIntakeChat.displayName = "AIIntakeChat";
 
 export default AIIntakeChat;
