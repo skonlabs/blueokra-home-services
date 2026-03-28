@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Clock, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useState, useMemo } from "react";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -7,11 +8,11 @@ const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 interface ScheduleJob {
   time: string;
   service: string;
+  serviceType: string;
   customer: string;
   address: string;
   price: string;
   duration: string;
-  icon: string;
 }
 
 const today = new Date();
@@ -35,21 +36,21 @@ const buildScheduleData = (): Record<string, ScheduleJob[]> => {
   // We'll attach jobs to specific weekday indices (0=Mon … 6=Sun)
   const byWeekday: Record<number, ScheduleJob[]> = {
     2: [ // Wed (index 2)
-      { time: "9:00 AM", service: "HVAC Tune-up", customer: "Amy R.", address: "789 Pine Rd", price: "$150", duration: "1 hr", icon: "❄️" },
-      { time: "11:00 AM", service: "Lawn Mowing", customer: "Sarah M.", address: "123 Main St", price: "$185", duration: "1.5 hrs", icon: "🌿" },
-      { time: "2:00 PM", service: "Pressure Wash", customer: "James L.", address: "456 Oak Ave", price: "$320", duration: "2 hrs", icon: "💧" },
+      { time: "9:00 AM", service: "HVAC Tune-up", serviceType: "duct", customer: "Amy R.", address: "789 Pine Rd", price: "$150", duration: "1 hr" },
+      { time: "11:00 AM", service: "Lawn Mowing", serviceType: "lawn", customer: "Sarah M.", address: "123 Main St", price: "$185", duration: "1.5 hrs" },
+      { time: "2:00 PM", service: "Pressure Wash", serviceType: "pressure", customer: "James L.", address: "456 Oak Ave", price: "$320", duration: "2 hrs" },
     ],
     3: [ // Thu (index 3)
-      { time: "8:00 AM", service: "Roof Cleaning", customer: "Tom B.", address: "555 Cedar Ln", price: "$450", duration: "3 hrs", icon: "🏠" },
-      { time: "1:00 PM", service: "Lawn Mowing", customer: "David K.", address: "321 Elm St", price: "$165", duration: "1 hr", icon: "🌿" },
+      { time: "8:00 AM", service: "Roof Cleaning", serviceType: "roof", customer: "Tom B.", address: "555 Cedar Ln", price: "$450", duration: "3 hrs" },
+      { time: "1:00 PM", service: "Lawn Mowing", serviceType: "lawn", customer: "David K.", address: "321 Elm St", price: "$165", duration: "1 hr" },
     ],
     4: [ // Fri (index 4)
-      { time: "10:00 AM", service: "Electrical", customer: "Lisa W.", address: "890 Birch Dr", price: "$200", duration: "1.5 hrs", icon: "⚡" },
+      { time: "10:00 AM", service: "Duct Cleaning", serviceType: "duct", customer: "Lisa W.", address: "890 Birch Dr", price: "$200", duration: "1.5 hrs" },
     ],
     5: [ // Sat (index 5)
-      { time: "9:00 AM", service: "Lawn Mowing", customer: "Sarah M.", address: "123 Main St", price: "$185", duration: "1.5 hrs", icon: "🌿" },
-      { time: "12:00 PM", service: "Handyman", customer: "Mike P.", address: "234 Maple Ave", price: "$175", duration: "2 hrs", icon: "🛠️" },
-      { time: "3:00 PM", service: "Pressure Wash", customer: "Ana S.", address: "678 Walnut St", price: "$280", duration: "1.5 hrs", icon: "💧" },
+      { time: "9:00 AM", service: "Lawn Mowing", serviceType: "lawn", customer: "Sarah M.", address: "123 Main St", price: "$185", duration: "1.5 hrs" },
+      { time: "12:00 PM", service: "Fence Repair", serviceType: "fence", customer: "Mike P.", address: "234 Maple Ave", price: "$175", duration: "2 hrs" },
+      { time: "3:00 PM", service: "Pressure Wash", serviceType: "pressure", customer: "Ana S.", address: "678 Walnut St", price: "$280", duration: "1.5 hrs" },
     ],
   };
 
@@ -177,7 +178,7 @@ const ProviderSchedule = () => {
               <div className="flex-1 bg-card rounded-2xl border border-border p-3.5 mb-3">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{job.icon}</span>
+                    <ServiceIcon serviceType={job.serviceType} size="sm" />
                     <div>
                       <p className="font-semibold text-sm text-foreground">{job.service}</p>
                       <p className="text-xs text-muted-foreground">{job.customer}</p>
