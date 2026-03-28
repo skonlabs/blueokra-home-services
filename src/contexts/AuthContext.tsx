@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -46,75 +46,116 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const hydrationRunRef = useRef(0);
 
-  const fetchProfile = async (userId: string) => {
-    // Ensure profile row exists for this user (no-op if already present)
+  const fetchProfile = async (userId: string): Promise<Profile | null> => {
     await supabase
       .from("profiles")
       .upsert({ user_id: userId }, { onConflict: "user_id", ignoreDuplicates: true });
-    const { data } = await supabase
+
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("user_id", userId)
       .single();
-    if (data) setProfile(data as Profile);
+
+    if (error) throw error;
+    return (data as Profile) ?? null;
   };
 
-  const fetchRoles = async (userId: string) => {
-    const { data } = await supabase
+  const fetchRoles = async (userId: string): Promise<string[]> => {
+    const { data, error } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    if (data) setRoles(data.map((r) => r.role));
+
+    if (error) throw error;
+    return data?.map((r) => r.role) ?? [];
+  };
+
+  const hydrateSession = async (nextSession: Session | null) => {
+    const runId = ++hydrationRunRef.current;
+
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+
+    if (!nextSession?.user) {
+      setProfile(null);
+      setRoles([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setProfile(null);
+    setRoles([]);
+
+    try {
+      const [nextProfile, nextRoles] = await Promise.all([
+        fetchProfile(nextSession.user.id),
+        fetchRoles(nextSession.user.id),
+      ]);
+
+      if (runId !== hydrationRunRef.current) return;
+      setProfile(nextProfile);
+      setRoles(nextRoles);
+    } catch (error) {
+      if (runId !== hydrationRunRef.current) return;
+      console.error("Failed to hydrate auth state", error);
+      setProfile(null);
+      setRoles([]);
+    } finally {
+      if (runId === hydrationRunRef.current) {
+        setLoading(false);
+      }
+    }
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      await Promise.all([fetchProfile(user.id), fetchRoles(user.id)]);
+    if (!user) return;
+
+    const runId = ++hydrationRunRef.current;
+    setLoading(true);
+
+    try {
+      const [nextProfile, nextRoles] = await Promise.all([
+        fetchProfile(user.id),
+        fetchRoles(user.id),
+      ]);
+
+      if (runId !== hydrationRunRef.current) return;
+      setProfile(nextProfile);
+      setRoles(nextRoles);
+    } finally {
+      if (runId === hydrationRunRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    let initialSessionHandled = false;
+    let isActive = true;
 
-    // Set up auth state listener FIRST
+    const runHydration = (nextSession: Session | null) => {
+      if (!isActive) return;
+      void hydrateSession(nextSession);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          // Use setTimeout to avoid potential deadlocks with Supabase client
-          setTimeout(async () => {
-            await Promise.all([
-              fetchProfile(session.user.id),
-              fetchRoles(session.user.id),
-            ]);
-            setLoading(false);
-          }, 0);
-        } else {
-          setProfile(null);
-          setRoles([]);
-          setLoading(false);
-        }
+      (_event, nextSession) => {
+        runHydration(nextSession);
       }
     );
 
-    // THEN check existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (initialSessionHandled) return;
-      initialSessionHandled = true;
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await Promise.all([
-          fetchProfile(session.user.id),
-          fetchRoles(session.user.id),
-        ]);
-      }
-      setLoading(false);
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      runHydration(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isActive = false;
+      hydrationRunRef.current += 1;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithPhone = async (phone: string) => {
