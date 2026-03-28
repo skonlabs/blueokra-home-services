@@ -75,10 +75,12 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
         queryClient.invalidateQueries({ queryKey: ["bookings", user.id] });
 
       } catch (err) {
-        const pgErr = err as { message?: string; code?: string; details?: string };
-        const msg = pgErr?.message ?? (err instanceof Error ? err.message : "Booking save failed");
+        const pgErr = err as { message?: string; code?: string; details?: string; hint?: string };
+        const code = pgErr?.code ? ` [${pgErr.code}]` : "";
+        const hint = pgErr?.hint ? ` — ${pgErr.hint}` : "";
+        const msg = `${pgErr?.message ?? (err instanceof Error ? err.message : "Booking save failed")}${code}${hint}`;
         setSaveError(msg);
-        console.error("Booking save failed:", err);
+        console.error("Booking save failed — full error:", JSON.stringify(err, null, 2));
       } finally {
         setSaving(false);
       }
@@ -126,9 +128,12 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
       </motion.div>
 
       {saveError ? (
-        <div>
-          <h2 className="font-display text-xl font-bold text-foreground">Booking request sent</h2>
-          <p className="text-xs text-destructive mt-1 px-4">Note: Could not save to database — {saveError}</p>
+        <div className="w-full">
+          <h2 className="font-display text-xl font-bold text-destructive">Save Failed</h2>
+          <div className="mt-2 mx-2 bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-left">
+            <p className="text-xs font-semibold text-destructive mb-1">Database error — copy this and send to support:</p>
+            <p className="text-xs text-destructive font-mono break-all">{saveError}</p>
+          </div>
         </div>
       ) : (
         <div>
