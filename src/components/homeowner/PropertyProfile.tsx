@@ -46,7 +46,7 @@ const PropertyProfile = () => {
     setAddError("");
     setAddSaving(true);
     try {
-      await supabase.from("user_homes").insert({
+      const { error: insertError } = await supabase.from("user_homes").insert({
         user_id: user.id,
         address: newAddress,
         nickname: newNickname.trim() || null,
@@ -55,6 +55,7 @@ const PropertyProfile = () => {
         zip_code: newZip || null,
         is_primary: !homes || homes.length === 0,
       });
+      if (insertError) throw insertError;
       await queryClient.invalidateQueries({ queryKey: ["user-homes", user.id] });
       setShowAddForm(false);
       setNewNickname("");
@@ -63,7 +64,8 @@ const PropertyProfile = () => {
       setNewState("");
       setNewZip("");
     } catch (err) {
-      setAddError("Failed to save. Please try again.");
+      const pgErr = err as { message?: string };
+      setAddError(pgErr?.message ?? "Failed to save. Please try again.");
       console.error(err);
     } finally {
       setAddSaving(false);

@@ -19,6 +19,7 @@ interface Booking {
   service: string;
   icon: string;
   provider: string;
+  provider_user_id?: string;
   date: string;
   price: string;
   status: BookingStatus;
@@ -61,6 +62,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
     service: b.package_name || b.service_type,
     icon: serviceIcons[b.service_type] || "🔧",
     provider: "Assigned Provider",
+    provider_user_id: b.booking_appointment?.[0]?.provider_user_id ?? undefined,
     date: b.booking_appointment?.[0]?.appointment_date
       ? format(new Date(b.booking_appointment[0].appointment_date), "MMM d, h:mm a")
       : format(new Date(b.created_at), "MMM d"),

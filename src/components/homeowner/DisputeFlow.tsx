@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, AlertTriangle, Check, ChevronRight, X } from "lucide-react";
+import { Camera, AlertTriangle, Check, ChevronRight, X, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DisputeFlowProps {
   onComplete: () => void;
@@ -17,10 +19,13 @@ const issues = [
 ];
 
 const DisputeFlow = ({ onComplete }: DisputeFlowProps) => {
+  const { user } = useAuth();
   const [step, setStep] = useState<"select" | "detail" | "submitted">("select");
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
   const [detail, setDetail] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [caseRef] = useState(() => Math.random().toString(36).slice(2, 8).toUpperCase());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +49,28 @@ const DisputeFlow = ({ onComplete }: DisputeFlowProps) => {
   };
 
   const isDetailValid = detail.trim().length >= 10;
+
+  const handleSubmitDispute = async () => {
+    if (!isDetailValid) return;
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const { error } = await supabase.from("admin_support_ticket").insert({
+        subject: selectedIssue ?? "Dispute",
+        content: detail.trim(),
+        sender_email: user?.email ?? null,
+        ticket_status: "open",
+      });
+      if (error) throw error;
+      setStep("submitted");
+    } catch (err) {
+      const pgErr = err as { message?: string };
+      setSubmitError(pgErr?.message ?? "Failed to submit. Please try again.");
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (step === "submitted") {
     return (
@@ -138,12 +165,13 @@ const DisputeFlow = ({ onComplete }: DisputeFlowProps) => {
           )}
         </div>
 
+        {submitError && <p className="text-xs text-destructive">{submitError}</p>}
         <button
-          onClick={() => setStep("submitted")}
-          disabled={!isDetailValid}
+          onClick={handleSubmitDispute}
+          disabled={!isDetailValid || submitting}
           className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Submit Dispute <ChevronRight className="w-4 h-4" />
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Submit Dispute <ChevronRight className="w-4 h-4" /></>}
         </button>
       </motion.div>
     );

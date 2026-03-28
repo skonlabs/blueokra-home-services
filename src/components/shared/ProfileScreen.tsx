@@ -45,17 +45,19 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
     setSavingProfile(true);
     setProfileError("");
     try {
-      const { error } = await supabase.from("profiles").update({
+      const { error } = await supabase.from("profiles").upsert({
+        user_id: user.id,
         display_name: displayName.trim() || null,
         first_name: firstName.trim() || null,
         last_name: lastName.trim() || null,
-      }).eq("user_id", user.id);
+      }, { onConflict: "user_id" });
       if (error) throw error;
       await refreshProfile();
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 2500);
     } catch (err) {
-      setProfileError("Failed to save. Please try again.");
+      const pgErr = err as { message?: string };
+      setProfileError(pgErr?.message ?? "Failed to save. Please try again.");
       console.error(err);
     } finally {
       setSavingProfile(false);

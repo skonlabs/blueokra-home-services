@@ -46,6 +46,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
+    // Ensure profile row exists for this user (no-op if already present)
+    await supabase
+      .from("profiles")
+      .upsert({ user_id: userId }, { onConflict: "user_id", ignoreDuplicates: true });
     const { data } = await supabase
       .from("profiles")
       .select("*")

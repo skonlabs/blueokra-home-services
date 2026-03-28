@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import Auth from "./Auth";
 import BottomNav from "@/components/shared/BottomNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
@@ -307,8 +308,17 @@ const Index = () => {
         <ReviewModal
           booking={reviewBooking}
           onClose={() => setReviewBooking(null)}
-          onSubmit={(rating, comment) => {
-            console.log("Review submitted:", rating, comment);
+          onSubmit={async (rating, comment) => {
+            if (user && reviewBooking.provider_user_id) {
+              const { error } = await supabase.from("reviews").insert({
+                homeowner_id: user.id,
+                provider_id: reviewBooking.provider_user_id,
+                rating,
+                comments: comment || null,
+                reviewed_by: user.id,
+              });
+              if (error) console.error("Review save failed:", error.message);
+            }
             setReviewBooking(null);
           }}
         />

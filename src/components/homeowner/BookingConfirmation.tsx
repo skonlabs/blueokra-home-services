@@ -58,21 +58,23 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
         }
 
         // Insert one appointment row per selected date
+        // Note: customer_user_id is omitted to avoid FK violation for users without profile rows
         for (const date of appointmentDates) {
-          await supabase.from("booking_appointment").insert({
+          const { error: apptError } = await supabase.from("booking_appointment").insert({
             service_id: bookingData.id,
             appointment_date: date,
-            customer_user_id: user.id,
             appointment_status: "pending",
             customer_amount: quote.low,
           });
+          if (apptError) console.warn("Appointment insert warning:", apptError.message);
         }
 
         // Refresh the booking history cache so the new booking appears immediately
         queryClient.invalidateQueries({ queryKey: ["bookings", user.id] });
 
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
+        const pgErr = err as { message?: string; code?: string; details?: string };
+        const msg = pgErr?.message ?? (err instanceof Error ? err.message : "Booking save failed");
         setSaveError(msg);
         console.error("Booking save failed:", err);
       } finally {

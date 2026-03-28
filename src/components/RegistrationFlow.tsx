@@ -54,22 +54,26 @@ const RegistrationFlow = ({ onComplete }: RegistrationFlowProps) => {
     setSaving(true);
     setError("");
     try {
-      // Insert homeowner role
-      await supabase.from("user_roles").insert({
+      // Insert homeowner role (ignore duplicate if already exists)
+      const { error: roleError } = await supabase.from("user_roles").insert({
         user_id: user.id,
-        role: "homeowner" as never,
+        role: "homeowner" as import("@/integrations/supabase/types").Database["public"]["Enums"]["app_role"],
       });
-      // Update profile with basic name
-      if (firstName) {
-        await supabase.from("profiles").update({
-          first_name: firstName || null,
-          last_name: lastName || null,
-        }).eq("user_id", user.id);
-      }
+      if (roleError && roleError.code !== "23505") throw roleError;
+
+      // Upsert profile (works even if profile row doesn't exist yet)
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        user_id: user.id,
+        first_name: firstName.trim() || null,
+        last_name: lastName.trim() || null,
+      }, { onConflict: "user_id" });
+      if (profileError) throw profileError;
+
       await refreshProfile();
       onComplete();
     } catch (err) {
-      setError("Failed to save. Please try again.");
+      const pgErr = err as { message?: string };
+      setError(pgErr?.message ?? "Failed to save. Please try again.");
       console.error(err);
     } finally {
       setSaving(false);
@@ -81,24 +85,31 @@ const RegistrationFlow = ({ onComplete }: RegistrationFlowProps) => {
     setSaving(true);
     setError("");
     try {
-      // Insert provider role
-      await supabase.from("user_roles").insert({
+      // Insert provider role (ignore duplicate if already exists)
+      const { error: roleError } = await supabase.from("user_roles").insert({
         user_id: user.id,
-        role: "provider" as never,
+        role: "provider" as import("@/integrations/supabase/types").Database["public"]["Enums"]["app_role"],
       });
-      // Update profile with provider details
-      await supabase.from("profiles").update({
-        first_name: firstName || null,
-        last_name: lastName || null,
-        company_name: providerType === "company" ? businessName || null : null,
-        display_name: providerType === "company" ? businessName || null : (firstName ? `${firstName} ${lastName}`.trim() : null),
-        address: businessAddress || null,
-      }).eq("user_id", user.id);
+      if (roleError && roleError.code !== "23505") throw roleError;
+
+      // Upsert profile with provider details (works even if row doesn't exist yet)
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        user_id: user.id,
+        first_name: firstName.trim() || null,
+        last_name: lastName.trim() || null,
+        company_name: providerType === "company" ? businessName.trim() || null : null,
+        display_name: providerType === "company"
+          ? businessName.trim() || null
+          : firstName.trim() ? `${firstName.trim()} ${lastName.trim()}`.trim() : null,
+        address: businessAddress.trim() || null,
+      }, { onConflict: "user_id" });
+      if (profileError) throw profileError;
 
       await refreshProfile();
       onComplete();
     } catch (err) {
-      setError("Failed to save. Please try again.");
+      const pgErr = err as { message?: string };
+      setError(pgErr?.message ?? "Failed to save. Please try again.");
       console.error(err);
     } finally {
       setSaving(false);
