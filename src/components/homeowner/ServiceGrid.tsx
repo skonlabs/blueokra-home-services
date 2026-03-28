@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 
 const services = [
@@ -18,9 +19,9 @@ interface ServiceGridProps {
   onSelect: (serviceId: string) => void;
 }
 
-const ServiceGrid = ({ onSelect }: ServiceGridProps) => {
+const ServiceGrid = forwardRef<HTMLDivElement, ServiceGridProps>(({ onSelect }, ref) => {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div ref={ref} className="grid grid-cols-2 gap-3">
       {services.map((service, i) => (
         <motion.button
           key={service.id}
@@ -39,6 +40,7 @@ const ServiceGrid = ({ onSelect }: ServiceGridProps) => {
       ))}
     </div>
   );
-};
+});
+ServiceGrid.displayName = "ServiceGrid";
 
 export default ServiceGrid;
