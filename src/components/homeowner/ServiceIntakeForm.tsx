@@ -20,7 +20,7 @@ function ChipRow<T extends string>({
   label: string;
   options: { value: T; label: string }[];
   value: T | undefined;
-  onChange: (v: T) => void;
+  onChange: React.Dispatch<React.SetStateAction<T>> | ((v: T) => void);
 }) {
   return (
     <div className="space-y-1.5">
