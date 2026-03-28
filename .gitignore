@@ -1,5 +1,6 @@
-# Supabase Edge Function local secrets
+# Supabase
 supabase/functions/.env
+supabase/.temp/
 
 # Logs
 logs
