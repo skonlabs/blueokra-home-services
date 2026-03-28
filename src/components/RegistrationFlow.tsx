@@ -11,14 +11,14 @@ interface RegistrationFlowProps {
 }
 
 const AVAILABLE_SERVICES = [
-  "Lawn Care",
-  "House Cleaning",
-  "Gutter Cleaning",
-  "Roof Cleaning",
-  "Pressure Washing",
-  "Duct Cleaning",
-  "Backwater Testing",
-  "Fence Installation",
+  { name: "Lawn Care", description: "Mowing, trimming, edging, fertilizing, and seasonal yard clean-ups" },
+  { name: "House Cleaning", description: "Deep cleaning, recurring maintenance, move-in/move-out cleans" },
+  { name: "Gutter Cleaning", description: "Debris removal, downspout flushing, gutter guard installation" },
+  { name: "Roof Cleaning", description: "Moss & algae treatment, debris removal, soft washing" },
+  { name: "Pressure Washing", description: "Driveways, siding, decks, patios, and concrete surfaces" },
+  { name: "Duct Cleaning", description: "HVAC duct cleaning, dryer vent cleaning, air quality improvement" },
+  { name: "Backwater Testing", description: "Valve testing, certification, repair & compliance inspections" },
+  { name: "Fence Installation", description: "Wood, vinyl & chain-link fencing, repairs, staining & sealing" },
 ];
 
 const inputCls =
@@ -53,6 +53,8 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
   const [licenseNumber, setLicenseNumber] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
+
+  const [expandedService, setExpandedService] = useState<string | null>(null);
 
   const toggleService = (s: string) => {
     setSelectedServices(prev =>
@@ -386,7 +388,11 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                     {/* Business address */}
                     <div>
                       <label className="block text-xs text-muted-foreground mb-1.5">Business address</label>
-                      <input className={inputCls} placeholder="123 Main St, Seattle, WA 98101" value={businessAddress} onChange={e => setBusinessAddress(e.target.value)} />
+                      <AddressInput
+                        value={businessAddress}
+                        onChange={(addr) => setBusinessAddress(addr)}
+                        placeholder="Start typing your business address…"
+                      />
                     </div>
 
                     <div className="flex gap-2">
@@ -411,20 +417,37 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                     </div>
                     <div className="space-y-2">
                       {AVAILABLE_SERVICES.map(s => {
-                        const checked = selectedServices.includes(s);
+                        const checked = selectedServices.includes(s.name);
+                        const expanded = expandedService === s.name;
                         return (
-                          <button
-                            key={s}
-                            onClick={() => toggleService(s)}
-                            className={`w-full flex items-center gap-3 p-3.5 rounded-xl border text-sm font-medium transition-all ${
-                              checked ? "bg-primary/10 border-primary text-primary" : "bg-card border-border text-foreground"
-                            }`}
-                          >
-                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${checked ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
-                              {checked && <span className="text-primary-foreground text-[10px] font-bold">✓</span>}
+                          <div key={s.name} className={`rounded-xl border transition-all ${checked ? "bg-primary/10 border-primary" : "bg-card border-border"}`}>
+                            <div className="flex items-center gap-3 p-3.5">
+                              <button
+                                onClick={() => toggleService(s.name)}
+                                className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0"
+                                style={{ borderColor: checked ? "hsl(var(--primary))" : undefined, backgroundColor: checked ? "hsl(var(--primary))" : undefined }}
+                              >
+                                {checked && <Check className="w-3 h-3 text-primary-foreground" />}
+                              </button>
+                              <button
+                                onClick={() => setExpandedService(expanded ? null : s.name)}
+                                className={`flex-1 text-left text-sm font-medium ${checked ? "text-primary" : "text-foreground"}`}
+                              >
+                                {s.name}
+                              </button>
+                              <button
+                                onClick={() => setExpandedService(expanded ? null : s.name)}
+                                className="text-muted-foreground shrink-0"
+                              >
+                                <ChevronRight className={`w-4 h-4 transition-transform ${expanded ? "rotate-90" : ""}`} />
+                              </button>
                             </div>
-                            {s}
-                          </button>
+                            {expanded && (
+                              <div className="px-3.5 pb-3 pt-0">
+                                <p className="text-xs text-muted-foreground leading-relaxed">{s.description}</p>
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
