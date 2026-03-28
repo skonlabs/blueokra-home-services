@@ -54,7 +54,7 @@ const statusLabels: Record<BookingStatus, string> = {
 
 const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: BookingHistoryProps) => {
   const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "completed">("all");
-  const { data: rawBookings, isLoading } = useBookings();
+  const { data: rawBookings, isLoading, error: bookingsError } = useBookings();
 
   const bookings: Booking[] = (rawBookings || []).map((b) => ({
     id: b.id,
@@ -84,6 +84,12 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
           </button>
         ))}
       </div>
+      {bookingsError && (
+        <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
+          <p className="text-xs font-semibold text-destructive mb-1">Failed to load bookings — copy and send to support:</p>
+          <p className="text-xs text-destructive font-mono break-all">{JSON.stringify(bookingsError)}</p>
+        </div>
+      )}
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
       ) : filtered.length === 0 ? (

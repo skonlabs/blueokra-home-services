@@ -17,15 +17,15 @@ export const useBookings = () => {
           booking_appointment (
             id, appointment_date, appointment_status, provider_user_id,
             customer_status, provider_status
-          ),
-          booking_assignment (
-            provider_user_id, provider_quote_amount
           )
         `)
         .eq("customer_user_id", user!.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("useBookings query failed:", JSON.stringify(error, null, 2));
+        throw error;
+      }
       return data;
     },
   });
