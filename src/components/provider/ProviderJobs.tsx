@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, Loader2, MessageSquare, Inbox } from "lucide-react";
+import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useProviderJobs } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -9,18 +10,13 @@ import { format } from "date-fns";
 export interface Job {
   id: string;
   service: string;
-  icon: string;
+  serviceType: string;
   customer: string;
   address: string;
   date: string;
   price: string;
   status: string;
 }
-
-const serviceIcons: Record<string, string> = {
-  lawn: "🌿", hvac: "❄️", plumbing: "🔧", pressure: "💧",
-  roof: "🏠", electrical: "⚡", handyman: "🛠️",
-};
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -40,7 +36,7 @@ const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
     return {
       id: j.id,
       service: service?.package_name || service?.service_type || "Service",
-      icon: serviceIcons[service?.service_type] || "🔧",
+      serviceType: service?.service_type || "lawn",
       customer: "Customer",
       address: "123 Main St",
       date: (() => { try { const d = new Date(j.appointment_date); return isNaN(d.getTime()) ? "N/A" : format(d, "MMM d, h:mm a"); } catch { return "N/A"; } })(),
@@ -141,7 +137,7 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
       className="bg-card rounded-2xl border border-border p-4 space-y-3">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{job.icon}</span>
+          <ServiceIcon serviceType={job.serviceType} size="sm" />
           <div>
             <p className="font-semibold text-sm text-foreground">{job.service}</p>
             <p className="text-xs text-muted-foreground">{job.customer}</p>

@@ -1,15 +1,16 @@
 import { forwardRef } from "react";
 import { motion } from "framer-motion";
+import { Leaf, SprayCan, Warehouse, Home, Droplets, Wind, Wrench, Fence } from "lucide-react";
 
 const services = [
-  { id: "lawn", name: "Lawn & Garden", icon: "🌿", description: "Mowing, trimming, landscaping", color: "bg-okra-50 border-okra-100" },
-  { id: "house_cleaning", name: "House Cleaning", icon: "🏠", description: "Deep clean, recurring, move-out", color: "bg-blue-50 border-blue-100" },
-  { id: "gutter", name: "Gutter Cleaning", icon: "🏗️", description: "Cleaning, guards, repairs", color: "bg-warm-50 border-warm-100" },
-  { id: "roof", name: "Roof Cleaning", icon: "🏠", description: "Moss, debris, gutters", color: "bg-warm-50 border-warm-100" },
-  { id: "pressure", name: "Pressure Wash", icon: "💧", description: "Driveways, siding, decks", color: "bg-blue-50 border-blue-100" },
-  { id: "duct", name: "Duct Cleaning", icon: "🌬️", description: "Vents, dryer ducts, air quality", color: "bg-blue-50 border-blue-100" },
-  { id: "backwater", name: "Backwater Testing", icon: "🔧", description: "Testing, repair, certification", color: "bg-okra-50 border-okra-100" },
-  { id: "fence", name: "Fence Installation", icon: "🏗️", description: "Install, repair, coating", color: "bg-okra-50 border-okra-100" },
+  { id: "lawn", name: "Lawn & Garden", icon: Leaf, description: "Mowing, trimming, landscaping", color: "bg-okra-50 border-okra-100", iconColor: "text-secondary" },
+  { id: "house_cleaning", name: "House Cleaning", icon: SprayCan, description: "Deep clean, recurring, move-out", color: "bg-blue-50 border-blue-100", iconColor: "text-primary" },
+  { id: "gutter", name: "Gutter Cleaning", icon: Warehouse, description: "Cleaning, guards, repairs", color: "bg-warm-50 border-warm-100", iconColor: "text-accent" },
+  { id: "roof", name: "Roof Cleaning", icon: Home, description: "Moss, debris, gutters", color: "bg-warm-50 border-warm-100", iconColor: "text-accent" },
+  { id: "pressure", name: "Pressure Wash", icon: Droplets, description: "Driveways, siding, decks", color: "bg-blue-50 border-blue-100", iconColor: "text-primary" },
+  { id: "duct", name: "Duct Cleaning", icon: Wind, description: "Vents, dryer ducts, air quality", color: "bg-blue-50 border-blue-100", iconColor: "text-primary" },
+  { id: "backwater", name: "Backwater Testing", icon: Wrench, description: "Testing, repair, certification", color: "bg-okra-50 border-okra-100", iconColor: "text-secondary" },
+  { id: "fence", name: "Fence Installation", icon: Fence, description: "Install, repair, coating", color: "bg-okra-50 border-okra-100", iconColor: "text-secondary" },
 ];
 
 export const getServiceById = (id: string) => services.find((s) => s.id === id);
@@ -31,7 +32,9 @@ const ServiceGrid = forwardRef<HTMLDivElement, ServiceGridProps>(({ onSelect }, 
           onClick={() => onSelect(service.id)}
           className={`flex flex-col items-start gap-2 p-4 rounded-2xl border ${service.color} text-left service-card-hover active:scale-[0.97] transition-transform`}
         >
-          <span className="text-2xl">{service.icon}</span>
+          <div className={`w-9 h-9 rounded-xl bg-card/60 flex items-center justify-center ${service.iconColor}`}>
+            <service.icon className="w-5 h-5" />
+          </div>
           <div>
             <p className="font-semibold text-sm text-foreground">{service.name}</p>
             <p className="text-xs text-muted-foreground leading-tight">{service.description}</p>

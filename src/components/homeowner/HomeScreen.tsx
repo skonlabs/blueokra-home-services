@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun, Wind, Droplets } from "lucide-react";
 import ServiceGrid from "./ServiceGrid";
+import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useBookings } from "@/hooks/useBookings";
 import { format } from "date-fns";
 
@@ -12,11 +13,6 @@ interface HomeScreenProps {
   onBookAgain: () => void;
   onRebook: (serviceId: string) => void;
 }
-
-const serviceIcons: Record<string, string> = {
-  lawn: "🌿", house_cleaning: "🏠", gutter: "🏗️", roof: "🏠",
-  pressure: "💧", duct: "🌬️", backwater: "🔧", fence: "🏗️",
-};
 
 // Dynamic seasonal picks based on current month
 function getSeasonalRecs() {
@@ -69,7 +65,6 @@ const HomeScreen = ({
     try {
       const apptDate = b.booking_appointment?.[0]?.appointment_date;
       if (apptDate) {
-        // appointment_date may be date-only (YYYY-MM-DD) — append noon to avoid TZ issues
         const d = new Date(apptDate.length === 10 ? apptDate + "T12:00:00" : apptDate);
         if (!isNaN(d.getTime())) dateStr = format(d, "MMM d");
       } else {
@@ -82,7 +77,6 @@ const HomeScreen = ({
       id: b.id,
       serviceType: b.service_type,
       service: b.package_name || b.service_type,
-      icon: serviceIcons[b.service_type] || "🔧",
       date: dateStr,
       price: b.revenue ? `$${b.revenue}` : "TBD",
       status: b.booking_status,
@@ -143,7 +137,7 @@ const HomeScreen = ({
           <div className="space-y-2">
             {recentBookings.map((booking) => (
               <div key={booking.id} className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
-                <span className="text-xl">{booking.icon}</span>
+                <ServiceIcon serviceType={booking.serviceType} size="sm" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">{booking.service}</p>
                   <p className="text-xs text-muted-foreground">{booking.date} · {booking.price}</p>
