@@ -86,7 +86,7 @@ const NotificationsDrawer = forwardRef<HTMLDivElement, NotificationsDrawerProps>
         <div className="fixed inset-0 z-50 flex items-end justify-center">
           {/* Overlay */}
           <motion.div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-foreground/50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -155,7 +155,7 @@ const NotificationsDrawer = forwardRef<HTMLDivElement, NotificationsDrawerProps>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       <span className="text-[11px] text-muted-foreground">{notification.time}</span>
                       {notification.unread && !readIds.has(notification.id) && (
-                        <span className="w-2 h-2 bg-blue-500 rounded-full" />
+                        <span className="w-2 h-2 bg-primary rounded-full" />
                       )}
                     </div>
                   </button>
