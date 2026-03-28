@@ -64,17 +64,30 @@ const HomeScreen = ({
   const seasonalRecs = getSeasonalRecs();
 
   // Show last 2 bookings from DB, fall back to empty
-  const recentBookings = (rawBookings || []).slice(0, 2).map(b => ({
-    id: b.id,
-    serviceType: b.service_type,
-    service: b.package_name || b.service_type,
-    icon: serviceIcons[b.service_type] || "🔧",
-    date: b.booking_appointment?.[0]?.appointment_date
-      ? format(new Date(b.booking_appointment[0].appointment_date + "T12:00:00"), "MMM d")
-      : format(new Date(b.created_at), "MMM d"),
-    price: b.revenue ? `$${b.revenue}` : "TBD",
-    status: b.booking_status,
-  }));
+  const recentBookings = (rawBookings || []).slice(0, 2).map(b => {
+    let dateStr = "N/A";
+    try {
+      const apptDate = b.booking_appointment?.[0]?.appointment_date;
+      if (apptDate) {
+        // appointment_date may be date-only (YYYY-MM-DD) — append noon to avoid TZ issues
+        const d = new Date(apptDate.length === 10 ? apptDate + "T12:00:00" : apptDate);
+        if (!isNaN(d.getTime())) dateStr = format(d, "MMM d");
+      } else {
+        const d = new Date(b.created_at);
+        if (!isNaN(d.getTime())) dateStr = format(d, "MMM d");
+      }
+    } catch { /* keep "N/A" */ }
+
+    return {
+      id: b.id,
+      serviceType: b.service_type,
+      service: b.package_name || b.service_type,
+      icon: serviceIcons[b.service_type] || "🔧",
+      date: dateStr,
+      price: b.revenue ? `$${b.revenue}` : "TBD",
+      status: b.booking_status,
+    };
+  });
 
   return (
     <div className="px-4 pt-4 pb-24">
