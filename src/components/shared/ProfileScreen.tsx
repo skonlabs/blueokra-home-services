@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2 } from "lucide-react";
+import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2, Wrench } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -80,7 +80,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
       {/* Avatar + name */}
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <span className="text-2xl">{isProvider ? "👷" : "👤"}</span>
+          {isProvider ? <Wrench className="w-7 h-7 text-primary" /> : <User className="w-7 h-7 text-primary" />}
         </div>
         <div>
           <h2 className="font-display text-lg font-bold text-foreground">{shownName}</h2>

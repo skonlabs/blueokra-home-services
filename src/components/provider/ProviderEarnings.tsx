@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { DollarSign, TrendingUp, Calendar, ArrowUpRight } from "lucide-react";
+import { DollarSign, TrendingUp, Calendar, ArrowUpRight, Trophy, Star } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,7 +54,7 @@ const ProviderEarnings = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 flex items-center gap-2"
         >
-          <span className="text-lg">🏆</span>
+          <Trophy className="w-5 h-5 text-amber-600" />
           <p className="text-sm font-semibold text-amber-700 font-display">Top Provider This Week</p>
         </motion.div>
       )}
@@ -97,7 +97,7 @@ const ProviderEarnings = () => {
         </div>
         <div className="bg-card rounded-xl border border-border p-3 text-center">
           <p className="text-xs text-muted-foreground">Rating</p>
-          <p className="text-lg font-bold text-foreground">4.9⭐</p>
+          <p className="text-lg font-bold text-foreground flex items-center gap-1">4.9 <Star className="w-4 h-4 text-amber-500 fill-amber-500" /></p>
         </div>
       </div>
 
