@@ -23,7 +23,7 @@ const AVAILABLE_SERVICES = [
 const inputCls =
   "w-full bg-muted rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 border border-transparent";
 
-const RegistrationFlow = ({ onComplete }: RegistrationFlowProps) => {
+const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ onComplete }, ref) => {
   const { user, refreshProfile } = useAuth();
   const [step, setStep] = useState<"role" | "provider-details">("role");
   const [role, setRole] = useState<"homeowner" | "provider" | null>(null);
@@ -416,6 +416,7 @@ const RegistrationFlow = ({ onComplete }: RegistrationFlowProps) => {
       </AnimatePresence>
     </div>
   );
-};
+});
+RegistrationFlow.displayName = "RegistrationFlow";
 
 export default RegistrationFlow;
