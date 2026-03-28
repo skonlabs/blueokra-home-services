@@ -246,7 +246,7 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
       </AnimatePresence>
     </div>
   );
-};
+});
 
 // Simple clipboard empty icon using Lucide
 const ClipboardEmpty = () => (
