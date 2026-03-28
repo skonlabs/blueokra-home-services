@@ -20,7 +20,7 @@ function ChipRow<T extends string>({
   label: string;
   options: { value: T; label: string }[];
   value: T | undefined;
-  onChange: (v: T) => void;
+  onChange: (v: string) => void;
 }) {
   return (
     <div className="space-y-1.5">

@@ -167,7 +167,7 @@ const AddressInput = ({ value, onChange, placeholder, hasError }: AddressInputPr
     }
     setWaitlistError("");
     try {
-      await supabase.from("waitlist" as never).insert({ email: waitlistEmail, state: "other" });
+      await supabase.from("waitlist" as never).insert([{ email: waitlistEmail, state: "other" }] as never);
     } catch {
       // Table may not exist yet — still show success to user
     }
