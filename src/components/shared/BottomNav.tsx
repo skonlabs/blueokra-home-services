@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Home, History, Briefcase, User, Search } from "lucide-react";
 
 interface BottomNavProps {
@@ -6,7 +7,7 @@ interface BottomNavProps {
   mode: "homeowner" | "provider";
 }
 
-const BottomNav = ({ active, onNavigate, mode }: BottomNavProps) => {
+const BottomNav = forwardRef<HTMLDivElement, BottomNavProps>(({ active, onNavigate, mode }, ref) => {
   const homeownerItems = [
     { id: "home", icon: Home, label: "Home" },
     { id: "bookings", icon: History, label: "Bookings" },
@@ -24,7 +25,7 @@ const BottomNav = ({ active, onNavigate, mode }: BottomNavProps) => {
   const items = mode === "provider" ? providerItems : homeownerItems;
 
   return (
-    <div className="sticky bottom-0 bg-card border-t border-border px-2 pb-6 pt-2 z-50">
+    <div ref={ref} className="sticky bottom-0 bg-card border-t border-border px-2 pb-6 pt-2 z-50">
       <div className="flex justify-around">
         {items.map((item) => (
           <button
@@ -41,6 +42,7 @@ const BottomNav = ({ active, onNavigate, mode }: BottomNavProps) => {
       </div>
     </div>
   );
-};
+});
+BottomNav.displayName = "BottomNav";
 
 export default BottomNav;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home, Wrench, Building2, User, ChevronRight, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,7 @@ const AVAILABLE_SERVICES = [
 const inputCls =
   "w-full bg-muted rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 border border-transparent";
 
-const RegistrationFlow = ({ onComplete }: RegistrationFlowProps) => {
+const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ onComplete }, ref) => {
   const { user, refreshProfile } = useAuth();
   const [step, setStep] = useState<"role" | "provider-details">("role");
   const [role, setRole] = useState<"homeowner" | "provider" | null>(null);
@@ -117,7 +117,7 @@ const RegistrationFlow = ({ onComplete }: RegistrationFlowProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col px-6 py-12">
+    <div ref={ref} className="min-h-screen bg-background flex flex-col px-6 py-12">
       <div className="flex items-center gap-2.5 mb-8">
         <img src={blueokraLogo} alt="BlueOkra" className="w-8 h-8" />
         <h1 className="font-display text-2xl font-bold text-gradient-primary">BlueOkra<sup className="text-xs font-normal align-super text-primary">®</sup></h1>
@@ -416,6 +416,7 @@ const RegistrationFlow = ({ onComplete }: RegistrationFlowProps) => {
       </AnimatePresence>
     </div>
   );
-};
+});
+RegistrationFlow.displayName = "RegistrationFlow";
 
 export default RegistrationFlow;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Check, Calendar, Leaf, Star, X } from "lucide-react";
 
@@ -75,11 +75,12 @@ const iconBgMap: Record<NotificationType, string> = {
   loyalty: "bg-warm-50 text-warm-500",
 };
 
-const NotificationsDrawer = ({ open, onClose, onPaymentAction }: NotificationsDrawerProps) => {
+const NotificationsDrawer = forwardRef<HTMLDivElement, NotificationsDrawerProps>(({ open, onClose, onPaymentAction }, ref) => {
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const markAllRead = () => setReadIds(new Set(notifications.map((n) => n.id)));
 
   return (
+    <div ref={ref}>
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
@@ -165,7 +166,9 @@ const NotificationsDrawer = ({ open, onClose, onPaymentAction }: NotificationsDr
         </div>
       )}
     </AnimatePresence>
+    </div>
   );
-};
+});
+NotificationsDrawer.displayName = "NotificationsDrawer";
 
 export default NotificationsDrawer;
