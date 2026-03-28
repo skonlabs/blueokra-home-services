@@ -73,6 +73,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let initialSessionHandled = false;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -80,25 +82,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           // Use setTimeout to avoid potential deadlocks with Supabase client
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-            fetchRoles(session.user.id);
+          setTimeout(async () => {
+            await Promise.all([
+              fetchProfile(session.user.id),
+              fetchRoles(session.user.id),
+            ]);
+            setLoading(false);
           }, 0);
         } else {
           setProfile(null);
           setRoles([]);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
     // THEN check existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (initialSessionHandled) return;
+      initialSessionHandled = true;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
-        fetchRoles(session.user.id);
+        await Promise.all([
+          fetchProfile(session.user.id),
+          fetchRoles(session.user.id),
+        ]);
       }
       setLoading(false);
     });

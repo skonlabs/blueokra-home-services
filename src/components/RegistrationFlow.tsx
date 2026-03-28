@@ -54,12 +54,12 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
     setSaving(true);
     setError("");
     try {
-      // Insert homeowner role (ignore duplicate if already exists)
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: user.id,
-        role: "homeowner" as import("@/integrations/supabase/types").Database["public"]["Enums"]["app_role"],
+      // Insert homeowner role via RPC (bypasses RLS safely)
+      const { error: roleError } = await supabase.rpc("add_user_role", {
+        _user_id: user.id,
+        _role: "homeowner",
       });
-      if (roleError && roleError.code !== "23505") throw roleError;
+      if (roleError) throw roleError;
 
       // Upsert profile (works even if profile row doesn't exist yet)
       const { error: profileError } = await supabase.from("profiles").upsert({
@@ -85,12 +85,12 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
     setSaving(true);
     setError("");
     try {
-      // Insert provider role (ignore duplicate if already exists)
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: user.id,
-        role: "provider" as import("@/integrations/supabase/types").Database["public"]["Enums"]["app_role"],
+      // Insert provider role via RPC (bypasses RLS safely)
+      const { error: roleError } = await supabase.rpc("add_user_role", {
+        _user_id: user.id,
+        _role: "provider",
       });
-      if (roleError && roleError.code !== "23505") throw roleError;
+      if (roleError) throw roleError;
 
       // Upsert profile with provider details (works even if row doesn't exist yet)
       const { error: profileError } = await supabase.from("profiles").upsert({
