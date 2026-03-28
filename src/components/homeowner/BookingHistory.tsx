@@ -3,6 +3,7 @@ import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Loader2, Dow
 import { useState } from "react";
 import { useBookings } from "@/hooks/useBookings";
 import { format } from "date-fns";
+import ServiceIcon from "@/components/shared/ServiceIcon";
 
 interface BookingHistoryProps {
   onPaymentFlow: () => void;
@@ -17,7 +18,6 @@ interface Booking {
   id: string;
   serviceType: string;
   service: string;
-  icon: string;
   provider: string;
   provider_user_id?: string;
   date: string;
@@ -25,13 +25,6 @@ interface Booking {
   status: BookingStatus;
   rating?: number;
 }
-
-const serviceIcons: Record<string, string> = {
-  lawn: "🌿", hvac: "❄️", plumbing: "🔧", pressure: "💧",
-  roof: "🏠", electrical: "⚡", handyman: "🛠️",
-  house_cleaning: "🧹", gutter: "🏗️", backwater: "💦",
-  duct: "🌀", fence: "🪵",
-};
 
 const mapStatus = (status: string): BookingStatus => {
   switch (status) {
@@ -71,7 +64,6 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
     id: b.id,
     serviceType: b.service_type,
     service: b.package_name || b.service_type,
-    icon: serviceIcons[b.service_type] || "🔧",
     provider: "Assigned Provider",
     provider_user_id: b.booking_appointment?.[0]?.provider_user_id ?? undefined,
     date: b.booking_appointment?.[0]?.appointment_date
@@ -107,7 +99,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-2xl mb-2">📋</p>
+          <ClipboardEmpty />
           <p className="text-sm text-muted-foreground">No bookings yet</p>
           <p className="text-xs text-muted-foreground mt-1">Book a service from the home screen to get started</p>
         </div>
@@ -119,7 +111,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
               onClick={() => setSelectedId(booking.id)}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{booking.icon}</span>
+                  <ServiceIcon serviceType={booking.serviceType} size="sm" />
                   <div>
                     <p className="font-semibold text-sm text-foreground">{booking.service}</p>
                     <p className="text-xs text-muted-foreground">{booking.provider}</p>
@@ -147,7 +139,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
       <AnimatePresence>
         {selectedBooking && selectedRaw && (
           <>
-            <motion.div className="fixed inset-0 bg-black/40 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            <motion.div className="fixed inset-0 bg-foreground/40 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedId(null)} />
             <motion.div className="fixed bottom-0 inset-x-0 mx-auto w-full max-w-lg bg-card rounded-t-3xl z-50 max-h-[75vh] overflow-y-auto"
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 300 }}>
@@ -158,7 +150,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-2xl shrink-0">{selectedBooking.icon}</span>
+                    <ServiceIcon serviceType={selectedBooking.serviceType} size="sm" />
                     <div className="min-w-0">
                       <p className="font-bold text-sm text-foreground truncate">{selectedBooking.service}</p>
                       <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium inline-block mt-0.5 ${statusColors[selectedBooking.status]}`}>
@@ -255,5 +247,14 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
     </div>
   );
 };
+
+// Simple clipboard empty icon using Lucide
+const ClipboardEmpty = () => (
+  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mx-auto mb-2">
+    <svg className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+    </svg>
+  </div>
+);
 
 export default BookingHistory;
