@@ -59,6 +59,14 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: rawBookings, isLoading, error: bookingsError } = useBookings();
 
+  const safeFmt = (raw: string | null | undefined, fmt: string): string => {
+    if (!raw) return "N/A";
+    try {
+      const d = new Date(raw.length === 10 ? raw + "T12:00:00" : raw);
+      return isNaN(d.getTime()) ? "N/A" : format(d, fmt);
+    } catch { return "N/A"; }
+  };
+
   const bookings: Booking[] = (rawBookings || []).map((b) => ({
     id: b.id,
     serviceType: b.service_type,
@@ -67,8 +75,8 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
     provider: "Assigned Provider",
     provider_user_id: b.booking_appointment?.[0]?.provider_user_id ?? undefined,
     date: b.booking_appointment?.[0]?.appointment_date
-      ? format(new Date(b.booking_appointment[0].appointment_date), "MMM d, h:mm a")
-      : format(new Date(b.created_at), "MMM d"),
+      ? safeFmt(b.booking_appointment[0].appointment_date, "MMM d, h:mm a")
+      : safeFmt(b.created_at, "MMM d"),
     price: b.revenue ? `$${b.revenue}` : "TBD",
     status: mapStatus(b.booking_status),
   }));
