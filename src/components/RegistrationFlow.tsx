@@ -1,9 +1,10 @@
 import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, Wrench, Building2, User, ChevronRight, Check, Loader2, MapPin } from "lucide-react";
+import { Home, Wrench, Building2, User, ChevronRight, Check, Loader2, MapPin, PartyPopper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import blueokraLogo from "@/assets/blueokra-logo.svg";
+import AddressInput, { type AddressParts } from "@/components/homeowner/AddressInput";
 
 interface RegistrationFlowProps {
   onComplete: () => void;
@@ -260,45 +261,32 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1.5">Street address</label>
-                  <input
-                    className={inputCls}
-                    placeholder="123 Main St"
+                  <label className="block text-xs text-muted-foreground mb-1.5">Home address</label>
+                  <AddressInput
                     value={homeAddress}
-                    onChange={e => setHomeAddress(e.target.value)}
+                    onChange={(addr, _isWA, parts?: AddressParts) => {
+                      setHomeAddress(addr);
+                      if (parts) {
+                        setHomeCity(parts.city ?? "");
+                        setHomeState(parts.state ?? "");
+                        setHomeZip(parts.zip ?? "");
+                      }
+                    }}
+                    placeholder="Start typing your address…"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1.5">City</label>
-                    <input
-                      className={inputCls}
-                      placeholder="Seattle"
-                      value={homeCity}
-                      onChange={e => setHomeCity(e.target.value)}
-                    />
+                    <input className={inputCls} placeholder="Seattle" value={homeCity} onChange={e => setHomeCity(e.target.value)} />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1.5">State</label>
-                      <input
-                        className={inputCls}
-                        placeholder="WA"
-                        value={homeState}
-                        onChange={e => setHomeState(e.target.value)}
-                        maxLength={2}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1.5">ZIP</label>
-                      <input
-                        className={inputCls}
-                        placeholder="98101"
-                        value={homeZip}
-                        onChange={e => setHomeZip(e.target.value)}
-                        maxLength={10}
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5">State</label>
+                    <input className={inputCls} placeholder="WA" value={homeState} onChange={e => setHomeState(e.target.value)} maxLength={2} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5">ZIP</label>
+                    <input className={inputCls} placeholder="98101" value={homeZip} onChange={e => setHomeZip(e.target.value)} maxLength={10} />
                   </div>
                 </div>
               </div>
@@ -317,7 +305,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                   disabled={saving}
                   className="flex-1 bg-primary text-primary-foreground font-semibold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-transform"
                 >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Get Started 🎉"}
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Get Started</span><PartyPopper className="w-4 h-4" /></>}
                 </button>
               </div>
 
@@ -524,7 +512,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                         disabled={saving}
                         className="flex-1 bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                       >
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Launch My Profile 🎉"}
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Launch My Profile</span><PartyPopper className="w-4 h-4" /></>}
                       </button>
                     </div>
                   </motion.div>

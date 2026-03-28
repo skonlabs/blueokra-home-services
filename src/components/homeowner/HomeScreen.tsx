@@ -87,7 +87,7 @@ const HomeScreen = ({
     <div className="px-4 pt-4 pb-24">
       {/* Greeting */}
       <div className="mb-5">
-        <h1 className="font-display text-xl font-bold text-foreground">Welcome back! 👋</h1>
+        <h1 className="font-display text-xl font-bold text-foreground">Welcome back!</h1>
         <p className="text-sm text-muted-foreground mt-0.5">What can we help with today?</p>
       </div>
 
