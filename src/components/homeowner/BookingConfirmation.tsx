@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Calendar, MapPin, DollarSign, Clock, Shield, Loader2, AlertCircle, Bell } from "lucide-react";
+import { Check, Calendar, MapPin, DollarSign, Shield, Loader2, AlertCircle, Bell } from "lucide-react";
 import type { QuoteData } from "./AIIntakeChat";
 import type { ScheduleData } from "./QuoteView";
 import type { IntakeFormData } from "@/lib/quoteCalculator";
@@ -238,12 +238,17 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
         </div>
       </div>
 
-      <div className="bg-muted rounded-2xl p-4">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">
-            We will notify you as soon as the provider confirms the date and time.
-          </p>
+      <div className="bg-primary/10 rounded-2xl p-4 border border-primary/20">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center shrink-0">
+            <Bell className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <div className="text-left">
+            <p className="text-sm font-semibold text-foreground">You'll hear back soon!</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              We'll notify you as soon as the provider confirms your date and time.
+            </p>
+          </div>
         </div>
       </div>
 

@@ -32,11 +32,6 @@ type Screen =
   | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile"
   | "provider-home" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-profile";
 
-const getGreeting = () => {
-  const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-};
-
 const Index = () => {
   const { user, loading, roles, refreshProfile } = useAuth();
   const [screen, setScreen] = useState<Screen>("home");
