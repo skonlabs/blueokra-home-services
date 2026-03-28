@@ -1,6 +1,6 @@
 import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Check, Calendar, Leaf, Star, X } from "lucide-react";
+import { Bell, CircleCheck, Calendar, Leaf, Star, X, DollarSign } from "lucide-react";
 
 interface NotificationsDrawerProps {
   open: boolean;
@@ -61,16 +61,16 @@ const notifications: Notification[] = [
 
 const iconMap: Record<NotificationType, React.ElementType> = {
   info: Bell,
-  payment: Check,
-  confirmed: Calendar,
+  payment: DollarSign,
+  confirmed: CircleCheck,
   tip: Leaf,
   loyalty: Star,
 };
 
 const iconBgMap: Record<NotificationType, string> = {
-  info: "bg-blue-50 text-blue-500",
+  info: "bg-primary/10 text-primary",
   payment: "bg-okra-50 text-okra-600",
-  confirmed: "bg-primary/10 text-primary",
+  confirmed: "bg-secondary/10 text-secondary",
   tip: "bg-okra-50 text-okra-500",
   loyalty: "bg-warm-50 text-warm-500",
 };
