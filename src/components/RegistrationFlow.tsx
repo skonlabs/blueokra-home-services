@@ -72,9 +72,9 @@ const RegistrationFlow = ({ onComplete }: RegistrationFlowProps) => {
       await refreshProfile();
       onComplete();
     } catch (err) {
-      const pgErr = err as { message?: string };
-      setError(pgErr?.message ?? "Failed to save. Please try again.");
-      console.error(err);
+      const { handleMutationError } = await import("@/lib/errorHandler");
+      const friendly = await handleMutationError(err, "register_homeowner", user.id);
+      setError(friendly);
     } finally {
       setSaving(false);
     }
@@ -108,9 +108,9 @@ const RegistrationFlow = ({ onComplete }: RegistrationFlowProps) => {
       await refreshProfile();
       onComplete();
     } catch (err) {
-      const pgErr = err as { message?: string };
-      setError(pgErr?.message ?? "Failed to save. Please try again.");
-      console.error(err);
+      const { handleMutationError } = await import("@/lib/errorHandler");
+      const friendly = await handleMutationError(err, "register_provider", user.id);
+      setError(friendly);
     } finally {
       setSaving(false);
     }

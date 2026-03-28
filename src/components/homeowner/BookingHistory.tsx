@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Loader2, Download, X, MapPin, Calendar, Hash, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useBookings } from "@/hooks/useBookings";
-import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 interface BookingHistoryProps {
@@ -58,7 +57,6 @@ const statusLabels: Record<BookingStatus, string> = {
 const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: BookingHistoryProps) => {
   const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "completed">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { user } = useAuth();
   const { data: rawBookings, isLoading, error: bookingsError } = useBookings();
 
   const bookings: Booking[] = (rawBookings || []).map((b) => ({
@@ -94,8 +92,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
       </div>
       {bookingsError && (
         <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
-          <p className="text-xs font-semibold text-destructive mb-1">Failed to load bookings:</p>
-          <p className="text-xs text-destructive font-mono break-all">{JSON.stringify(bookingsError)}</p>
+          <p className="text-xs font-medium text-destructive">Unable to load bookings. Please try again later.</p>
         </div>
       )}
       {isLoading ? (
@@ -105,7 +102,6 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
           <p className="text-2xl mb-2">📋</p>
           <p className="text-sm text-muted-foreground">No bookings yet</p>
           <p className="text-xs text-muted-foreground mt-1">Book a service from the home screen to get started</p>
-          <p className="text-[10px] font-mono text-muted-foreground mt-3 bg-muted px-2 py-1 rounded break-all">uid: {user?.id ?? "not logged in"} · rows: {rawBookings?.length ?? 0}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -145,9 +141,9 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
           <>
             <motion.div className="fixed inset-0 bg-black/40 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedId(null)} />
-            <motion.div className="fixed bottom-0 inset-x-0 mx-auto w-full max-w-lg bg-card rounded-t-3xl z-50 max-h-[80vh] overflow-y-auto"
+            <motion.div className="fixed bottom-0 inset-x-0 mx-auto w-full max-w-lg bg-card rounded-t-3xl z-50 max-h-[75vh] overflow-y-auto"
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 300 }}>
-              <div className="px-4 pt-3 pb-6 space-y-4" style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
+              <div className="px-4 pt-3 pb-24 space-y-4">
                 {/* Handle */}
                 <div className="w-10 h-1 bg-muted rounded-full mx-auto shrink-0" />
 

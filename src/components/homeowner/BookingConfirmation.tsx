@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { handleMutationError } from "@/lib/errorHandler";
 
 interface BookingConfirmationProps {
   quote: QuoteData;
@@ -68,19 +69,17 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
             provider_amount: quote.providerPayout ?? null,
             platform_amount: quote.platformMargin ?? null,
           });
-          if (apptError) console.warn("Appointment insert warning:", apptError.message);
+          if (apptError) {
+            await handleMutationError(apptError, "insert_appointment", user.id);
+          }
         }
 
         // Refresh the booking history cache so the new booking appears immediately
         queryClient.invalidateQueries({ queryKey: ["bookings", user.id] });
 
       } catch (err) {
-        const pgErr = err as { message?: string; code?: string; details?: string; hint?: string };
-        const code = pgErr?.code ? ` [${pgErr.code}]` : "";
-        const hint = pgErr?.hint ? ` — ${pgErr.hint}` : "";
-        const msg = `${pgErr?.message ?? (err instanceof Error ? err.message : "Booking save failed")}${code}${hint}`;
-        setSaveError(msg);
-        console.error("Booking save failed — full error:", JSON.stringify(err, null, 2));
+        const friendly = await handleMutationError(err, "create_booking", user.id);
+        setSaveError(friendly);
       } finally {
         setSaving(false);
       }

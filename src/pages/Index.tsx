@@ -315,7 +315,10 @@ const Index = () => {
                 comments: comment || null,
                 reviewed_by: user.id,
               });
-              if (error) console.error("Review save failed:", error.message);
+              if (error) {
+                const { handleMutationError } = await import("@/lib/errorHandler");
+                await handleMutationError(error, "submit_review", user.id);
+              }
             }
             setReviewBooking(null);
           }}

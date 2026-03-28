@@ -56,9 +56,9 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 2500);
     } catch (err) {
-      const pgErr = err as { message?: string };
-      setProfileError(pgErr?.message ?? "Failed to save. Please try again.");
-      console.error(err);
+      const { handleMutationError } = await import("@/lib/errorHandler");
+      const friendly = await handleMutationError(err, "save_profile", user.id);
+      setProfileError(friendly);
     } finally {
       setSavingProfile(false);
     }

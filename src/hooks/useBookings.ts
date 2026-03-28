@@ -9,34 +9,21 @@ export const useBookings = () => {
     queryKey: ["bookings", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      console.log("[useBookings] querying for user:", user!.id);
-
-      // Step 1: query booking_service without join to isolate issues
       const { data: serviceData, error: serviceError } = await supabase
         .from("booking_service")
         .select("id, service_type, package_name, booking_status, created_at, frequency, notes, revenue, customizations, completed_at, customer_user_id")
         .eq("customer_user_id", user!.id)
         .order("created_at", { ascending: false });
 
-      console.log("[useBookings] booking_service result:", { count: serviceData?.length, serviceError, rows: serviceData });
-
-      if (serviceError) {
-        console.error("[useBookings] booking_service error:", JSON.stringify(serviceError, null, 2));
-        throw serviceError;
-      }
-
+      if (serviceError) throw serviceError;
       if (!serviceData?.length) return [];
 
-      // Step 2: fetch appointments separately to avoid join RLS issues
       const serviceIds = serviceData.map(s => s.id);
-      const { data: apptData, error: apptError } = await supabase
+      const { data: apptData } = await supabase
         .from("booking_appointment")
         .select("id, service_id, appointment_date, appointment_status, provider_user_id, customer_status, provider_status")
         .in("service_id", serviceIds);
 
-      console.log("[useBookings] booking_appointment result:", { count: apptData?.length, apptError });
-
-      // Merge appointments into bookings (ignore appointment errors — don't block bookings from showing)
       return serviceData.map(s => ({
         ...s,
         booking_appointment: apptData?.filter(a => a.service_id === s.id) ?? [],
@@ -52,7 +39,6 @@ export const useProviderJobs = () => {
     queryKey: ["provider-jobs", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      // Get appointments assigned to this provider
       const { data, error } = await supabase
         .from("booking_appointment")
         .select(`

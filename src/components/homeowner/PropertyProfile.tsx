@@ -64,9 +64,9 @@ const PropertyProfile = () => {
       setNewState("");
       setNewZip("");
     } catch (err) {
-      const pgErr = err as { message?: string };
-      setAddError(pgErr?.message ?? "Failed to save. Please try again.");
-      console.error(err);
+      const { handleMutationError } = await import("@/lib/errorHandler");
+      const friendly = await handleMutationError(err, "save_property", user.id);
+      setAddError(friendly);
     } finally {
       setAddSaving(false);
     }
@@ -105,8 +105,9 @@ const PropertyProfile = () => {
       }
       await queryClient.invalidateQueries({ queryKey: ["user-homes", user.id] });
     } catch (err) {
+      const { handleMutationError } = await import("@/lib/errorHandler");
+      await handleMutationError(err, "delete_property", user.id);
       setDeleteError("Failed to delete property.");
-      console.error(err);
     } finally {
       setDeletingId(null);
     }
