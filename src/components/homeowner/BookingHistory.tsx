@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Loader2, Download, X, MapPin, Calendar, Hash, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { useBookings } from "@/hooks/useBookings";
 import { format } from "date-fns";
 import ServiceIcon from "@/components/shared/ServiceIcon";
@@ -47,7 +47,7 @@ const statusLabels: Record<BookingStatus, string> = {
   upcoming: "Upcoming", in_progress: "In Progress", completed: "Completed", disputed: "Disputed",
 };
 
-const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: BookingHistoryProps) => {
+const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaymentFlow, onReview, onDispute, onRebook }, ref) => {
   const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "completed">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: rawBookings, isLoading, error: bookingsError } = useBookings();
@@ -246,7 +246,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
       </AnimatePresence>
     </div>
   );
-};
+});
 
 // Simple clipboard empty icon using Lucide
 const ClipboardEmpty = () => (
