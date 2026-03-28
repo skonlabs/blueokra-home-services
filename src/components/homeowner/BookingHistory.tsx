@@ -231,10 +231,12 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
                       <RotateCcw className="w-3.5 h-3.5" /> Rebook
                     </button>
                   )}
-                  <button onClick={() => { setSelectedId(null); onDispute(); }}
-                    className="w-11 bg-muted text-muted-foreground rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform py-3">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                  </button>
+                  {selectedBooking.status === "completed" && (
+                    <button onClick={() => { setSelectedId(null); onDispute(); }}
+                      className="w-11 bg-destructive/10 text-destructive rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform py-3">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
                 {selectedBooking.status === "completed" && (
                   <button onClick={() => alert("Receipt saved to device")} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
