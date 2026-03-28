@@ -16,7 +16,8 @@ const BottomNav = forwardRef<HTMLDivElement, BottomNavProps>(({ active, onNaviga
   ];
 
   const providerItems = [
-    { id: "provider-home", icon: Briefcase, label: "Jobs" },
+    { id: "provider-home", icon: Home, label: "Home" },
+    { id: "provider-jobs", icon: Briefcase, label: "Jobs" },
     { id: "provider-schedule", icon: CalendarDays, label: "Schedule" },
     { id: "provider-earnings", icon: Wallet, label: "Earnings" },
     { id: "provider-profile", icon: User, label: "Profile" },
