@@ -65,6 +65,8 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
             appointment_date: date,
             appointment_status: "pending",
             customer_amount: quote.low,
+            provider_amount: quote.providerPayout ?? null,
+            platform_amount: quote.platformMargin ?? null,
           });
           if (apptError) console.warn("Appointment insert warning:", apptError.message);
         }

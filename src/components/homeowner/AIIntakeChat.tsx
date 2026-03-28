@@ -38,6 +38,12 @@ export interface QuoteData {
   timeSlots: string[];       // available times for each date (e.g. "9:00 AM")
   frequency?: string;        // "weekly" | "biweekly" | etc. (undefined = one-time)
   recurringVisitPrice?: number; // price per visit from 2nd onwards (when different from first)
+  // Economics (computed from customer price tier)
+  providerPayout: number;    // what the provider receives
+  platformMargin: number;    // BlueOkra margin
+  marginPercent: number;     // margin as integer percent (20 | 25 | 30)
+  recurringProviderPayout?: number;  // provider payout for 2nd+ visits
+  recurringPlatformMargin?: number;  // margin for 2nd+ visits
 }
 
 // ---------------------------------------------------------------------------
