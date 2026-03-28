@@ -16,6 +16,7 @@ import DisputeFlow from "@/components/homeowner/DisputeFlow";
 import PropertyProfile from "@/components/homeowner/PropertyProfile";
 import NotificationsDrawer from "@/components/homeowner/NotificationsDrawer";
 import ReviewModal from "@/components/homeowner/ReviewModal";
+import ProviderHome from "@/components/provider/ProviderHome";
 import ProviderJobs from "@/components/provider/ProviderJobs";
 import ProviderCompletion from "@/components/provider/ProviderCompletion";
 import ProviderEarnings from "@/components/provider/ProviderEarnings";
