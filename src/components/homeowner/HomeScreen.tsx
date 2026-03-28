@@ -1,17 +1,14 @@
 import { motion } from "framer-motion";
-import { Bell, User, Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun, Wind, Droplets } from "lucide-react";
+import { Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun, Wind, Droplets } from "lucide-react";
 import ServiceGrid from "./ServiceGrid";
 import { useBookings } from "@/hooks/useBookings";
 import { format } from "date-fns";
-import blueokraLogo from "@/assets/blueokra-logo.svg";
 
 interface HomeScreenProps {
   onServiceSelect: (serviceId: string) => void;
   onOpenIntake: (context?: string) => void;
   onViewBookings: () => void;
   onViewProperty: () => void;
-  onOpenProfile: () => void;
-  onOpenNotifications: () => void;
   onBookAgain: () => void;
   onRebook: (serviceId: string) => void;
 }
@@ -60,8 +57,6 @@ const HomeScreen = ({
   onServiceSelect,
   onOpenIntake,
   onViewBookings,
-  onOpenProfile,
-  onOpenNotifications,
   onBookAgain,
   onRebook,
 }: HomeScreenProps) => {
@@ -82,34 +77,11 @@ const HomeScreen = ({
   }));
 
   return (
-    <div className="px-4 pt-12 pb-24">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-sm text-muted-foreground">Welcome back 👋</p>
-          <div className="flex items-center gap-2">
-            <img src={blueokraLogo} alt="BlueOkra" className="w-8 h-8" />
-            <h1 className="font-display text-2xl font-bold text-gradient-primary">
-              BlueOkra<sup className="text-xs font-normal align-super text-primary">®</sup>
-            </h1>
-            <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">beta</span>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={onOpenNotifications}
-            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground relative"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full border-2 border-background" />
-          </button>
-          <button
-            onClick={onOpenProfile}
-            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground"
-          >
-            <User className="w-4 h-4" />
-          </button>
-        </div>
+    <div className="px-4 pt-4 pb-24">
+      {/* Greeting */}
+      <div className="mb-5">
+        <h1 className="font-display text-xl font-bold text-foreground">Welcome back! 👋</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">What can we help with today?</p>
       </div>
 
       {/* Search / Quick input */}

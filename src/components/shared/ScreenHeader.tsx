@@ -1,91 +1,43 @@
 import { ArrowLeft } from "lucide-react";
-import { motion } from "framer-motion";
 import { ReactNode } from "react";
 import blueokraLogo from "@/assets/blueokra-logo.svg";
 
-interface RightAction {
-  icon: ReactNode;
-  onClick: () => void;
-}
-
 interface ScreenHeaderProps {
-  title: string;
-  subtitle?: string;
+  title?: string;
   onBack?: () => void;
-  /** Legacy: pass any ReactNode directly to the right side */
-  rightAction?: ReactNode | RightAction;
+  rightActions?: ReactNode;
 }
 
-/** Type guard to distinguish the new structured RightAction from a raw ReactNode */
-const isRightAction = (value: unknown): value is RightAction =>
-  typeof value === "object" &&
-  value !== null &&
-  "icon" in value &&
-  "onClick" in value &&
-  typeof (value as RightAction).onClick === "function";
+const ScreenHeader = ({ title, onBack, rightActions }: ScreenHeaderProps) => (
+  <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50">
+    {/* Always-visible brand bar */}
+    <div className="px-4 pt-12 pb-2.5 flex items-center justify-between">
+      <div className="flex items-center gap-1.5">
+        <img src={blueokraLogo} alt="BlueOkra" className="w-6 h-6" aria-hidden="true" />
+        <span className="font-display text-sm font-semibold tracking-tight text-gradient-primary">
+          BlueOkra<sup className="text-[8px] text-primary align-super">®</sup>
+        </span>
+        <span className="text-[9px] font-medium text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full leading-none ml-0.5">beta</span>
+      </div>
+      {rightActions && <div className="flex gap-2">{rightActions}</div>}
+    </div>
 
-/** Small BlueOkra wordmark shown when there is no back button */
-const BlueOkraLogo = () => (
-  <motion.div
-    initial={{ opacity: 0, x: -4 }}
-    animate={{ opacity: 1, x: 0 }}
-    transition={{ duration: 0.3 }}
-    className="flex items-center gap-1.5 select-none"
-    aria-label="BlueOkra"
-  >
-    <img src={blueokraLogo} alt="" className="w-6 h-6" aria-hidden="true" />
-    <span className="font-display text-sm font-semibold tracking-tight text-gradient-primary">
-      BlueOkra<sup className="text-[8px] text-primary">®</sup>
-    </span>
-  </motion.div>
-);
-
-const ScreenHeader = ({ title, subtitle, onBack, rightAction }: ScreenHeaderProps) => {
-  const showLogo = !onBack;
-
-  return (
-    <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50">
-      <div className="px-4 pt-12 pb-3 flex items-center gap-3">
-        {/* Left side: back button OR logo */}
-        {onBack ? (
+    {/* Optional page title bar */}
+    {title && (
+      <div className="px-4 pb-3 flex items-center gap-2 border-t border-border/30">
+        {onBack && (
           <button
             onClick={onBack}
-            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+            className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 active:scale-95 transition-transform"
             aria-label="Go back"
           >
-            <ArrowLeft className="w-4 h-4 text-foreground" />
+            <ArrowLeft className="w-3.5 h-3.5 text-foreground" />
           </button>
-        ) : (
-          showLogo && <BlueOkraLogo />
         )}
-
-        {/* Title block */}
-        <div className="flex-1 min-w-0">
-          <h2 className="font-display text-base font-semibold text-foreground truncate">
-            {title}
-          </h2>
-          {subtitle && (
-            <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
-          )}
-        </div>
-
-        {/* Right side */}
-        {rightAction && (
-          isRightAction(rightAction) ? (
-            <button
-              onClick={rightAction.onClick}
-              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
-              aria-label="Action"
-            >
-              {rightAction.icon}
-            </button>
-          ) : (
-            <>{rightAction}</>
-          )
-        )}
+        <h2 className="font-display text-base font-semibold text-foreground">{title}</h2>
       </div>
-    </div>
-  );
-};
+    )}
+  </div>
+);
 
 export default ScreenHeader;

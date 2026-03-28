@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Calendar, MapPin, DollarSign, Clock, Shield, Loader2, AlertCircle } from "lucide-react";
+import { Check, Calendar, MapPin, DollarSign, Clock, Shield, Loader2, AlertCircle, Bell } from "lucide-react";
 import type { QuoteData } from "./AIIntakeChat";
 import type { ScheduleData } from "./QuoteView";
 import type { IntakeFormData } from "@/lib/quoteCalculator";
@@ -97,11 +97,10 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
     ? [scheduleData.firstServiceDate]
     : [];
 
-  const displayTimes = scheduleData?.selectedTimes?.length
-    ? scheduleData.selectedTimes
-    : scheduleData?.firstServiceTimeSlots?.length
+  const displayTimes = scheduleData?.firstServiceTimeSlots?.length
     ? scheduleData.firstServiceTimeSlots
-    : [];
+    : scheduleData?.selectedTimes ?? [];
+  const hasPerDateSlots = !!(scheduleData?.dateTimeSlots && Object.keys(scheduleData.dateTimeSlots).length > 0);
 
   return (
     <motion.div
@@ -174,11 +173,22 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
                   ))}
                 </ul>
               )}
-              {displayTimes.length > 0 && (
+              {hasPerDateSlots ? (
+                <ul className="mt-1 space-y-0.5">
+                  {displayDates.map(d => {
+                    const slots = scheduleData?.dateTimeSlots?.[d];
+                    return slots?.length ? (
+                      <li key={d} className="text-xs text-muted-foreground">
+                        {new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}: {slots.join(", ")}
+                      </li>
+                    ) : null;
+                  })}
+                </ul>
+              ) : displayTimes.length > 0 ? (
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Preferred times: {displayTimes.join(", ")}
                 </p>
-              )}
+              ) : null}
               <p className="text-xs text-muted-foreground mt-0.5">
                 {quote.frequency ? `${quote.frequency} · recurring` : "One-time service"}
               </p>

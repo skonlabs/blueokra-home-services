@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, Loader2, MessageSquare, Inbox } from "lucide-react";
 import { useProviderJobs } from "@/hooks/useBookings";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -21,12 +22,18 @@ const serviceIcons: Record<string, string> = {
   roof: "🏠", electrical: "⚡", handyman: "🛠️",
 };
 
+const getGreeting = () => {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+};
+
 interface ProviderJobsProps {
   onCompleteJob: (job: Job) => void;
 }
 
 const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
   const { data: rawJobs, isLoading } = useProviderJobs();
+  const { user } = useAuth();
 
   const jobs: Job[] = (rawJobs || []).map((j) => {
     const service = j.booking_service as any;
@@ -68,6 +75,21 @@ const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
 
   return (
     <div className="px-4 py-4 pb-24 space-y-5">
+      {/* Provider greeting */}
+      <div className="bg-primary px-4 pt-3 pb-4 mb-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-primary-foreground/70 text-sm">{getGreeting()}</p>
+            <p className="font-display text-lg font-bold text-primary-foreground">
+              {user?.email?.split("@")[0] || "Provider"}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-primary-foreground/70 text-xs">Today's earnings</p>
+            <p className="text-primary-foreground font-bold text-lg">$0</p>
+          </div>
+        </div>
+      </div>
       {pendingJobs.length > 0 && (
         <div>
           <h3 className="font-display text-sm font-semibold text-foreground mb-2 flex items-center gap-2">

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, Clock, ChevronRight, ChevronLeft, Info, AlertTriangle, Check, MapPin } from "lucide-react";
+import { Shield, Clock, ChevronRight, ChevronLeft, AlertTriangle, Check, MapPin } from "lucide-react";
 import type { QuoteData } from "./AIIntakeChat";
 
 // ---------------------------------------------------------------------------
@@ -8,9 +8,10 @@ import type { QuoteData } from "./AIIntakeChat";
 // ---------------------------------------------------------------------------
 
 export interface ScheduleData {
-  // One-time: multiple preferred dates and shared preferred times
+  // One-time: multiple preferred dates with per-date time slots
   selectedDates?: string[];
-  selectedTimes?: string[];
+  selectedTimes?: string[];           // legacy / fallback
+  dateTimeSlots?: Record<string, string[]>; // per-date time slots
   // Recurring
   firstServiceDate?: string;
   firstServiceTimeSlots?: string[];
@@ -65,7 +66,7 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
     quote.slots[0] ? new Date(quote.slots[0] + "T12:00:00") : new Date()
   );
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+  const [dateTimeSlotsMap, setDateTimeSlotsMap] = useState<Record<string, string[]>>({});
 
   // Recurring scheduling
   const [firstServiceDate, setFirstServiceDate] = useState("");
@@ -79,10 +80,12 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
     );
   };
 
-  const toggleTimeSlot = (slot: string) => {
-    setSelectedTimes(prev =>
-      prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]
-    );
+  const toggleDateTimeSlot = (date: string, slot: string) => {
+    setDateTimeSlotsMap(prev => {
+      const cur = prev[date] ?? [];
+      const next = cur.includes(slot) ? cur.filter(s => s !== slot) : [...cur, slot];
+      return { ...prev, [date]: next };
+    });
   };
 
   const toggleRecurringTimeSlot = (slot: string) => {
@@ -129,7 +132,7 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
     if (isRecurring) {
       onBook({ firstServiceDate, firstServiceTimeSlots, recurringEndMonth, recurringEndYear });
     } else {
-      onBook({ selectedDates, selectedTimes });
+      onBook({ selectedDates, dateTimeSlots: dateTimeSlotsMap });
     }
   };
 
@@ -218,25 +221,24 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
         </div>
       </div>
 
-      {/* What could change */}
-      {quote.factors.length > 0 && (
-        <div className="bg-warm-50 rounded-2xl p-4 border border-warm-100">
-          <div className="flex items-start gap-2">
-            <Info className="w-4 h-4 text-warm-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">What could change the price?</p>
-              <ul className="mt-1 space-y-0.5">
-                {quote.factors.map((f, i) => (
-                  <li key={i} className="text-xs text-muted-foreground flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Why book now */}
+      <div className="bg-secondary/5 rounded-2xl p-4 border border-secondary/20">
+        <p className="text-sm font-semibold text-foreground mb-2.5">What's included</p>
+        <ul className="space-y-2">
+          {[
+            "Background-checked, vetted provider",
+            "Pay only after the job is done right",
+            "Dispute protection — we've got your back",
+            "Service satisfaction guarantee",
+            "Full invoice & receipt on file",
+          ].map((item) => (
+            <li key={item} className="flex items-center gap-2 text-xs text-foreground">
+              <Check className="w-3.5 h-3.5 text-secondary shrink-0" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
 
       {/* Scheduling — calendar (one-time) */}
       {!isRecurring && (
@@ -303,40 +305,39 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
             })}
           </div>
 
-          {/* Selected dates summary */}
+          {/* Per-date time slot selection */}
           {selectedDates.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1">
-              {selectedDates.sort().map(d => (
-                <span
-                  key={d}
-                  className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium"
-                >
-                  {formatDate(d)}
-                </span>
+            <div className="mt-3 border-t border-border pt-3 space-y-4">
+              <p className="text-xs font-medium text-muted-foreground">Select preferred time slots for each date</p>
+              {selectedDates.sort().map(date => (
+                <div key={date}>
+                  <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
+                    {formatDate(date)}
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {TIME_SLOT_OPTIONS.map((slot) => {
+                      const isSelected = dateTimeSlotsMap[date]?.includes(slot);
+                      return (
+                        <button
+                          key={slot}
+                          onClick={() => toggleDateTimeSlot(date, slot)}
+                          className={`text-xs py-1.5 px-1 rounded-xl border transition-all flex items-center justify-center gap-1 ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-card text-foreground border-border hover:border-primary/50"
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3" />}
+                          {slot}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
           )}
-
-          {/* Preferred time slots */}
-          <div className="mt-4 border-t border-border pt-3 space-y-2">
-            <p className="text-xs text-muted-foreground font-medium">Preferred time slots (optional)</p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {TIME_SLOT_OPTIONS.map((time) => (
-                <button
-                  key={time}
-                  onClick={() => toggleTimeSlot(time)}
-                  className={`text-xs py-1.5 px-1 rounded-xl border transition-all flex items-center justify-center gap-1 ${
-                    selectedTimes.includes(time)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card text-foreground border-border hover:border-primary/50"
-                  }`}
-                >
-                  {selectedTimes.includes(time) && <Check className="w-3 h-3" />}
-                  {time}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 

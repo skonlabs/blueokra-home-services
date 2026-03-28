@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, Bell, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Auth from "./Auth";
@@ -153,27 +153,32 @@ const Index = () => {
 
   const headerConfig = getHeaderConfig();
 
+  // Always-visible header right actions: bell + profile
+  const headerRightActions = (
+    <div className="flex gap-2">
+      <button
+        onClick={() => setNotificationsOpen(true)}
+        className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground relative"
+      >
+        <Bell className="w-4 h-4" />
+        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full border-2 border-background" />
+      </button>
+      <button
+        onClick={() => navigate(isProvider ? "provider-profile" : "profile")}
+        className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground"
+      >
+        <User className="w-4 h-4" />
+      </button>
+    </div>
+  );
+
   return (
     <div className="max-w-md mx-auto min-h-screen bg-background flex flex-col relative">
-      {/* Provider top bar */}
-      {screen === "provider-home" && (
-        <div className="bg-primary px-4 pt-12 pb-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-primary-foreground/70 text-sm">{getGreeting()}</p>
-              <h1 className="font-display text-xl font-bold text-primary-foreground">
-                {user.phone || "Provider"}
-              </h1>
-            </div>
-            <div className="text-right">
-              <p className="text-primary-foreground/70 text-xs">Today's earnings</p>
-              <p className="text-primary-foreground font-bold text-lg">$0</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {headerConfig && <ScreenHeader {...headerConfig} />}
+      <ScreenHeader
+        title={headerConfig?.title}
+        onBack={headerConfig?.onBack}
+        rightActions={headerRightActions}
+      />
 
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
@@ -184,9 +189,7 @@ const Index = () => {
                 onOpenIntake={() => { setSelectedService(undefined); navigate("intake"); }}
                 onViewBookings={() => navigate("bookings")}
                 onViewProperty={() => navigate("property")}
-                onOpenNotifications={() => setNotificationsOpen(true)}
                 onBookAgain={() => navigate("bookings")}
-                onOpenProfile={() => navigate("profile")}
                 onRebook={(id) => { setSelectedService(id); navigate("intake"); }}
               />
             </motion.div>
