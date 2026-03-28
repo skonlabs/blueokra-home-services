@@ -64,9 +64,9 @@ const DisputeFlow = ({ onComplete }: DisputeFlowProps) => {
       if (error) throw error;
       setStep("submitted");
     } catch (err) {
-      const pgErr = err as { message?: string };
-      setSubmitError(pgErr?.message ?? "Failed to submit. Please try again.");
-      console.error(err);
+      const { handleMutationError } = await import("@/lib/errorHandler");
+      const friendly = await handleMutationError(err, "submit_dispute", user?.id);
+      setSubmitError(friendly);
     } finally {
       setSubmitting(false);
     }
