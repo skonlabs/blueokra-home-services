@@ -145,65 +145,68 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
           <>
             <motion.div className="fixed inset-0 bg-black/40 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedId(null)} />
-            <motion.div className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
-              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 300 }}>
-              <div className="p-5 space-y-5">
-                {/* Handle + header */}
-                <div className="w-10 h-1 bg-muted rounded-full mx-auto" />
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{selectedBooking.icon}</span>
-                    <div>
-                      <p className="font-bold text-base text-foreground">{selectedBooking.service}</p>
-                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${statusColors[selectedBooking.status]}`}>
+            <motion.div className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 max-h-[80vh] overflow-y-auto safe-bottom"
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              style={{ maxWidth: "100vw" }}>
+              <div className="px-4 pt-3 pb-6 space-y-4" style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
+                {/* Handle */}
+                <div className="w-10 h-1 bg-muted rounded-full mx-auto shrink-0" />
+
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-2xl shrink-0">{selectedBooking.icon}</span>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-foreground truncate">{selectedBooking.service}</p>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium inline-block mt-0.5 ${statusColors[selectedBooking.status]}`}>
                         {statusLabels[selectedBooking.status]}
                       </span>
                     </div>
                   </div>
-                  <button onClick={() => setSelectedId(null)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <button onClick={() => setSelectedId(null)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Details grid */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
+                {/* Details */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2.5 text-sm">
                     <Hash className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">Booking ID</span>
-                    <span className="ml-auto font-mono text-xs">BK{selectedRaw.id.replace(/-/g, "").slice(-8).toUpperCase()}</span>
+                    <span className="text-muted-foreground text-xs">Booking ID</span>
+                    <span className="ml-auto font-mono text-xs truncate max-w-[40%]">BK{selectedRaw.id.replace(/-/g, "").slice(-8).toUpperCase()}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-2.5 text-sm">
                     <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">Price</span>
-                    <span className="ml-auto font-semibold">{selectedBooking.price}</span>
+                    <span className="text-muted-foreground text-xs">Price</span>
+                    <span className="ml-auto font-semibold text-sm">{selectedBooking.price}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-2.5 text-sm">
                     <RefreshCw className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">Frequency</span>
-                    <span className="ml-auto capitalize">{selectedRaw.frequency || "One-time"}</span>
+                    <span className="text-muted-foreground text-xs">Frequency</span>
+                    <span className="ml-auto capitalize text-sm">{selectedRaw.frequency || "One-time"}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-2.5 text-sm">
                     <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">Booked on</span>
-                    <span className="ml-auto">{format(new Date(selectedRaw.created_at), "MMM d, yyyy")}</span>
+                    <span className="text-muted-foreground text-xs">Booked on</span>
+                    <span className="ml-auto text-sm">{format(new Date(selectedRaw.created_at), "MMM d, yyyy")}</span>
                   </div>
                   {selectedRaw.notes && (
-                    <div className="flex items-start gap-3 text-sm">
+                    <div className="flex items-start gap-2.5 text-sm">
                       <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <span className="text-muted-foreground">Address</span>
-                      <span className="ml-auto text-right max-w-[60%]">{selectedRaw.notes}</span>
+                      <span className="text-muted-foreground text-xs shrink-0">Address</span>
+                      <span className="ml-auto text-right text-xs leading-snug max-w-[55%] break-words">{selectedRaw.notes}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Appointments */}
                 {selectedRaw.booking_appointment?.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Appointments</p>
+                  <div className="space-y-1.5">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Appointments</p>
                     {selectedRaw.booking_appointment.map((appt: { id: string; appointment_date: string; appointment_status: string }) => (
-                      <div key={appt.id} className="flex items-center justify-between bg-muted rounded-xl px-3 py-2.5">
-                        <span className="text-sm">{format(new Date(appt.appointment_date), "EEE, MMM d, yyyy")}</span>
-                        <span className="text-xs text-muted-foreground capitalize">{appt.appointment_status}</span>
+                      <div key={appt.id} className="flex items-center justify-between bg-muted rounded-xl px-3 py-2">
+                        <span className="text-xs">{format(new Date(appt.appointment_date), "EEE, MMM d, yyyy")}</span>
+                        <span className="text-[11px] text-muted-foreground capitalize">{appt.appointment_status}</span>
                       </div>
                     ))}
                   </div>
@@ -213,25 +216,25 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
                 <div className="flex gap-2 pt-1">
                   {selectedBooking.status === "in_progress" && (
                     <button onClick={() => { setSelectedId(null); onPaymentFlow(); }}
-                      className="flex-1 bg-primary text-primary-foreground text-sm font-medium py-3 rounded-xl flex items-center justify-center gap-2 active:scale-[0.97] transition-transform">
-                      <QrCode className="w-4 h-4" /> Confirm &amp; Pay
+                      className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
+                      <QrCode className="w-3.5 h-3.5" /> Confirm &amp; Pay
                     </button>
                   )}
                   {selectedBooking.status === "completed" && !selectedBooking.rating && (
                     <button onClick={() => { setSelectedId(null); onReview(selectedBooking); }}
-                      className="flex-1 bg-primary text-primary-foreground text-sm font-medium py-3 rounded-xl flex items-center justify-center gap-2 active:scale-[0.97] transition-transform">
-                      <Star className="w-4 h-4" /> Leave Review
+                      className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
+                      <Star className="w-3.5 h-3.5" /> Leave Review
                     </button>
                   )}
                   {selectedBooking.status === "completed" && (
                     <button onClick={() => { setSelectedId(null); onRebook(selectedBooking.serviceType); }}
-                      className="flex-1 bg-muted text-foreground text-sm font-medium py-3 rounded-xl flex items-center justify-center gap-2 active:scale-[0.97] transition-transform">
-                      <RotateCcw className="w-4 h-4" /> Rebook
+                      className="flex-1 bg-muted text-foreground text-xs font-medium py-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
+                      <RotateCcw className="w-3.5 h-3.5" /> Rebook
                     </button>
                   )}
                   <button onClick={() => { setSelectedId(null); onDispute(); }}
-                    className="w-12 bg-muted text-muted-foreground rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform">
-                    <AlertTriangle className="w-4 h-4" />
+                    className="w-11 bg-muted text-muted-foreground rounded-xl flex items-center justify-center active:scale-[0.97] transition-transform py-3">
+                    <AlertTriangle className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 {selectedBooking.status === "completed" && (
