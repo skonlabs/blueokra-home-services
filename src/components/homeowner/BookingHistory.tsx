@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Loader2, Download } from "lucide-react";
 import { useState } from "react";
 import { useBookings } from "@/hooks/useBookings";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 interface BookingHistoryProps {
@@ -54,6 +55,7 @@ const statusLabels: Record<BookingStatus, string> = {
 
 const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: BookingHistoryProps) => {
   const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "completed">("all");
+  const { user } = useAuth();
   const { data: rawBookings, isLoading, error: bookingsError } = useBookings();
 
   const bookings: Booking[] = (rawBookings || []).map((b) => ({
@@ -97,6 +99,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
           <p className="text-2xl mb-2">📋</p>
           <p className="text-sm text-muted-foreground">No bookings yet</p>
           <p className="text-xs text-muted-foreground mt-1">Book a service from the home screen to get started</p>
+          <p className="text-[10px] font-mono text-muted-foreground mt-3 bg-muted px-2 py-1 rounded break-all">uid: {user?.id ?? "not logged in"} · rows: {rawBookings?.length ?? 0}</p>
         </div>
       ) : (
         <div className="space-y-3">
