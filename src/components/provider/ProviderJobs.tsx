@@ -43,7 +43,7 @@ const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
       icon: serviceIcons[service?.service_type] || "🔧",
       customer: "Customer",
       address: "123 Main St",
-      date: format(new Date(j.appointment_date), "MMM d, h:mm a"),
+      date: (() => { try { const d = new Date(j.appointment_date); return isNaN(d.getTime()) ? "N/A" : format(d, "MMM d, h:mm a"); } catch { return "N/A"; } })(),
       price: service?.revenue ? `$${service.revenue}` : "TBD",
       status: j.appointment_status as string,
     };

@@ -352,7 +352,7 @@ const PropertyProfile = () => {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">{item.package_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {format(new Date(item.completed_at || item.created_at), "MMM d, yyyy")}
+                    {(() => { try { const d = new Date(item.completed_at || item.created_at); return isNaN(d.getTime()) ? "N/A" : format(d, "MMM d, yyyy"); } catch { return "N/A"; } })()}
                   </p>
                 </div>
                 {item.revenue && <span className="text-sm font-medium text-foreground">${item.revenue}</span>}
