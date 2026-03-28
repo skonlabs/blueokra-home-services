@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, Loader2, MessageSquare, Inbox } from "lucide-react";
+import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, Loader2, MessageSquare, Inbox, ThumbsDown, Calendar } from "lucide-react";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useProviderJobs } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,18 +18,23 @@ export interface Job {
   status: string;
 }
 
-const getGreeting = () => {
-  const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-};
+type TabKey = "all" | "new" | "in_progress" | "completed" | "declined";
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "new", label: "New Requests" },
+  { key: "in_progress", label: "In Progress" },
+  { key: "completed", label: "Completed" },
+  { key: "declined", label: "Declined" },
+];
 
 interface ProviderJobsProps {
   onCompleteJob: (job: Job) => void;
 }
 
 const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
+  const [activeTab, setActiveTab] = useState<TabKey>("all");
   const { data: rawJobs, isLoading } = useProviderJobs();
-  const { user } = useAuth();
 
   const jobs: Job[] = (rawJobs || []).map((j) => {
     const service = j.booking_service as any;
@@ -45,9 +50,19 @@ const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
     };
   });
 
-  const pendingJobs = jobs.filter((j) => j.status === "scheduled" || j.status === "new" || j.status === "pending");
-  const activeJobs = jobs.filter((j) => j.status === "confirmed" || j.status === "in_progress");
-  const completedJobs = jobs.filter((j) => j.status === "completed");
+  const filterJobs = (tab: TabKey): Job[] => {
+    switch (tab) {
+      case "new": return jobs.filter((j) => ["scheduled", "new", "pending"].includes(j.status));
+      case "in_progress": return jobs.filter((j) => ["confirmed", "in_progress"].includes(j.status));
+      case "completed": return jobs.filter((j) => j.status === "completed");
+      case "declined": return jobs.filter((j) => ["declined", "cancelled"].includes(j.status));
+      default: return jobs;
+    }
+  };
+
+  const filteredJobs = filterJobs(activeTab);
+
+  const getTabCount = (tab: TabKey) => filterJobs(tab).length;
 
   if (isLoading) {
     return (
@@ -57,60 +72,55 @@ const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
     );
   }
 
-  if (jobs.length === 0) {
-    return (
-      <div className="px-4 py-12 text-center flex flex-col items-center gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
-          <Inbox className="w-7 h-7 text-muted-foreground" />
-        </div>
-        <p className="font-display font-semibold text-foreground text-base">No new requests</p>
-        <p className="text-xs text-muted-foreground max-w-[240px]">New jobs will appear here when customers book services in your area</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="px-4 py-4 pb-24 space-y-5">
-      {/* Provider greeting */}
-      <div className="bg-primary px-4 pt-3 pb-4 mb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-primary-foreground/70 text-sm">{getGreeting()}</p>
-            <p className="font-display text-lg font-bold text-primary-foreground">
-              {user?.email?.split("@")[0] || "Provider"}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-primary-foreground/70 text-xs">Today's earnings</p>
-            <p className="text-primary-foreground font-bold text-lg">$0</p>
-          </div>
-        </div>
+    <div className="px-4 py-4 pb-24 space-y-4">
+      {/* Tabs */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+        {TABS.map((tab) => {
+          const count = getTabCount(tab.key);
+          const isActive = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${
+                isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {tab.label}
+              {count > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-background text-foreground"
+                }`}>{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
-      {pendingJobs.length > 0 && (
-        <div>
-          <h3 className="font-display text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-            New Requests
-            <span className="bg-accent text-accent-foreground text-[10px] px-1.5 py-0.5 rounded-full">{pendingJobs.length}</span>
-          </h3>
-          <div className="space-y-3">
-            {pendingJobs.map((job, i) => <JobCard key={job.id} job={job} index={i} />)}
+
+      {/* Job list */}
+      {filteredJobs.length === 0 ? (
+        <div className="py-12 text-center flex flex-col items-center gap-3">
+          <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+            <Inbox className="w-7 h-7 text-muted-foreground" />
           </div>
+          <p className="font-display font-semibold text-foreground text-base">
+            {activeTab === "new" ? "No new requests" : activeTab === "declined" ? "No declined jobs" : activeTab === "completed" ? "No completed jobs" : "No jobs yet"}
+          </p>
+          <p className="text-xs text-muted-foreground max-w-[240px]">
+            {activeTab === "new" ? "New jobs will appear here when customers book services in your area" : "Jobs matching this filter will show here"}
+          </p>
         </div>
-      )}
-      {activeJobs.length > 0 && (
-        <div>
-          <h3 className="font-display text-sm font-semibold text-foreground mb-2">Today's Jobs</h3>
-          <div className="space-y-3">
-            {activeJobs.map((job, i) => <JobCard key={job.id} job={job} index={i} onComplete={() => onCompleteJob(job)} />)}
-          </div>
-        </div>
-      )}
-      {completedJobs.length > 0 && (
-        <div>
-          <h3 className="font-display text-sm font-semibold text-foreground mb-2">Completed</h3>
-          <div className="space-y-3">
-            {completedJobs.map((job, i) => <JobCard key={job.id} job={job} index={i} />)}
-          </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredJobs.map((job, i) => (
+            <JobCard
+              key={job.id}
+              job={job}
+              index={i}
+              onComplete={["confirmed", "in_progress"].includes(job.status) ? () => onCompleteJob(job) : undefined}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -125,15 +135,24 @@ interface JobCardProps {
 
 const JobCard = ({ job, index, onComplete }: JobCardProps) => {
   const { toast } = useToast();
-  const isPending = job.status === "scheduled" || job.status === "new" || job.status === "pending";
-  const isActive = job.status === "confirmed" || job.status === "in_progress";
+  const isPending = ["scheduled", "new", "pending"].includes(job.status);
+  const isActive = ["confirmed", "in_progress"].includes(job.status);
   const isCompleted = job.status === "completed";
+  const isDeclined = ["declined", "cancelled"].includes(job.status);
 
   const rawPrice = parseFloat(job.price.replace(/[^0-9.]/g, ""));
   const netEarnings = !isNaN(rawPrice) ? `(~$${Math.round(rawPrice * 0.88)} after fees)` : null;
 
+  const statusBadge = isPending
+    ? { bg: "bg-warm-50 text-warm-500", label: "New" }
+    : isCompleted
+    ? { bg: "bg-okra-50 text-okra-600", label: "Done" }
+    : isDeclined
+    ? { bg: "bg-destructive/10 text-destructive", label: "Declined" }
+    : { bg: "bg-blue-50 text-blue-500", label: "Active" };
+
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
       className="bg-card rounded-2xl border border-border p-4 space-y-3">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -143,8 +162,8 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
             <p className="text-xs text-muted-foreground">{job.customer}</p>
           </div>
         </div>
-        <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${isPending ? "bg-warm-50 text-warm-500" : isCompleted ? "bg-okra-50 text-okra-600" : "bg-blue-50 text-blue-500"}`}>
-          {isPending ? "New" : isCompleted ? "Done" : "Active"}
+        <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${statusBadge.bg}`}>
+          {statusBadge.label}
         </span>
       </div>
 
@@ -186,6 +205,13 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
         <div className="flex items-center gap-2 bg-okra-50 rounded-xl p-2.5">
           <Check className="w-4 h-4 text-okra-600" />
           <p className="text-xs text-okra-600 font-medium">Payment of {job.price} captured</p>
+        </div>
+      )}
+
+      {isDeclined && (
+        <div className="flex items-center gap-2 bg-destructive/5 rounded-xl p-2.5">
+          <ThumbsDown className="w-4 h-4 text-destructive" />
+          <p className="text-xs text-destructive font-medium">This job was declined</p>
         </div>
       )}
     </motion.div>

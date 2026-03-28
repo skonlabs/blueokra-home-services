@@ -16,6 +16,7 @@ import DisputeFlow from "@/components/homeowner/DisputeFlow";
 import PropertyProfile from "@/components/homeowner/PropertyProfile";
 import NotificationsDrawer from "@/components/homeowner/NotificationsDrawer";
 import ReviewModal from "@/components/homeowner/ReviewModal";
+import ProviderHome from "@/components/provider/ProviderHome";
 import ProviderJobs from "@/components/provider/ProviderJobs";
 import ProviderCompletion from "@/components/provider/ProviderCompletion";
 import ProviderEarnings from "@/components/provider/ProviderEarnings";
@@ -30,7 +31,7 @@ import type { Job } from "@/components/provider/ProviderJobs";
 
 type Screen =
   | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile"
-  | "provider-home" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-profile";
+  | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-profile";
 
 const Index = () => {
   const { user, loading, roles, refreshProfile } = useAuth();
@@ -137,6 +138,10 @@ const Index = () => {
         return { title: "My Property" };
       case "profile":
         return { title: "Profile" };
+      case "provider-home":
+        return null;
+      case "provider-jobs":
+        return { title: "Jobs" };
       case "provider-completion":
         return { title: "Complete Job", onBack: () => navigate("provider-home") };
       case "provider-schedule":
@@ -266,6 +271,12 @@ const Index = () => {
 
           {screen === "provider-home" && (
             <motion.div key="provider-home" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <ProviderHome onNavigate={handleNavigation} />
+            </motion.div>
+          )}
+
+          {screen === "provider-jobs" && (
+            <motion.div key="provider-jobs" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <ProviderJobs
                 onCompleteJob={(job) => { setSelectedJobForCompletion(job); navigate("provider-completion"); }}
               />
