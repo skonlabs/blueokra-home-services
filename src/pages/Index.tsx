@@ -46,9 +46,13 @@ const Index = () => {
 
   // Set mode based on user role
   useEffect(() => {
+    if (roles.length === 0) return; // still loading or onboarding
     if (roles.includes("provider") && !roles.includes("homeowner")) {
       setMode("provider");
       setScreen("provider-home");
+    } else {
+      setMode("homeowner");
+      setScreen("home");
     }
   }, [roles]);
 
