@@ -59,6 +59,14 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: rawBookings, isLoading, error: bookingsError } = useBookings();
 
+  const safeFmt = (raw: string | null | undefined, fmt: string): string => {
+    if (!raw) return "N/A";
+    try {
+      const d = new Date(raw.length === 10 ? raw + "T12:00:00" : raw);
+      return isNaN(d.getTime()) ? "N/A" : format(d, fmt);
+    } catch { return "N/A"; }
+  };
+
   const bookings: Booking[] = (rawBookings || []).map((b) => ({
     id: b.id,
     serviceType: b.service_type,
@@ -67,8 +75,8 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
     provider: "Assigned Provider",
     provider_user_id: b.booking_appointment?.[0]?.provider_user_id ?? undefined,
     date: b.booking_appointment?.[0]?.appointment_date
-      ? format(new Date(b.booking_appointment[0].appointment_date), "MMM d, h:mm a")
-      : format(new Date(b.created_at), "MMM d"),
+      ? safeFmt(b.booking_appointment[0].appointment_date, "MMM d, h:mm a")
+      : safeFmt(b.created_at, "MMM d"),
     price: b.revenue ? `$${b.revenue}` : "TBD",
     status: mapStatus(b.booking_status),
   }));
@@ -183,7 +191,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
                   <div className="flex items-center gap-2.5 text-sm">
                     <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
                     <span className="text-muted-foreground text-xs">Booked on</span>
-                    <span className="ml-auto text-sm">{format(new Date(selectedRaw.created_at), "MMM d, yyyy")}</span>
+                    <span className="ml-auto text-sm">{safeFmt(selectedRaw.created_at, "MMM d, yyyy")}</span>
                   </div>
                   {selectedRaw.notes && (
                     <div className="flex items-start gap-2.5 text-sm">
@@ -200,7 +208,7 @@ const BookingHistory = ({ onPaymentFlow, onReview, onDispute, onRebook }: Bookin
                     <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Appointments</p>
                     {selectedRaw.booking_appointment.map((appt: { id: string; appointment_date: string; appointment_status: string }) => (
                       <div key={appt.id} className="flex items-center justify-between bg-muted rounded-xl px-3 py-2">
-                        <span className="text-xs">{format(new Date(appt.appointment_date), "EEE, MMM d, yyyy")}</span>
+                        <span className="text-xs">{safeFmt(appt.appointment_date, "EEE, MMM d, yyyy")}</span>
                         <span className="text-[11px] text-muted-foreground capitalize">{appt.appointment_status}</span>
                       </div>
                     ))}
