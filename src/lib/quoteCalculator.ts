@@ -171,25 +171,43 @@ function calcLawn(d: IntakeFormData): QuoteData {
   }
   subtotal += addOnTotal;
 
-  // Step 5: Apply minimum charge
+  // Step 5: First-time setup fee (+40% on base, first visit only)
+  // For monthly/quarterly: applies every visit. For weekly/biweekly/one-time: first visit only.
+  const isRecurring = d.frequency !== "one-time";
+  const isEveryVisit = d.frequency === "monthly" || d.frequency === "quarterly";
+  const firstTimeSurcharge = Math.round(base * 0.40);
+  breakdown.push({
+    label: isEveryVisit
+      ? "First-time setup fee (+40% on base, every visit)"
+      : "First-time setup fee (+40% on base, first visit only)",
+    amount: `$${firstTimeSurcharge}`,
+  });
+  subtotal += firstTimeSurcharge;
+
+  // Step 6: Apply minimum charge
   const MINIMUM = 65;
   const total = Math.max(Math.round(subtotal), MINIMUM);
   if (total === MINIMUM && subtotal < MINIMUM) {
     breakdown.push({ label: "Minimum charge applied", amount: `$${MINIMUM}` });
   }
 
-  // Recurring: subsequent visits are the same (no first-time surcharge for lawn)
-  const isRecurring = d.frequency !== "one-time";
-  const recurringVisitPrice = isRecurring ? total : undefined;
+  // Recurring: 2nd+ visits drop the first-time surcharge (except monthly/quarterly)
+  const recurringVisitPrice = (isRecurring && !isEveryVisit)
+    ? Math.max(Math.round(subtotal - firstTimeSurcharge), MINIMUM)
+    : undefined;
 
   const econ = computeEconomics(total);
   const recurringEcon = recurringVisitPrice !== undefined ? computeEconomics(recurringVisitPrice) : undefined;
+
+  const factors: string[] = [];
+  if (isEveryVisit) factors.push("First-time setup fee applies to every visit for monthly/quarterly plans");
+  else if (isRecurring) factors.push("First-time setup fee applies to first visit only");
 
   return {
     serviceId: "lawn", serviceName: "Lawn Care", type: "fixed",
     low: total, high: total, confidence: 92,
     breakdown,
-    factors: isRecurring ? ["Same price applies to all visits"] : [],
+    factors,
     ...getSlots(d.urgency),
     frequency: isRecurring ? d.frequency : undefined,
     recurringVisitPrice,
