@@ -1,6 +1,6 @@
 import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, Wrench, Building2, User, ChevronRight, Check, Loader2 } from "lucide-react";
+import { Home, Wrench, Building2, User, ChevronRight, Check, Loader2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import blueokraLogo from "@/assets/blueokra-logo.svg";
@@ -23,12 +23,24 @@ const AVAILABLE_SERVICES = [
 const inputCls =
   "w-full bg-muted rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 border border-transparent";
 
+type Step = "role" | "homeowner-address" | "provider-details";
+
 const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ onComplete }, ref) => {
   const { user, refreshProfile } = useAuth();
-  const [step, setStep] = useState<"role" | "provider-details">("role");
+  const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<"homeowner" | "provider" | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Shared fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
+  // Homeowner-specific fields
+  const [homeAddress, setHomeAddress] = useState("");
+  const [homeCity, setHomeCity] = useState("");
+  const [homeState, setHomeState] = useState("");
+  const [homeZip, setHomeZip] = useState("");
 
   // Provider-specific fields
   const [providerType, setProviderType] = useState<"individual" | "company" | null>(null);
@@ -40,8 +52,6 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
   const [licenseNumber, setLicenseNumber] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
 
   const toggleService = (s: string) => {
     setSelectedServices(prev =>
@@ -61,13 +71,30 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
       });
       if (roleError) throw roleError;
 
-      // Upsert profile (works even if profile row doesn't exist yet)
+      // Upsert profile with address info
       const { error: profileError } = await supabase.from("profiles").upsert({
         user_id: user.id,
         first_name: firstName.trim() || null,
         last_name: lastName.trim() || null,
+        display_name: firstName.trim() ? `${firstName.trim()} ${lastName.trim()}`.trim() : null,
+        address: homeAddress.trim() || null,
+        city: homeCity.trim() || null,
+        state: homeState.trim() || null,
+        zip_code: homeZip.trim() || null,
       }, { onConflict: "user_id" });
       if (profileError) throw profileError;
+
+      // Also save home address if provided
+      if (homeAddress.trim()) {
+        await supabase.from("user_homes").insert({
+          user_id: user.id,
+          address: homeAddress.trim(),
+          city: homeCity.trim() || null,
+          state: homeState.trim() || null,
+          zip_code: homeZip.trim() || null,
+          is_primary: true,
+        });
+      }
 
       await refreshProfile();
       onComplete();
@@ -92,7 +119,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
       });
       if (roleError) throw roleError;
 
-      // Upsert profile with provider details (works even if row doesn't exist yet)
+      // Upsert profile with provider details
       const { error: profileError } = await supabase.from("profiles").upsert({
         user_id: user.id,
         first_name: firstName.trim() || null,
@@ -102,6 +129,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
           ? businessName.trim() || null
           : firstName.trim() ? `${firstName.trim()} ${lastName.trim()}`.trim() : null,
         address: businessAddress.trim() || null,
+        services_offered: selectedServices,
       }, { onConflict: "user_id" });
       if (profileError) throw profileError;
 
@@ -126,7 +154,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
 
         <AnimatePresence mode="wait">
 
-          {/* Step 1: Role selection */}
+          {/* Step 1: Name + Role selection */}
           {step === "role" && (
             <motion.div
               key="role"
@@ -137,17 +165,17 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
             >
               <div>
                 <h2 className="font-display text-2xl font-bold text-foreground">Welcome to BlueOkra</h2>
-                <p className="text-sm text-muted-foreground mt-1">How will you be using the app?</p>
+                <p className="text-sm text-muted-foreground mt-1">Let's get you set up. How will you be using the app?</p>
               </div>
 
-              {/* Name fields (optional but helpful) */}
+              {/* Name fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1.5">First name</label>
+                  <label className="block text-xs text-muted-foreground mb-1.5">First name *</label>
                   <input className={inputCls} placeholder="First" value={firstName} onChange={e => setFirstName(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1.5">Last name</label>
+                  <label className="block text-xs text-muted-foreground mb-1.5">Last name *</label>
                   <input className={inputCls} placeholder="Last" value={lastName} onChange={e => setLastName(e.target.value)} />
                 </div>
               </div>
@@ -195,17 +223,107 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
               {error && <p className="text-xs text-destructive">{error}</p>}
 
               <button
-                disabled={!role || saving}
+                disabled={!role || !firstName.trim() || !lastName.trim() || saving}
                 onClick={() => {
-                  if (role === "homeowner") saveHomeowner();
+                  if (role === "homeowner") setStep("homeowner-address");
                   else if (role === "provider") setStep("provider-details");
                 }}
                 className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 disabled:opacity-40 active:scale-[0.98] transition-transform"
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                  <>Continue <ChevronRight className="w-4 h-4" /></>
-                )}
+                Continue <ChevronRight className="w-4 h-4" />
               </button>
+            </motion.div>
+          )}
+
+          {/* Step 2 (Homeowner): Address / Property */}
+          {step === "homeowner-address" && (
+            <motion.div
+              key="homeowner-address"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              className="space-y-6"
+            >
+              {/* Progress bar */}
+              <div className="flex gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-primary" />
+                <div className="flex-1 h-1.5 rounded-full bg-primary" />
+              </div>
+
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                  <MapPin className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="font-display text-xl font-bold text-foreground">Where's your home?</h2>
+                <p className="text-sm text-muted-foreground mt-1">We'll use this to find service providers in your area</p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1.5">Street address</label>
+                  <input
+                    className={inputCls}
+                    placeholder="123 Main St"
+                    value={homeAddress}
+                    onChange={e => setHomeAddress(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5">City</label>
+                    <input
+                      className={inputCls}
+                      placeholder="Seattle"
+                      value={homeCity}
+                      onChange={e => setHomeCity(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1.5">State</label>
+                      <input
+                        className={inputCls}
+                        placeholder="WA"
+                        value={homeState}
+                        onChange={e => setHomeState(e.target.value)}
+                        maxLength={2}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1.5">ZIP</label>
+                      <input
+                        className={inputCls}
+                        placeholder="98101"
+                        value={homeZip}
+                        onChange={e => setHomeZip(e.target.value)}
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {error && <p className="text-xs text-destructive">{error}</p>}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setStep("role")}
+                  className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm"
+                >
+                  ← Back
+                </button>
+                <button
+                  onClick={saveHomeowner}
+                  disabled={saving}
+                  className="flex-1 bg-primary text-primary-foreground font-semibold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-transform"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Get Started 🎉"}
+                </button>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground text-center">
+                You can skip the address and add it later from your property page.
+              </p>
             </motion.div>
           )}
 
@@ -284,7 +402,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                     </div>
 
                     <div className="flex gap-2">
-                      <button onClick={() => setStep("role")} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
+                      <button onClick={() => { setStep("role"); setProviderStep(1); }} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
                       <button
                         onClick={() => setProviderStep(2)}
                         disabled={!providerType}
