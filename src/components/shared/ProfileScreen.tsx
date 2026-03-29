@@ -34,8 +34,17 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   ]);
   const [showAddCard, setShowAddCard] = useState(false);
 
-  // Provider Venmo phone (uses their profile phone number)
-  const providerVenmoPhone = profile?.phone || user?.phone || "";
+  // Load venmo_phone from DB
+  useEffect(() => {
+    if (user && isProvider) {
+      supabase.from("profiles").select("venmo_phone").eq("user_id", user.id).single().then(({ data }) => {
+        if (data?.venmo_phone) setVenmoPhone(data.venmo_phone);
+      });
+    }
+  }, [user, isProvider]);
+
+  // Provider Venmo phone
+  const providerVenmoPhone = venmoPhone || profile?.phone || user?.phone || "";
 
   const shownName = profile?.display_name
     || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : null)
