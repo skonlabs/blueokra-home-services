@@ -206,9 +206,13 @@ const Index = () => {
       </button>
       <button
         onClick={() => navigate(isProvider ? "provider-profile" : "profile")}
-        className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground"
+        className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden"
       >
-        <User className="w-4 h-4" />
+        {profile?.profile_photo_url ? (
+          <img src={profile.profile_photo_url} alt="Profile" className="w-full h-full object-cover" />
+        ) : (
+          <User className="w-4 h-4" />
+        )}
       </button>
     </div>
   );
@@ -219,6 +223,8 @@ const Index = () => {
         title={headerConfig?.title}
         onBack={headerConfig?.onBack}
         rightActions={headerRightActions}
+        onLogoClick={goHome}
+        profilePhotoUrl={profile?.profile_photo_url}
       />
 
       <div className="flex-1 overflow-y-auto">
