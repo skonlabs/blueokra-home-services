@@ -45,6 +45,7 @@ const Index = () => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [reviewBooking, setReviewBooking] = useState<any>(null);
   const [selectedJobForCompletion, setSelectedJobForCompletion] = useState<Job | null>(null);
+  const [navParams, setNavParams] = useState<Record<string, string>>({});
 
   // Set mode based on user role
   useEffect(() => {
@@ -114,7 +115,8 @@ const Index = () => {
     navigate("booked");
   };
 
-  const handleNavigation = (target: string) => {
+  const handleNavigation = (target: string, params?: Record<string, string>) => {
+    setNavParams(params || {});
     navigate(target as Screen);
   };
 
@@ -281,6 +283,7 @@ const Index = () => {
           {screen === "provider-jobs" && (
             <motion.div key="provider-jobs" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <ProviderJobs
+                initialTab={navParams.tab as any}
                 onCompleteJob={(job) => { setSelectedJobForCompletion(job); navigate("provider-completion"); }}
               />
             </motion.div>

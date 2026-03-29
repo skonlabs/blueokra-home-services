@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Calendar, DollarSign, Clock, ChevronDown, Loader2, FileText, Filter } from "lucide-react";
+import { Calendar, DollarSign, Clock, ChevronDown, Loader2, FileText, Filter, MapPin, User } from "lucide-react";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useProviderJobs } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +35,21 @@ const ProviderServiceHistory = () => {
 
       if (error) throw error;
 
+      // Fetch customer profiles
+      const customerIds = [...new Set((data || []).map((d: any) => d.customer_user_id).filter(Boolean))];
+      let customerProfiles: Record<string, { name: string; address: string }> = {};
+      if (customerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, first_name, last_name, display_name, address, city, state")
+          .in("user_id", customerIds);
+        (profiles || []).forEach((p: any) => {
+          const name = p.display_name || [p.first_name, p.last_name].filter(Boolean).join(" ") || "Customer";
+          const address = [p.address, p.city, p.state].filter(Boolean).join(", ") || "Address not available";
+          customerProfiles[p.user_id] = { name, address };
+        });
+      }
+
       // Also fetch payment data for these services
       const serviceIds = (data || []).map((d: any) => d.service_id).filter(Boolean);
       let payments: any[] = [];
@@ -50,6 +65,7 @@ const ProviderServiceHistory = () => {
       return (data || []).map((job: any) => {
         const service = job.booking_service;
         const payment = payments.find((p: any) => p.service_id === job.service_id);
+        const customer = customerProfiles[job.customer_user_id] || { name: "Customer", address: "Address not available" };
         return {
           id: job.id,
           serviceId: job.service_id,
@@ -65,6 +81,8 @@ const ProviderServiceHistory = () => {
           paymentStatus: payment?.payment_status || "pending",
           paymentMethod: payment?.payment_method_type || "N/A",
           notes: service?.notes || job.notes,
+          customerName: customer.name,
+          customerAddress: customer.address,
         };
       });
     },
@@ -229,9 +247,12 @@ const ProviderServiceHistory = () => {
                 >
                   <div className="flex items-center gap-3">
                     <ServiceIcon serviceType={job.serviceType} size="sm" />
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-semibold text-sm text-foreground capitalize">
                         {job.serviceType.replace(/_/g, " ")}
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <User className="w-3 h-3 shrink-0" />{job.customerName}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {safeDateFormat(job.appointmentDate, "MMM d, yyyy")} · {job.packageName}
@@ -258,6 +279,14 @@ const ProviderServiceHistory = () => {
                     className="border-t border-border px-4 pb-4 pt-3 space-y-2.5"
                   >
                     <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-muted-foreground">Customer</p>
+                        <p className="font-medium text-foreground">{job.customerName}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Address</p>
+                        <p className="font-medium text-foreground">{job.customerAddress}</p>
+                      </div>
                       <div>
                         <p className="text-muted-foreground">Service Date</p>
                         <p className="font-medium text-foreground">

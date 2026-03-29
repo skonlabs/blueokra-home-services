@@ -101,7 +101,7 @@ const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
         </div>
         <div className="bg-card rounded-xl border border-border p-3 text-center">
           <p className="text-xs text-muted-foreground">Rating</p>
-          <p className="text-lg font-bold text-foreground flex items-center gap-1">4.9 <Star className="w-4 h-4 text-amber-500 fill-amber-500" /></p>
+          <p className="text-lg font-bold text-foreground flex items-center justify-center gap-1">4.9 <Star className="w-4 h-4 text-amber-500 fill-amber-500" /></p>
         </div>
       </div>
 
