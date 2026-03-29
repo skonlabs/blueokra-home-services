@@ -26,7 +26,13 @@ const DisputeFlow = ({ onComplete }: DisputeFlowProps) => {
   const [photos, setPhotos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [caseRef] = useState(() => Math.random().toString(36).slice(2, 8).toUpperCase());
+  const [caseRef] = useState(() =>
+    Array.from(crypto.getRandomValues(new Uint8Array(4)))
+      .map(b => b.toString(36).padStart(2, "0"))
+      .join("")
+      .slice(0, 6)
+      .toUpperCase()
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,9 +70,8 @@ const DisputeFlow = ({ onComplete }: DisputeFlowProps) => {
       if (error) throw error;
       setStep("submitted");
     } catch (err) {
-      const { handleMutationError } = await import("@/lib/errorHandler");
-      const friendly = await handleMutationError(err, "submit_dispute", user?.id);
-      setSubmitError(friendly);
+      const pgErr = err as { message?: string };
+      setSubmitError(pgErr?.message ?? "Failed to submit. Please try again.");
     } finally {
       setSubmitting(false);
     }

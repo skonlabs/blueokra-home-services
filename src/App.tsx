@@ -9,7 +9,16 @@ import Index from "./pages/Index.tsx";
 import AdminPage from "./pages/AdminPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,      // data stays fresh for 5 minutes
+      gcTime: 1000 * 60 * 30,        // cache held for 30 minutes
+      retry: 2,
+      refetchOnWindowFocus: false,    // don't hammer DB on every tab switch
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

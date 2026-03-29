@@ -64,9 +64,8 @@ const PropertyProfile = () => {
       setNewState("");
       setNewZip("");
     } catch (err) {
-      const { handleMutationError } = await import("@/lib/errorHandler");
-      const friendly = await handleMutationError(err, "save_property", user.id);
-      setAddError(friendly);
+      const pgErr = err as { message?: string };
+      setAddError(pgErr?.message ?? "Failed to save. Please try again.");
     } finally {
       setAddSaving(false);
     }
@@ -105,8 +104,6 @@ const PropertyProfile = () => {
       }
       await queryClient.invalidateQueries({ queryKey: ["user-homes", user.id] });
     } catch (err) {
-      const { handleMutationError } = await import("@/lib/errorHandler");
-      await handleMutationError(err, "delete_property", user.id);
       setDeleteError("Failed to delete property.");
     } finally {
       setDeletingId(null);
@@ -281,10 +278,10 @@ const PropertyProfile = () => {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-muted rounded-xl p-1 overflow-x-auto">
-        {(["details", "history"] as const).map((tab) => (
+        {(["details", "appliances", "history", "warranties"] as const).map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab as any)}
+            onClick={() => setActiveTab(tab)}
             className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all whitespace-nowrap px-2 ${
               activeTab === tab ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
             }`}
@@ -352,7 +349,7 @@ const PropertyProfile = () => {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">{item.package_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {(() => { try { const d = new Date(item.completed_at || item.created_at); return isNaN(d.getTime()) ? "N/A" : format(d, "MMM d, yyyy"); } catch { return "N/A"; } })()}
+                    {format(new Date(item.completed_at || item.created_at), "MMM d, yyyy")}
                   </p>
                 </div>
                 {item.revenue && <span className="text-sm font-medium text-foreground">${item.revenue}</span>}

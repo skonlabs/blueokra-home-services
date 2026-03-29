@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { handleMutationError } from "@/lib/errorHandler";
 
 interface BookingConfirmationProps {
   quote: QuoteData;
@@ -58,75 +57,33 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
           appointmentDates.push(scheduleData.firstServiceDate);
         }
 
-        // Insert one appointment row per selected date
-        // Note: customer_user_id is omitted to avoid FK violation for users without profile rows
-        for (const date of appointmentDates) {
-          const { error: apptError } = await supabase.from("booking_appointment").insert({
-            service_id: bookingData.id,
-            appointment_date: date,
-            appointment_status: "pending",
-            customer_amount: quote.low,
-            provider_amount: quote.providerPayout ?? null,
-            platform_amount: quote.platformMargin ?? null,
-          });
-          if (apptError) {
-            await handleMutationError(apptError, "insert_appointment", user.id);
-          }
-        }
-
-        // Auto-match providers: find providers who offer this service type and serve this city
-        try {
-          const serviceCity = intakeData?.serviceAddress?.split(",").map(s => s.trim())[1] || "";
-          const serviceName = quote.serviceName || "";
-          
-          // Find providers whose services_offered includes this service and service_areas includes the city
-          const { data: matchingProviders } = await supabase
-            .from("profiles")
-            .select("user_id")
-            .contains("services_offered", [serviceName])
-            .not("user_id", "eq", user.id);
-
-          if (matchingProviders?.length) {
-            // Filter by service area if city is known
-            let providerIds = matchingProviders.map(p => p.user_id);
-            
-            if (serviceCity) {
-              const { data: areaFiltered } = await supabase
-                .from("profiles")
-                .select("user_id")
-                .in("user_id", providerIds)
-                .contains("service_areas", [serviceCity]);
-              if (areaFiltered?.length) {
-                providerIds = areaFiltered.map(p => p.user_id);
-              }
-            }
-
-            // Create leads and notifications for matching providers
-            for (const providerId of providerIds) {
-              await supabase.from("booking_lead").insert({
+        // Batch-insert all appointment dates in a single DB round-trip
+        if (appointmentDates.length > 0) {
+          const { error: apptError } = await supabase
+            .from("booking_appointment")
+            .insert(
+              appointmentDates.map(date => ({
                 service_id: bookingData.id,
-                provider_user_id: providerId,
-                lead_status: "new",
-              });
-              await supabase.from("booking_notification").insert({
-                recipient_user_id: providerId,
-                service_id: bookingData.id,
-                notification_type: "new_service_request",
-                title: "New Service Request",
-                message: `A customer needs ${serviceName}${serviceCity ? ` in ${serviceCity}` : ""}. Accept to get the job!`,
-              });
-            }
-          }
-        } catch (matchErr) {
-          console.warn("Provider matching failed (non-critical):", matchErr);
+                appointment_date: date,
+                appointment_status: "pending",
+                customer_amount: quote.low,
+                provider_amount: quote.providerPayout ?? null,
+                platform_amount: quote.platformMargin ?? null,
+              }))
+            );
+          if (apptError) throw apptError;
         }
 
         // Refresh the booking history cache so the new booking appears immediately
         queryClient.invalidateQueries({ queryKey: ["bookings", user.id] });
 
       } catch (err) {
-        const friendly = await handleMutationError(err, "create_booking", user.id);
-        setSaveError(friendly);
+        const pgErr = err as { message?: string; code?: string; details?: string; hint?: string };
+        const code = pgErr?.code ? ` [${pgErr.code}]` : "";
+        const hint = pgErr?.hint ? ` — ${pgErr.hint}` : "";
+        const msg = `${pgErr?.message ?? (err instanceof Error ? err.message : "Booking save failed")}${code}${hint}`;
+        setSaveError(msg);
+        // intentionally not logging full error object to avoid leaking data to console in production
       } finally {
         setSaving(false);
       }

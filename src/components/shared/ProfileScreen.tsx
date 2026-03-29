@@ -1,52 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2, Camera, Home, MapPin, Briefcase } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
-const AVAILABLE_SERVICES = [
-  "Lawn Care", "House Cleaning", "Gutter Cleaning", "Roof Cleaning",
-  "Pressure Washing", "Duct Cleaning", "Backwater Testing", "Fence Installation",
-];
-
-const WA_CITIES = [
-  "Aberdeen", "Anacortes", "Auburn", "Bainbridge Island", "Battle Ground", "Bellevue", "Bellingham",
-  "Bonney Lake", "Bothell", "Bremerton", "Burien", "Burlington", "Camas", "Centralia", "Chelan",
-  "Cheney", "Covington", "Des Moines", "DuPont", "East Wenatchee", "Edmonds", "Ellensburg",
-  "Enumclaw", "Ephrata", "Everett", "Federal Way", "Ferndale", "Gig Harbor", "Issaquah",
-  "Kenmore", "Kennewick", "Kent", "Kirkland", "Lacey", "Lake Forest Park", "Lake Stevens",
-  "Lakewood", "Liberty Lake", "Longview", "Lynnwood", "Maple Valley", "Marysville", "Mercer Island",
-  "Mill Creek", "Monroe", "Moses Lake", "Mount Vernon", "Mountlake Terrace", "Mukilteo",
-  "Newcastle", "Oak Harbor", "Olympia", "Orting", "Pasco", "Port Angeles", "Port Orchard",
-  "Port Townsend", "Poulsbo", "Pullman", "Puyallup", "Redmond", "Renton", "Richland",
-  "Sammamish", "SeaTac", "Seattle", "Sedro-Woolley", "Sequim", "Shelton", "Shoreline",
-  "Snohomish", "Snoqualmie", "Spokane", "Spokane Valley", "Stanwood", "Sumner", "Sunnyside",
-  "Tacoma", "Tukwila", "Tumwater", "University Place", "Vancouver", "Walla Walla", "Washougal",
-  "Wenatchee", "West Richland", "Woodinville", "Yakima",
-];
 
 interface ProfileScreenProps {
   isProvider?: boolean;
-  onNavigateProperty?: () => void;
 }
 
-type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | "properties" | "services" | "areas" | null;
+type Section = "account" | "payment" | "notifications" | "help" | "privacy" | "terms" | null;
 
-const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) => {
+const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
-  const { toast } = useToast();
   const [activeSection, setActiveSection] = useState<Section>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
 
   // Account Settings
   const [firstName, setFirstName] = useState(profile?.first_name ?? "");
   const [lastName, setLastName] = useState(profile?.last_name ?? "");
   const [displayName, setDisplayName] = useState(profile?.display_name ?? "");
-  const [venmoPhone, setVenmoPhone] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -56,109 +27,15 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
   const [notifReminders, setNotifReminders] = useState(true);
   const [notifPromos, setNotifPromos] = useState(false);
 
-  // Provider: services & areas
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
-  const [savingServices, setSavingServices] = useState(false);
-  const [savingAreas, setSavingAreas] = useState(false);
-  const [citySearch, setCitySearch] = useState("");
-
-
-  const handleSaveServices = async () => {
-    if (!user) return;
-    setSavingServices(true);
-    try {
-      const { error } = await supabase.from("profiles").update({ services_offered: selectedServices } as any).eq("user_id", user.id);
-      if (error) throw error;
-      await refreshProfile();
-      toast({ title: "Services updated!" });
-    } catch (err: any) {
-      toast({ title: "Failed to save", description: err.message, variant: "destructive" });
-    } finally {
-      setSavingServices(false);
-    }
-  };
-
-  const handleSaveAreas = async () => {
-    if (!user) return;
-    setSavingAreas(true);
-    try {
-      const { error } = await supabase.from("profiles").update({ service_areas: selectedAreas } as any).eq("user_id", user.id);
-      if (error) throw error;
-      await refreshProfile();
-      toast({ title: "Service areas updated!" });
-    } catch (err: any) {
-      toast({ title: "Failed to save", description: err.message, variant: "destructive" });
-    } finally {
-      setSavingAreas(false);
-    }
-  };
-
-  const toggleService = (s: string) => setSelectedServices(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
-  const toggleArea = (a: string) => setSelectedAreas(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
-  const filteredCities = citySearch ? WA_CITIES.filter(c => c.toLowerCase().includes(citySearch.toLowerCase())) : WA_CITIES;
-
-  // Load venmo_phone and profile photo from DB
-  useEffect(() => {
-    if (user) {
-      supabase.from("profiles").select("venmo_phone, profile_photo_url, services_offered, service_areas").eq("user_id", user.id).single().then(({ data }) => {
-        if (data?.venmo_phone) setVenmoPhone(data.venmo_phone);
-        if (data?.profile_photo_url) setProfilePhotoUrl(data.profile_photo_url);
-        if (data?.services_offered) setSelectedServices(data.services_offered as string[]);
-        if (data?.service_areas) setSelectedAreas(data.service_areas as string[]);
-      });
-    }
-  }, [user]);
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Please select an image file", variant: "destructive" });
-      return;
-    }
-    setUploadingPhoto(true);
-    try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/avatar.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("profile-pictures").upload(path, file, { upsert: true });
-      if (uploadErr) throw uploadErr;
-      const { data: urlData } = supabase.storage.from("profile-pictures").getPublicUrl(path);
-      const photoUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-      await supabase.from("profiles").upsert({ user_id: user.id, profile_photo_url: photoUrl } as any, { onConflict: "user_id" });
-      setProfilePhotoUrl(photoUrl);
-      await refreshProfile();
-      toast({ title: "Profile photo updated!" });
-    } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
-  // Provider Venmo phone
-  const providerVenmoPhone = venmoPhone || profile?.phone || user?.phone || "";
-
-  // Extract phone from fake email if profile.phone is not set
-  const extractedPhone = (() => {
-    if (profile?.phone) return profile.phone;
-    const email = user?.email;
-    if (email?.endsWith("@blueokra.local")) {
-      const digits = email.replace("@blueokra.local", "");
-      if (digits.length === 11 && digits.startsWith("1")) {
-        return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
-      }
-      if (digits.length === 10) {
-        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-      }
-      return digits;
-    }
-    return user?.phone || "";
-  })();
+  // Payment methods (mock — no Stripe integration)
+  const [paymentMethods] = useState([
+    { id: "1", last4: "4242", brand: "Visa", exp: "12/26" },
+  ]);
+  const [showAddCard, setShowAddCard] = useState(false);
 
   const shownName = profile?.display_name
     || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : null)
-    || extractedPhone
+    || user?.phone
     || "User";
 
   const toggle = (s: Section) => setActiveSection(prev => prev === s ? null : s);
@@ -168,24 +45,19 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
     setSavingProfile(true);
     setProfileError("");
     try {
-      const upsertData: Record<string, string | null> = {
+      const { error } = await supabase.from("profiles").upsert({
         user_id: user.id,
         display_name: displayName.trim() || null,
         first_name: firstName.trim() || null,
         last_name: lastName.trim() || null,
-      };
-      if (isProvider && venmoPhone.trim()) {
-        upsertData.venmo_phone = venmoPhone.trim();
-      }
-      const { error } = await supabase.from("profiles").upsert(upsertData as any, { onConflict: "user_id" });
+      }, { onConflict: "user_id" });
       if (error) throw error;
       await refreshProfile();
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 2500);
     } catch (err) {
-      const { handleMutationError } = await import("@/lib/errorHandler");
-      const friendly = await handleMutationError(err, "save_profile", user.id);
-      setProfileError(friendly);
+      const pgErr = err as { message?: string };
+      setProfileError(pgErr?.message ?? "Failed to save. Please try again.");
     } finally {
       setSavingProfile(false);
     }
@@ -193,21 +65,9 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
 
   const inputCls = "w-full bg-muted rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent text-foreground";
 
-  const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }>; badge?: React.ReactNode }[] = [
+  const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { key: "account", label: "Account Settings", icon: User },
-    ...(isProvider ? [{
-      key: "venmo" as Section,
-      label: "Venmo Payouts",
-      icon: Smartphone,
-      badge: venmoPhone
-        ? <CheckCircle2 className="w-3.5 h-3.5 text-secondary" />
-        : <Smartphone className="w-3.5 h-3.5 text-muted-foreground" />,
-    }] : []),
-    ...(isProvider ? [
-      { key: "services" as Section, label: "Services Offered", icon: Briefcase },
-      { key: "areas" as Section, label: "Service Areas", icon: MapPin },
-    ] : []),
-    ...(!isProvider ? [{ key: "properties" as Section, label: "My Properties", icon: Home }] : []),
+    { key: "payment", label: "Payment Methods", icon: CreditCard },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "help", label: "Help & Support", icon: HelpCircle },
     { key: "privacy", label: "Privacy Policy", icon: Lock },
@@ -218,28 +78,12 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
     <div className="px-4 py-6 pb-24 space-y-4">
       {/* Avatar + name */}
       <div className="flex items-center gap-4">
-        <div className="relative">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-            {profilePhotoUrl ? (
-              <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
-            ) : isProvider ? (
-              <Wrench className="w-7 h-7 text-primary" />
-            ) : (
-              <User className="w-7 h-7 text-primary" />
-            )}
-          </div>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingPhoto}
-            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition-transform"
-          >
-            {uploadingPhoto ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <span className="text-2xl">{isProvider ? "👷" : "👤"}</span>
         </div>
         <div>
           <h2 className="font-display text-lg font-bold text-foreground">{shownName}</h2>
-          <p className="text-sm text-muted-foreground">{extractedPhone}</p>
+          <p className="text-sm text-muted-foreground">{user?.phone || ""}</p>
           {isProvider && (
             <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Provider</span>
           )}
@@ -258,7 +102,6 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
               >
                 <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
                 <span className="flex-1 font-medium">{item.label}</span>
-                {item.badge && <span className="shrink-0">{item.badge}</span>}
                 {isOpen
                   ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   : <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -294,22 +137,9 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs text-muted-foreground mb-1.5">Phone (sign-up)</label>
-                            <input className={`${inputCls} opacity-60 cursor-not-allowed`} value={extractedPhone} readOnly />
+                            <label className="block text-xs text-muted-foreground mb-1.5">Phone</label>
+                            <input className={`${inputCls} opacity-60 cursor-not-allowed`} value={user?.phone || ""} readOnly />
                           </div>
-                          {isProvider && (
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1.5">Venmo phone (receives payment)</label>
-                              <input
-                                className={inputCls}
-                                value={venmoPhone}
-                                onChange={e => setVenmoPhone(e.target.value)}
-                                placeholder="Phone number linked to your Venmo"
-                                inputMode="tel"
-                              />
-                              <p className="text-[11px] text-muted-foreground mt-1">BlueOkra will send your earnings to this Venmo number</p>
-                            </div>
-                          )}
                           {profileError && <p className="text-xs text-destructive">{profileError}</p>}
                           <button
                             onClick={handleSaveProfile}
@@ -322,33 +152,47 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
                         </>
                       )}
 
-                      {/* VENMO PAYOUTS (Provider only) */}
-                      {item.key === "venmo" && (
-                        <div className="space-y-3">
-                          {venmoPhone ? (
-                            <div className="flex items-center gap-2 bg-secondary/10 rounded-xl p-3">
-                              <CheckCircle2 className="w-5 h-5 text-secondary shrink-0" />
+                      {/* PAYMENT METHODS */}
+                      {item.key === "payment" && (
+                        <>
+                          <p className="text-xs text-muted-foreground">Your payment is collected only after service is complete.</p>
+                          {paymentMethods.map(pm => (
+                            <div key={pm.id} className="flex items-center justify-between bg-muted rounded-xl px-3 py-2.5">
                               <div>
-                                <p className="text-sm font-medium text-foreground">Venmo payouts enabled</p>
-                                <p className="text-xs text-muted-foreground">Earnings will be sent to <span className="font-semibold">{venmoPhone}</span></p>
+                                <p className="text-sm font-medium text-foreground">{pm.brand} •••• {pm.last4}</p>
+                                <p className="text-xs text-muted-foreground">Expires {pm.exp}</p>
+                              </div>
+                              <button className="text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                          {showAddCard ? (
+                            <div className="space-y-2">
+                              <input className={inputCls} placeholder="Card number" maxLength={19} />
+                              <div className="grid grid-cols-2 gap-2">
+                                <input className={inputCls} placeholder="MM/YY" maxLength={5} />
+                                <input className={inputCls} placeholder="CVV" maxLength={4} type="password" />
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => setShowAddCard(false)} className="flex-1 bg-muted text-foreground py-2 rounded-xl text-sm font-medium">Cancel</button>
+                                <button
+                                  onClick={() => setShowAddCard(false)}
+                                  className="flex-1 bg-primary text-primary-foreground py-2 rounded-xl text-sm font-medium"
+                                >
+                                  Add Card
+                                </button>
                               </div>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 bg-destructive/10 rounded-xl p-3">
-                              <Smartphone className="w-5 h-5 text-destructive shrink-0" />
-                              <div>
-                                <p className="text-sm font-medium text-foreground">Venmo phone not set</p>
-                                <p className="text-xs text-muted-foreground">Go to Account Settings to add your Venmo phone number.</p>
-                              </div>
-                            </div>
+                            <button
+                              onClick={() => setShowAddCard(true)}
+                              className="w-full flex items-center justify-center gap-2 bg-muted rounded-xl py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <Plus className="w-4 h-4" /> Add Payment Method
+                            </button>
                           )}
-                          <div className="bg-muted rounded-xl p-3 space-y-1.5 text-xs text-muted-foreground">
-                            <p className="font-medium text-foreground text-sm">How payouts work</p>
-                            <p>1. Customer pays BlueOkra directly (card, debit, etc.)</p>
-                            <p>2. After service is confirmed complete, admin releases payment</p>
-                            <p>3. BlueOkra sends your earnings to your Venmo</p>
-                          </div>
-                        </div>
+                        </>
                       )}
 
                       {/* NOTIFICATIONS */}
@@ -364,7 +208,12 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
                                 <p className="text-sm font-medium text-foreground">{label}</p>
                                 <p className="text-xs text-muted-foreground">{sublabel}</p>
                               </div>
-                              <Switch checked={value} onCheckedChange={set} />
+                              <button
+                                onClick={() => set(!value)}
+                                className={`w-10 h-6 rounded-full transition-colors relative ${value ? "bg-primary" : "bg-muted"}`}
+                              >
+                                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${value ? "translate-x-5" : "translate-x-1"}`} />
+                              </button>
                             </div>
                           ))}
                         </>
@@ -414,89 +263,6 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
                           <p><strong className="text-foreground">Cancellations:</strong> Cancellations within 2 hours of scheduled service may incur a $25 cancellation fee.</p>
                           <p><strong className="text-foreground">Liability:</strong> BlueOkra's maximum liability is limited to the amount paid for the disputed service.</p>
                           <p className="text-[11px]">Last updated: January 2025</p>
-                        </div>
-                      )}
-
-                      {/* MY PROPERTIES (Homeowner only) */}
-                      {item.key === "properties" && (
-                        <div className="space-y-2">
-                          <p className="text-xs text-muted-foreground">Manage your properties, appliances and warranties.</p>
-                          <button
-                            onClick={() => onNavigateProperty?.()}
-                            className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2"
-                          >
-                            <Home className="w-4 h-4" /> View My Properties
-                          </button>
-                        </div>
-                      )}
-
-                      {/* SERVICES OFFERED (Provider only) */}
-                      {item.key === "services" && (
-                        <div className="space-y-3">
-                          <p className="text-xs text-muted-foreground">Select the services you provide. This determines which job leads you receive.</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {AVAILABLE_SERVICES.map(s => (
-                              <button
-                                key={s}
-                                onClick={() => toggleService(s)}
-                                className={`text-left text-xs px-3 py-2.5 rounded-xl border transition-colors ${
-                                  selectedServices.includes(s)
-                                    ? "bg-primary/10 border-primary text-primary font-medium"
-                                    : "bg-muted border-transparent text-foreground"
-                                }`}
-                              >
-                                {s}
-                              </button>
-                            ))}
-                          </div>
-                          <button
-                            onClick={handleSaveServices}
-                            disabled={savingServices || selectedServices.length === 0}
-                            className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                          >
-                            {savingServices ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                            Save Services
-                          </button>
-                        </div>
-                      )}
-
-                      {/* SERVICE AREAS (Provider only) */}
-                      {item.key === "areas" && (
-                        <div className="space-y-3">
-                          <p className="text-xs text-muted-foreground">Choose the cities where you're available to work.</p>
-                          <input
-                            className={inputCls}
-                            placeholder="Search cities…"
-                            value={citySearch}
-                            onChange={e => setCitySearch(e.target.value)}
-                          />
-                          <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-                            {filteredCities.map(c => (
-                              <button
-                                key={c}
-                                onClick={() => toggleArea(c)}
-                                className={`w-full text-left text-xs px-3 py-2 rounded-xl border transition-colors flex items-center gap-2 ${
-                                  selectedAreas.includes(c)
-                                    ? "bg-primary/10 border-primary text-primary font-medium"
-                                    : "bg-muted border-transparent text-foreground"
-                                }`}
-                              >
-                                {selectedAreas.includes(c) && <Check className="w-3 h-3 shrink-0" />}
-                                {c}
-                              </button>
-                            ))}
-                          </div>
-                          {selectedAreas.length > 0 && (
-                            <p className="text-xs text-muted-foreground">{selectedAreas.length} cities selected</p>
-                          )}
-                          <button
-                            onClick={handleSaveAreas}
-                            disabled={savingAreas || selectedAreas.length === 0}
-                            className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                          >
-                            {savingAreas ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                            Save Areas
-                          </button>
                         </div>
                       )}
 
