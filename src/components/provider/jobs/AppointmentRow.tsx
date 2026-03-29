@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Appointment } from "./types";
 import DateProposalSheet from "./DateProposalSheet";
+import ServiceIcon from "@/components/shared/ServiceIcon";
 import {
   getAppointmentStatusInfo,
   userNeedsToConfirm,
@@ -17,6 +18,7 @@ interface AppointmentRowProps {
   appointment: Appointment;
   address: string;
   customerUserId?: string;
+  serviceType?: string;
   viewRole?: ViewRole;
   onComplete?: (appointment: Appointment) => void;
   onChat?: (appointment: Appointment) => void;
@@ -28,6 +30,7 @@ const AppointmentRow = ({
   appointment,
   address,
   customerUserId,
+  serviceType = "general",
   viewRole = "provider",
   onComplete,
   onChat,
@@ -91,29 +94,19 @@ const AppointmentRow = ({
 
   return (
     <>
-      <div className="py-3 border-t border-border first:border-t-0 space-y-2">
-        {/* Info section */}
-        <div className="flex items-start gap-2">
-          <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${statusInfo.dotColor}`} />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-foreground">{appointment.date}</p>
-            <p className={`text-[10px] font-medium ${statusInfo.color}`}>{statusInfo.label}</p>
-            {appointment.serviceName && (
-              <p className="text-[10px] text-muted-foreground mt-0.5">{appointment.serviceName}</p>
-            )}
-            {appointment.customerName && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onChat) onChat(appointment);
-                }}
-                className="text-[10px] text-primary font-medium mt-0.5 block"
-              >
-                {appointment.customerName}
-              </button>
-            )}
+      <div className="bg-card rounded-xl border border-border p-3 mb-2 last:mb-0">
+        {/* Top row: icon + service + status + completed badge */}
+        <div className="flex items-center gap-2.5 mb-2">
+          <ServiceIcon serviceType={serviceType} size="sm" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">
+              {appointment.serviceName || "Service"}
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotColor}`} />
+              <span className={`text-[10px] font-medium ${statusInfo.color}`}>{statusInfo.label}</span>
+            </div>
           </div>
-
           {isCompleted && (
             <div className="flex items-center gap-1 text-okra-600 shrink-0">
               <Check className="w-3.5 h-3.5" />
@@ -122,9 +115,28 @@ const AppointmentRow = ({
           )}
         </div>
 
-        {/* Action buttons on a separate row */}
+        {/* Date + customer row */}
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3 shrink-0" />
+            {appointment.date}
+          </span>
+          {appointment.customerName && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onChat) onChat(appointment);
+              }}
+              className="flex items-center gap-1 text-primary font-medium"
+            >
+              {appointment.customerName}
+            </button>
+          )}
+        </div>
+
+        {/* Action buttons */}
         {isActive && (
-          <div className="flex items-center gap-1 pl-4">
+          <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border">
             {iNeedToConfirm && (
               <button
                 onClick={handleAcceptDate}
