@@ -24,9 +24,23 @@ export const useBookings = () => {
         .select("id, service_id, appointment_date, appointment_status, provider_user_id, customer_status, provider_status")
         .in("service_id", serviceIds);
 
+      // Fetch provider profiles for display
+      const providerIds = [...new Set((apptData || []).map(a => a.provider_user_id).filter(Boolean))] as string[];
+      let providerProfiles: Record<string, any> = {};
+      if (providerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, first_name, last_name, display_name, profile_photo_url")
+          .in("user_id", providerIds);
+        (profiles || []).forEach((p: any) => {
+          providerProfiles[p.user_id] = p;
+        });
+      }
+
       return serviceData.map(s => ({
         ...s,
         booking_appointment: apptData?.filter(a => a.service_id === s.id) ?? [],
+        provider_profiles: providerProfiles,
       }));
     },
   });

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Loader2, Download, X, MapPin, Calendar, Hash, RefreshCw } from "lucide-react";
+import { Star, Clock, DollarSign, RotateCcw, AlertTriangle, QrCode, Loader2, Download, X, MapPin, Calendar, Hash, RefreshCw, User as UserIcon } from "lucide-react";
 import { useState, forwardRef } from "react";
 import { useBookings } from "@/hooks/useBookings";
 import { format } from "date-fns";
