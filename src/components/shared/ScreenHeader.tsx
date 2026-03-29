@@ -24,7 +24,7 @@ const ScreenHeader = ({ title, onBack, rightActions }: ScreenHeaderProps) => (
 
     {/* Optional page title bar */}
     {title && (
-      <div className="px-4 pb-3 flex items-center gap-2 border-t border-border/30">
+      <div className="px-4 pb-3 flex items-center gap-2 border-t border-border/30 min-h-[44px]">
         {onBack && (
           <button
             onClick={onBack}
