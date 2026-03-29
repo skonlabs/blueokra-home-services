@@ -67,9 +67,11 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
   // Load venmo_phone and profile photo from DB
   useEffect(() => {
     if (user) {
-      supabase.from("profiles").select("venmo_phone, profile_photo_url").eq("user_id", user.id).single().then(({ data }) => {
+      supabase.from("profiles").select("venmo_phone, profile_photo_url, services_offered, service_areas").eq("user_id", user.id).single().then(({ data }) => {
         if (data?.venmo_phone) setVenmoPhone(data.venmo_phone);
         if (data?.profile_photo_url) setProfilePhotoUrl(data.profile_photo_url);
+        if (data?.services_offered) setSelectedServices(data.services_offered as string[]);
+        if (data?.service_areas) setSelectedAreas(data.service_areas as string[]);
       });
     }
   }, [user]);
