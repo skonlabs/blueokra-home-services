@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2, Wrench, Smartphone, CheckCircle2 } from "lucide-react";
+import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -8,7 +9,7 @@ interface ProfileScreenProps {
   isProvider?: boolean;
 }
 
-type Section = "account" | "payment" | "venmo" | "notifications" | "help" | "privacy" | "terms" | null;
+type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | null;
 
 const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
@@ -28,11 +29,6 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const [notifReminders, setNotifReminders] = useState(true);
   const [notifPromos, setNotifPromos] = useState(false);
 
-  // Payment methods (mock — for homeowners)
-  const [paymentMethods] = useState([
-    { id: "1", last4: "4242", brand: "Visa", exp: "12/26" },
-  ]);
-  const [showAddCard, setShowAddCard] = useState(false);
 
   // Load venmo_phone from DB
   useEffect(() => {
@@ -110,7 +106,6 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
         ? <CheckCircle2 className="w-3.5 h-3.5 text-secondary" />
         : <Smartphone className="w-3.5 h-3.5 text-muted-foreground" />,
     }] : []),
-    { key: "payment", label: "Payment Methods", icon: CreditCard },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "help", label: "Help & Support", icon: HelpCircle },
     { key: "privacy", label: "Privacy Policy", icon: Lock },
@@ -238,49 +233,6 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                         </div>
                       )}
 
-                      {/* PAYMENT METHODS */}
-                      {item.key === "payment" && (
-                        <>
-                          <p className="text-xs text-muted-foreground">Your payment is collected only after service is complete.</p>
-                          {paymentMethods.map(pm => (
-                            <div key={pm.id} className="flex items-center justify-between bg-muted rounded-xl px-3 py-2.5">
-                              <div>
-                                <p className="text-sm font-medium text-foreground">{pm.brand} •••• {pm.last4}</p>
-                                <p className="text-xs text-muted-foreground">Expires {pm.exp}</p>
-                              </div>
-                              <button className="text-destructive">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                          {showAddCard ? (
-                            <div className="space-y-2">
-                              <input className={inputCls} placeholder="Card number" maxLength={19} />
-                              <div className="grid grid-cols-2 gap-2">
-                                <input className={inputCls} placeholder="MM/YY" maxLength={5} />
-                                <input className={inputCls} placeholder="CVV" maxLength={4} type="password" />
-                              </div>
-                              <div className="flex gap-2">
-                                <button onClick={() => setShowAddCard(false)} className="flex-1 bg-muted text-foreground py-2 rounded-xl text-sm font-medium">Cancel</button>
-                                <button
-                                  onClick={() => setShowAddCard(false)}
-                                  className="flex-1 bg-primary text-primary-foreground py-2 rounded-xl text-sm font-medium"
-                                >
-                                  Add Card
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setShowAddCard(true)}
-                              className="w-full flex items-center justify-center gap-2 bg-muted rounded-xl py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              <Plus className="w-4 h-4" /> Add Payment Method
-                            </button>
-                          )}
-                        </>
-                      )}
-
                       {/* NOTIFICATIONS */}
                       {item.key === "notifications" && (
                         <>
@@ -294,12 +246,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                                 <p className="text-sm font-medium text-foreground">{label}</p>
                                 <p className="text-xs text-muted-foreground">{sublabel}</p>
                               </div>
-                              <button
-                                onClick={() => set(!value)}
-                                className={`w-10 h-6 rounded-full transition-colors relative ${value ? "bg-primary" : "bg-muted"}`}
-                              >
-                                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${value ? "translate-x-5" : "translate-x-1"}`} />
-                              </button>
+                              <Switch checked={value} onCheckedChange={set} />
                             </div>
                           ))}
                         </>
