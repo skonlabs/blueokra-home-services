@@ -195,7 +195,7 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
                   )}
                 </div>
 
-                {/* Actions - always visible */}
+                {/* Actions */}
                 {isActive && (
                   <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border">
                     {needsConfirm && (
@@ -218,10 +218,18 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
                       <button
                         onClick={(e) => { e.stopPropagation(); onChat?.(appt.provider_user_id!, appt.providerName); }}
                         className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
+                        title="Chat"
                       >
                         <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                       </button>
                     )}
+                  </div>
+                )}
+
+                {isCompleted && (
+                  <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border text-okra-600">
+                    <Check className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-medium">Completed</span>
                   </div>
                 )}
               </motion.div>
