@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigation, MessageSquare, QrCode, Check, Clock, CalendarClock, ThumbsUp, MapPin } from "lucide-react";
+import { Navigation, MessageSquare, QrCode, Check, Clock, CalendarClock, ThumbsUp, MapPin, User as UserIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
