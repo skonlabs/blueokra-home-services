@@ -64,6 +64,40 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
   const [citySearch, setCitySearch] = useState("");
 
 
+  const handleSaveServices = async () => {
+    if (!user) return;
+    setSavingServices(true);
+    try {
+      const { error } = await supabase.from("profiles").update({ services_offered: selectedServices } as any).eq("user_id", user.id);
+      if (error) throw error;
+      await refreshProfile();
+      toast({ title: "Services updated!" });
+    } catch (err: any) {
+      toast({ title: "Failed to save", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingServices(false);
+    }
+  };
+
+  const handleSaveAreas = async () => {
+    if (!user) return;
+    setSavingAreas(true);
+    try {
+      const { error } = await supabase.from("profiles").update({ service_areas: selectedAreas } as any).eq("user_id", user.id);
+      if (error) throw error;
+      await refreshProfile();
+      toast({ title: "Service areas updated!" });
+    } catch (err: any) {
+      toast({ title: "Failed to save", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingAreas(false);
+    }
+  };
+
+  const toggleService = (s: string) => setSelectedServices(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  const toggleArea = (a: string) => setSelectedAreas(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
+  const filteredCities = citySearch ? WA_CITIES.filter(c => c.toLowerCase().includes(citySearch.toLowerCase())) : WA_CITIES;
+
   // Load venmo_phone and profile photo from DB
   useEffect(() => {
     if (user) {
