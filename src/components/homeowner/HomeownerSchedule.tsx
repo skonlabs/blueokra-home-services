@@ -232,6 +232,18 @@ const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
                         <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                       </button>
                     )}
+                    {showDone && onComplete ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onComplete(appt.id); }}
+                        className="h-7 px-2 bg-success text-success-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform"
+                      >
+                        <QrCode className="w-3 h-3" /> Done
+                      </button>
+                    ) : showDoneDisabled ? (
+                      <span className="h-7 px-2 bg-muted text-muted-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60" title="Available on service date after confirmation">
+                        <Clock className="w-3 h-3" /> Done
+                      </span>
+                    ) : null}
                   </div>
                 )}
 
