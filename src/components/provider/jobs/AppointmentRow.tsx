@@ -95,45 +95,52 @@ const AppointmentRow = ({
 
   return (
     <>
-      <div className="bg-card rounded-xl border border-border p-3 mb-2 last:mb-0">
-        {/* Top row: icon + service + status + completed badge */}
-        <div className="flex items-center gap-2.5 mb-2">
-          <ServiceIcon serviceType={serviceType} size="sm" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">
-              {appointment.serviceName || "Service"}
-            </p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotColor}`} />
-              <span className={`text-[10px] font-medium ${statusInfo.color}`}>{statusInfo.label}</span>
+      <div className="bg-card rounded-xl border border-border p-3 mb-2 last:mb-0 active:scale-[0.99] transition-transform">
+        {/* Tappable area for expanding address */}
+        <button onClick={() => setExpanded(!expanded)} className="w-full text-left">
+          {/* Top row: icon + service + status + completed badge */}
+          <div className="flex items-center gap-2.5 mb-2">
+            <ServiceIcon serviceType={serviceType} size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground truncate">
+                {appointment.serviceName || "Service"}
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotColor}`} />
+                <span className={`text-[10px] font-medium ${statusInfo.color}`}>{statusInfo.label}</span>
+              </div>
             </div>
+            {isCompleted && (
+              <div className="flex items-center gap-1 text-okra-600 shrink-0">
+                <Check className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-medium">Done</span>
+              </div>
+            )}
           </div>
-          {isCompleted && (
-            <div className="flex items-center gap-1 text-okra-600 shrink-0">
-              <Check className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-medium">Done</span>
-            </div>
-          )}
-        </div>
 
-        {/* Date + customer row */}
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3 shrink-0" />
-            {appointment.date}
-          </span>
-          {appointment.customerName && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onChat) onChat(appointment);
-              }}
-              className="flex items-center gap-1 text-primary font-medium"
-            >
-              {appointment.customerName}
-            </button>
-          )}
-        </div>
+          {/* Date + customer row */}
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3 shrink-0" />
+              {appointment.date}
+            </span>
+            {appointment.customerName && (
+              <span className="flex items-center gap-1 text-primary font-medium">
+                {appointment.customerName}
+              </span>
+            )}
+          </div>
+        </button>
+
+        {/* Clickable customer name for chat (outside the expand button) */}
+        {appointment.customerName && onChat && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onChat(appointment); }}
+            className="sr-only"
+          >
+            Chat with {appointment.customerName}
+          </button>
+        )}
 
         {/* Action buttons */}
         {isActive && (
@@ -193,6 +200,16 @@ const AppointmentRow = ({
                 <Clock className="w-3 h-3" /> Done
               </span>
             ) : null}
+          </div>
+        )}
+
+        {/* Expandable address */}
+        {expanded && address && (
+          <div className="mt-2 pt-2 border-t border-border">
+            <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span className="break-words">{address}</span>
+            </div>
           </div>
         )}
       </div>
