@@ -169,9 +169,9 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
           <>
             <motion.div className="fixed inset-0 bg-foreground/40 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedId(null)} />
-            <motion.div className="fixed bottom-0 inset-x-0 mx-auto w-full max-w-lg bg-card rounded-t-3xl z-50 max-h-[75vh] overflow-y-auto"
+            <motion.div className="fixed bottom-[60px] inset-x-0 mx-auto w-full max-w-lg bg-card rounded-t-3xl z-50 max-h-[calc(100vh-120px)] overflow-y-auto"
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 300 }}>
-              <div className="px-4 pt-3 pb-24 space-y-4">
+              <div className="px-4 pt-3 pb-6 space-y-4">
                 {/* Handle */}
                 <div className="w-10 h-1 bg-muted rounded-full mx-auto shrink-0" />
 
