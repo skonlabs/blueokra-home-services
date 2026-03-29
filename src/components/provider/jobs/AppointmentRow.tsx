@@ -118,17 +118,28 @@ const AppointmentRow = ({
             )}
           </div>
 
-          {/* Date + customer row */}
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3 shrink-0" />
-              {appointment.date}
-            </span>
+        {/* Date + customer row */}
+          <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground">
             {appointment.customerName && (
-              <span className="flex items-center gap-1 text-primary font-medium">
-                {appointment.customerName}
-              </span>
+              <div className="shrink-0">
+                {appointment.customerPhoto ? (
+                  <img src={appointment.customerPhoto} alt={appointment.customerName} className="w-8 h-8 rounded-full object-cover border border-border" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border border-border">
+                    <UserIcon className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
             )}
+            <div className="flex flex-col min-w-0">
+              {appointment.customerName && (
+                <span className="text-xs text-primary font-medium truncate">{appointment.customerName}</span>
+              )}
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3 shrink-0" />
+                {appointment.date}
+              </span>
+            </div>
           </div>
         </button>
 

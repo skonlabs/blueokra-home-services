@@ -190,18 +190,23 @@ const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
                 </div>
 
                 {/* Date + provider */}
-                <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateStr} · {timeStr}</span>
+                {/* Provider avatar + date */}
+                <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground">
                   {provider && (
-                    <span className="flex items-center gap-1">
+                    <div className="shrink-0">
                       {provider.profile_photo_url ? (
-                        <img src={provider.profile_photo_url} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+                        <img src={provider.profile_photo_url} alt={appt.providerName} className="w-8 h-8 rounded-full object-cover border border-border" />
                       ) : (
-                        <UserIcon className="w-3 h-3 shrink-0" />
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border border-border">
+                          <UserIcon className="w-4 h-4 text-muted-foreground" />
+                        </div>
                       )}
-                      <span className="text-primary font-medium">{appt.providerName}</span>
-                    </span>
+                    </div>
                   )}
+                  <div className="flex flex-col min-w-0">
+                    {provider && <span className="text-xs text-primary font-medium truncate">{appt.providerName}</span>}
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateStr} · {timeStr}</span>
+                  </div>
                 </div>
 
                 {/* Actions */}
