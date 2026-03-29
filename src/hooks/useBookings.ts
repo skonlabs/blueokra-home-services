@@ -53,7 +53,24 @@ export const useProviderJobs = () => {
         .order("appointment_date", { ascending: true });
 
       if (error) throw error;
-      return data;
+
+      // Fetch customer profiles for display
+      const customerIds = [...new Set((data || []).map(d => d.customer_user_id).filter(Boolean))] as string[];
+      let customerProfiles: Record<string, any> = {};
+      if (customerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, first_name, last_name, display_name, address, city, state")
+          .in("user_id", customerIds);
+        (profiles || []).forEach((p: any) => {
+          customerProfiles[p.user_id] = p;
+        });
+      }
+
+      return (data || []).map(d => ({
+        ...d,
+        customer_profile: customerProfiles[d.customer_user_id!] || null,
+      }));
     },
   });
 };

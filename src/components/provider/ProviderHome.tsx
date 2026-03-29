@@ -15,7 +15,7 @@ interface ProviderHomeProps {
 }
 
 const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { data: rawJobs, isLoading: jobsLoading } = useProviderJobs();
   const { data: earnings, isLoading: earningsLoading } = useProviderEarnings();
 
@@ -43,7 +43,9 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
       <div className="bg-primary rounded-2xl px-4 pt-4 pb-5">
         <p className="text-primary-foreground/70 text-sm">{getGreeting()}</p>
         <p className="font-display text-xl font-bold text-primary-foreground">
-          {user?.email?.split("@")[0] || "Provider"}
+          {profile?.display_name || profile?.first_name || "Provider"}
+        </p>
+      </div>
         </p>
       </div>
 
