@@ -378,7 +378,6 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
               </p>
             );
           })() : null}
-          ) : null}
         </div>
 
         {/* Details grid */}
