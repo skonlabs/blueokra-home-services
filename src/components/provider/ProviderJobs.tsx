@@ -171,10 +171,13 @@ interface JobCardProps {
 
 const JobCard = ({ job, index, onComplete }: JobCardProps) => {
   const { toast } = useToast();
-  const isPending = ["scheduled", "new", "pending"].includes(job.status);
+  const isNewLead = job.status === "new_lead";
+  const isPending = ["scheduled", "new", "pending", "new_lead"].includes(job.status);
   const isActive = ["confirmed", "in_progress"].includes(job.status);
   const isCompleted = job.status === "completed";
   const isDeclined = ["declined", "cancelled"].includes(job.status);
+  const [accepting, setAccepting] = useState(false);
+  const [declining, setDeclining] = useState(false);
 
   const rawPrice = parseFloat(job.price.replace(/[^0-9.]/g, ""));
   const netEarnings = !isNaN(rawPrice) ? `(~$${Math.round(rawPrice * 0.88)} after fees)` : null;
