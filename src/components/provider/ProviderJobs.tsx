@@ -102,12 +102,15 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
     const apptCount = l.appointment_count || 1;
     const perYear = FREQUENCY_PER_YEAR[frequency] || 1;
     
-    // Calculate pricing: first service has surcharge (~15%), recurring is base price
+    // Calculate pricing using actual platform economics
+    // < $150 → 20% fee, $150-$400 → 25% fee, > $400 → 30% fee
+    const feePercent = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
     const firstServicePrice = revenue;
     const recurringPrice = frequency !== "one-time" ? Math.round(revenue * 0.85) : 0;
     const totalRevenue = frequency === "one-time" 
       ? revenue 
       : firstServicePrice + (recurringPrice * (apptCount > 1 ? apptCount - 1 : Math.max(perYear - 1, 0)));
+    const providerEarningsPercent = 1 - feePercent;
 
     // Expected end date
     let expectedEnd = "";

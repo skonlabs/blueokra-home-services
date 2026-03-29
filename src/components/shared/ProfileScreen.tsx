@@ -148,8 +148,24 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
     <div className="px-4 py-6 pb-24 space-y-4">
       {/* Avatar + name */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-          {isProvider ? <Wrench className="w-7 h-7 text-primary" /> : <User className="w-7 h-7 text-primary" />}
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+            {profilePhotoUrl ? (
+              <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+            ) : isProvider ? (
+              <Wrench className="w-7 h-7 text-primary" />
+            ) : (
+              <User className="w-7 h-7 text-primary" />
+            )}
+          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingPhoto}
+            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition-transform"
+          >
+            {uploadingPhoto ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
         </div>
         <div>
           <h2 className="font-display text-lg font-bold text-foreground">{shownName}</h2>
