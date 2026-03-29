@@ -27,11 +27,50 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const [notifReminders, setNotifReminders] = useState(true);
   const [notifPromos, setNotifPromos] = useState(false);
 
-  // Payment methods (mock — no Stripe integration)
+  // Payment methods (mock — for homeowners)
   const [paymentMethods] = useState([
     { id: "1", last4: "4242", brand: "Visa", exp: "12/26" },
   ]);
   const [showAddCard, setShowAddCard] = useState(false);
+
+  // Stripe Connect state (for providers)
+  const [connectStatus, setConnectStatus] = useState<"loading" | "not_created" | "pending" | "active">("loading");
+  const [connectLoading, setConnectLoading] = useState(false);
+
+  useEffect(() => {
+    if (isProvider && user) {
+      checkConnectStatus();
+    }
+  }, [isProvider, user]);
+
+  const checkConnectStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect", {
+        body: { action: "check_status" },
+      });
+      if (error) throw error;
+      setConnectStatus(data.status || "not_created");
+    } catch {
+      setConnectStatus("not_created");
+    }
+  };
+
+  const handleStripeConnect = async () => {
+    setConnectLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect", {
+        body: { action: "create_account" },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err) {
+      console.error("Stripe Connect error:", err);
+    } finally {
+      setConnectLoading(false);
+    }
+  };
 
   const shownName = profile?.display_name
     || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : null)
