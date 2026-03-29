@@ -3,6 +3,7 @@ import { Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun
 import ServiceGrid from "./ServiceGrid";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useBookings } from "@/hooks/useBookings";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 interface HomeScreenProps {
@@ -56,8 +57,11 @@ const HomeScreen = ({
   onBookAgain,
   onRebook,
 }: HomeScreenProps) => {
+  const { profile } = useAuth();
   const { data: rawBookings } = useBookings();
   const seasonalRecs = getSeasonalRecs();
+
+  const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
 
   // Show last 2 bookings from DB, fall back to empty
   const recentBookings = (rawBookings || []).slice(0, 2).map(b => {
@@ -87,7 +91,7 @@ const HomeScreen = ({
     <div className="px-4 pt-4 pb-24">
       {/* Greeting */}
       <div className="mb-5">
-        <h1 className="font-display text-xl font-bold text-foreground">Welcome back!</h1>
+        <h1 className="font-display text-xl font-bold text-foreground">Welcome back{userName ? `, ${userName}` : ""}!</h1>
         <p className="text-sm text-muted-foreground mt-0.5">What can we help with today?</p>
       </div>
 
