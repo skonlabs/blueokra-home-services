@@ -46,7 +46,7 @@ export const useProviderJobs = () => {
           provider_user_id, customer_status, provider_status, notes,
           service_id,
           booking_service!inner (
-            id, service_type, package_name, customer_user_id, revenue, notes
+            id, service_type, package_name, customer_user_id, revenue, notes, frequency, customizations, created_at
           )
         `)
         .eq("provider_user_id", user!.id)
