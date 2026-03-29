@@ -80,7 +80,7 @@ export const useProviderJobs = () => {
       if (customerIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("user_id, first_name, last_name, display_name, address, city, state")
+          .select("user_id, first_name, last_name, display_name, address, city, state, profile_photo_url")
           .in("user_id", customerIds);
         (profiles || []).forEach((p: any) => {
           customerProfiles[p.user_id] = p;
