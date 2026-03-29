@@ -104,8 +104,9 @@ const Index = () => {
     navigate(isProvider ? "provider-home" : "home");
   };
 
-  const handleServiceSelect = (serviceId: string) => {
+  const handleServiceSelect = (serviceId: string, rebookData?: IntakeFormData) => {
     setSelectedService(serviceId);
+    if (rebookData) setLastIntakeData(rebookData);
     navigate("intake");
   };
 
@@ -208,7 +209,7 @@ const Index = () => {
                 onViewBookings={() => navigate("bookings")}
                 onViewProperty={() => navigate("property")}
                 onBookAgain={() => navigate("bookings")}
-                onRebook={(id) => { setSelectedService(id); navigate("intake"); }}
+                onRebook={(id, customizations) => handleServiceSelect(id, customizations as IntakeFormData | undefined)}
               />
             </motion.div>
           )}
@@ -254,7 +255,7 @@ const Index = () => {
                 onPaymentFlow={() => navigate("payment")}
                 onReview={(booking) => { setReviewBooking(booking); }}
                 onDispute={() => navigate("dispute")}
-                onRebook={(serviceId) => { setSelectedService(serviceId); navigate("intake"); }}
+                onRebook={(serviceId, customizations) => handleServiceSelect(serviceId, customizations as IntakeFormData | undefined)}
               />
             </motion.div>
           )}
