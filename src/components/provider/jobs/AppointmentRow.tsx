@@ -172,6 +172,7 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
           appointmentId={appointment.id}
           currentDate={appointment.rawDate}
           onClose={() => setProposalOpen(false)}
+          key={`proposal-${appointment.id}`}
         />
       )}
     </>

@@ -79,11 +79,10 @@ const JobCard = ({ job, index, onCompleteAppointment, onChat }: JobCardProps) =>
     }
   };
 
-  // Earnings calculation
-  const feeP = job.firstServicePrice && job.firstServicePrice < 150 ? 20 : job.firstServicePrice && job.firstServicePrice <= 400 ? 25 : 30;
-  const earningsP = (100 - feeP) / 100;
-  const firstEarnings = Math.round((job.firstServicePrice || 0) * earningsP);
-  const recurringEarnings = Math.round((job.recurringPrice || 0) * earningsP);
+  // Earnings calculation - show what provider actually receives
+  const feeP = (job.firstServicePrice || 0) < 150 ? 0.20 : (job.firstServicePrice || 0) <= 400 ? 0.25 : 0.30;
+  const firstEarnings = Math.round((job.firstServicePrice || 0) * (1 - feeP));
+  const recurringEarnings = Math.round((job.recurringPrice || 0) * (1 - feeP));
 
   const statusBadge = isNewLead
     ? { bg: "bg-warm-50 text-warm-500", label: "New Request" }
