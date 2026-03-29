@@ -326,6 +326,7 @@ const Index = () => {
               <ProviderJobs
                 initialTab={navParams.tab as any}
                 onCompleteJob={(job) => { setSelectedJobForCompletion(job); navigate("provider-completion"); }}
+                onChat={(userId, name) => { setChatTarget({ userId, name }); navigate("provider-chat"); }}
               />
             </motion.div>
           )}
