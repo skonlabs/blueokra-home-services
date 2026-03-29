@@ -304,6 +304,17 @@ const Index = () => {
             </motion.div>
           )}
 
+          {screen === "chat" && (
+            <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 h-full flex flex-col" style={{ minHeight: "calc(100vh - 120px)" }}>
+              <ChatScreen initialUserId={chatTarget?.userId} initialUserName={chatTarget?.name} />
+            </motion.div>
+          )}
+
+          {screen === "provider-chat" && (
+            <motion.div key="provider-chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 h-full flex flex-col" style={{ minHeight: "calc(100vh - 120px)" }}>
+              <ChatScreen initialUserId={chatTarget?.userId} initialUserName={chatTarget?.name} />
+            </motion.div>
+
           {screen === "provider-home" && (
             <motion.div key="provider-home" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <ProviderHome onNavigate={handleNavigation} />
