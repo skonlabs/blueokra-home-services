@@ -8,7 +8,7 @@ interface ProfileScreenProps {
   isProvider?: boolean;
 }
 
-type Section = "account" | "payment" | "bank" | "notifications" | "help" | "privacy" | "terms" | null;
+type Section = "account" | "payment" | "venmo" | "notifications" | "help" | "privacy" | "terms" | null;
 
 const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
@@ -33,44 +33,8 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   ]);
   const [showAddCard, setShowAddCard] = useState(false);
 
-  // Stripe Connect state (for providers)
-  const [connectStatus, setConnectStatus] = useState<"loading" | "not_created" | "pending" | "active">("loading");
-  const [connectLoading, setConnectLoading] = useState(false);
-
-  useEffect(() => {
-    if (isProvider && user) {
-      checkConnectStatus();
-    }
-  }, [isProvider, user]);
-
-  const checkConnectStatus = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("stripe-connect", {
-        body: { action: "check_status" },
-      });
-      if (error) throw error;
-      setConnectStatus(data.status || "not_created");
-    } catch {
-      setConnectStatus("not_created");
-    }
-  };
-
-  const handleStripeConnect = async () => {
-    setConnectLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("stripe-connect", {
-        body: { action: "create_account" },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
-    } catch (err) {
-      console.error("Stripe Connect error:", err);
-    } finally {
-      setConnectLoading(false);
-    }
-  };
+  // Provider Venmo phone (uses their profile phone number)
+  const providerVenmoPhone = profile?.phone || user?.phone || "";
 
   const shownName = profile?.display_name
     || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : null)
