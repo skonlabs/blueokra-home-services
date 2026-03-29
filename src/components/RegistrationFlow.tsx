@@ -770,7 +770,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                     {error && <p className="text-xs text-destructive">{error}</p>}
 
                     <div className="flex gap-2">
-                      <button onClick={() => setProviderStep(3)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
+                      <button onClick={() => setProviderStep(4)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
                       <button
                         onClick={saveProvider}
                         disabled={saving || !venmoVerified || !venmoOwnershipAgreed}
