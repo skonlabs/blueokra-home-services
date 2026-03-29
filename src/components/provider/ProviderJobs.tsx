@@ -29,11 +29,12 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 interface ProviderJobsProps {
+  initialTab?: TabKey;
   onCompleteJob: (job: Job) => void;
 }
 
-const ProviderJobs = ({ onCompleteJob }: ProviderJobsProps) => {
-  const [activeTab, setActiveTab] = useState<TabKey>("all");
+const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab || "all");
   const { data: rawJobs, isLoading } = useProviderJobs();
 
   const jobs: Job[] = (rawJobs || []).map((j) => {
