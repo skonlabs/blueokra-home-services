@@ -152,6 +152,8 @@ const Index = () => {
         return { title: "My Properties" };
       case "profile":
         return { title: "Profile" };
+      case "chat":
+        return { title: "Messages" };
       case "provider-home":
         return null;
       case "provider-jobs":
@@ -166,6 +168,8 @@ const Index = () => {
         return { title: "Service History", onBack: () => navigate("provider-earnings") };
       case "provider-profile":
         return { title: "Profile" };
+      case "provider-chat":
+        return { title: "Messages" };
       default:
         return null;
     }
