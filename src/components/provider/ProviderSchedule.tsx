@@ -63,6 +63,7 @@ const ProviderSchedule = ({ onChat, onComplete }: ProviderScheduleProps) => {
   const [proposalApptId, setProposalApptId] = useState<string | null>(null);
   const [proposalDate, setProposalDate] = useState("");
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [expandedAppointmentId, setExpandedAppointmentId] = useState<string | null>(null);
 
   const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
 
@@ -198,7 +199,7 @@ const ProviderSchedule = ({ onChat, onComplete }: ProviderScheduleProps) => {
             const isCompleted = job.appointmentStatus === "completed";
             const isActive = !isCompleted && !["declined", "cancelled"].includes(job.appointmentStatus);
             const showDone = canCompleteAppointment(job.rawDate, job.appointmentStatus, job.providerStatus, job.customerStatus);
-            const showDoneDisabled = !showDone;
+            const isExpanded = expandedAppointmentId === job.id;
 
             return (
               <motion.div
@@ -208,26 +209,31 @@ const ProviderSchedule = ({ onChat, onComplete }: ProviderScheduleProps) => {
                 transition={{ delay: i * 0.05 }}
                 className="w-full text-left bg-card rounded-xl border border-border p-3"
               >
-                {/* Top row */}
-                <div className="flex items-center gap-2.5 mb-2">
-                  <ServiceIcon serviceType={job.serviceType} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{job.service}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-[10px] font-medium capitalize ${statusInfo.color}`}>{statusInfo.label}</span>
+                <button
+                  onClick={() => setExpandedAppointmentId((prev) => (prev === job.id ? null : job.id))}
+                  className="w-full text-left"
+                >
+                  {/* Top row */}
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <ServiceIcon serviceType={job.serviceType} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{job.service}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-[10px] font-medium capitalize ${statusInfo.color}`}>{statusInfo.label}</span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-foreground">${job.revenue}</p>
+                      <p className="text-[10px] text-muted-foreground">earnings</p>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-foreground">${job.revenue}</p>
-                    <p className="text-[10px] text-muted-foreground">earnings</p>
-                  </div>
-                </div>
 
-                {/* Info row */}
-                <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{job.time}</span>
-                  <span className="flex items-center gap-1"><User className="w-3 h-3 shrink-0" />{job.customer}</span>
-                </div>
+                  {/* Info row */}
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{job.time}</span>
+                    <span className="flex items-center gap-1"><User className="w-3 h-3 shrink-0" />{job.customer}</span>
+                  </div>
+                </button>
 
                 {/* Action buttons */}
                 {isActive && (
@@ -262,6 +268,15 @@ const ProviderSchedule = ({ onChat, onComplete }: ProviderScheduleProps) => {
                         <QrCode className="w-3 h-3" /> Done
                       </span>
                     )}
+                  </div>
+                )}
+
+                {isExpanded && (
+                  <div className="mt-2 pt-2 border-t border-border">
+                    <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <span className="break-words">{job.address}</span>
+                    </div>
                   </div>
                 )}
 
