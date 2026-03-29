@@ -69,6 +69,7 @@ const DateProposalSheet = ({ appointmentId, currentDate, onClose }: DateProposal
       toast({ title: "Date proposed!", description: "Waiting for the other party to confirm." });
       queryClient.invalidateQueries({ queryKey: ["provider-jobs"] });
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["homeowner-appointments"] });
       onClose();
     } catch (err: any) {
       toast({ title: "Failed to propose date", description: err.message, variant: "destructive" });

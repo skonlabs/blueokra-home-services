@@ -369,7 +369,13 @@ const Index = () => {
 
           {screen === "provider-schedule" && (
             <motion.div key="provider-schedule" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ProviderSchedule />
+              <ProviderSchedule
+                onChat={(userId, name) => { setChatTarget({ userId, name }); navigate("chat"); }}
+                onComplete={(apptId) => {
+                  setSelectedJobForCompletion({ id: apptId } as any);
+                  navigate("provider-completion");
+                }}
+              />
             </motion.div>
           )}
 

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon } from "lucide-react";
+import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon, DollarSign } from "lucide-react";
 import { useHomeownerAppointments } from "@/hooks/useHomeownerAppointments";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import DateProposalSheet from "@/components/provider/jobs/DateProposalSheet";
 import { format, isAfter } from "date-fns";
+import {
+  getAppointmentStatusInfo,
+  userNeedsToConfirm,
+} from "@/lib/appointmentStatus";
 
 type ScheduleTab = "all" | "pending" | "upcoming" | "completed";
 
@@ -25,7 +29,6 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
   const [proposalApptId, setProposalApptId] = useState<string | null>(null);
   const [proposalDate, setProposalDate] = useState<string>("");
   const [accepting, setAccepting] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const tabs: { key: ScheduleTab; label: string }[] = [
     { key: "all", label: "All" },
@@ -42,7 +45,6 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
         return all.filter(a => ["new", "pending", "scheduled"].includes(a.appointment_status) || a.customer_status === "pending");
       case "upcoming":
         return all.filter(a => {
-          if (a.appointment_status !== "confirmed") return false;
           if (a.customer_status !== "confirmed" || a.provider_status !== "confirmed") return false;
           try { return isAfter(new Date(a.appointment_date), now); } catch { return false; }
         });
@@ -77,22 +79,6 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
     }
   };
 
-  const getStatusInfo = (appt: any) => {
-    const cs = appt.customer_status;
-    const ps = appt.provider_status;
-    const status = appt.appointment_status;
-
-    if (status === "completed") return { label: "Completed", color: "text-okra-600", dot: "bg-okra-500" };
-    if (status === "confirmed" || (cs === "confirmed" && ps === "confirmed")) return { label: "Confirmed", color: "text-success", dot: "bg-success" };
-    
-    // Homeowner view: if provider proposed (provider confirmed, customer pending)
-    if (ps === "confirmed" && cs === "pending") return { label: "Pending your confirmation", color: "text-warm-500", dot: "bg-warm-400" };
-    // If homeowner proposed (customer confirmed, provider pending)
-    if (cs === "confirmed" && ps === "pending") return { label: "Awaiting confirmation", color: "text-primary", dot: "bg-primary" };
-    
-    return { label: status.replace("_", " "), color: "text-muted-foreground", dot: "bg-muted-foreground" };
-  };
-
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
@@ -107,7 +93,7 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
             const now = new Date();
             switch (tab.key) {
               case "pending": return all.filter(a => ["new", "pending", "scheduled"].includes(a.appointment_status) || a.customer_status === "pending").length;
-              case "upcoming": return all.filter(a => { if (a.appointment_status !== "confirmed") return false; if (a.customer_status !== "confirmed" || a.provider_status !== "confirmed") return false; try { return isAfter(new Date(a.appointment_date), now); } catch { return false; } }).length;
+              case "upcoming": return all.filter(a => { if (a.customer_status !== "confirmed" || a.provider_status !== "confirmed") return false; try { return isAfter(new Date(a.appointment_date), now); } catch { return false; } }).length;
               case "completed": return all.filter(a => a.appointment_status === "completed").length;
               default: return all.length;
             }
@@ -141,13 +127,22 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
       ) : (
         <div className="space-y-2">
           {filtered.map((appt, i) => {
-            const statusInfo = getStatusInfo(appt);
-            const isExpanded = expandedId === appt.id;
+            // Use shared status logic
+            const statusInfo = getAppointmentStatusInfo(
+              appt.appointment_status,
+              appt.provider_status,
+              appt.customer_status,
+              "homeowner"
+            );
+            const needsConfirm = userNeedsToConfirm(
+              appt.provider_status,
+              appt.customer_status,
+              "homeowner"
+            );
             const provider = appt.providerProfile;
             const amount = Number(appt.customerAmount) || 0;
-            const needsConfirm = appt.provider_status === "confirmed" && appt.customer_status === "pending";
             const isCompleted = appt.appointment_status === "completed";
-            const isActive = !isCompleted;
+            const isActive = !isCompleted && !["declined", "cancelled"].includes(appt.appointment_status);
 
             let dateStr = "TBD";
             let timeStr = "";
@@ -165,47 +160,44 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
-                className="bg-card rounded-xl border border-border p-3 active:scale-[0.99] transition-transform"
+                className="bg-card rounded-xl border border-border p-3"
               >
                 {/* Top: service + amount */}
-                <button onClick={() => setExpandedId(isExpanded ? null : appt.id)} className="w-full text-left">
-                  <div className="flex items-center gap-2.5 mb-2">
-                    <ServiceIcon serviceType={appt.serviceType} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{appt.serviceName}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />
-                        <span className={`text-[10px] font-medium ${statusInfo.color}`}>{statusInfo.label}</span>
-                      </div>
+                <div className="flex items-center gap-2.5 mb-2">
+                  <ServiceIcon serviceType={appt.serviceType} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{appt.serviceName}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotColor}`} />
+                      <span className={`text-[10px] font-medium ${statusInfo.color}`}>{statusInfo.label}</span>
                     </div>
-                    {amount > 0 && (
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-foreground">${amount}</p>
-                        <p className="text-[10px] text-muted-foreground">to pay</p>
-                      </div>
-                    )}
                   </div>
+                  {amount > 0 && (
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-foreground">${amount}</p>
+                      <p className="text-[10px] text-muted-foreground">to pay</p>
+                    </div>
+                  )}
+                </div>
 
-                  {/* Date + provider */}
-                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateStr} · {timeStr}</span>
-                    {provider && (
-                      <span className="flex items-center gap-1">
-                        {provider.profile_photo_url ? (
-                          <img src={provider.profile_photo_url} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-                        ) : (
-                          <UserIcon className="w-3 h-3 shrink-0" />
-                        )}
-                        <span className="text-primary font-medium">{appt.providerName}</span>
-                      </span>
-                    )}
-                  </div>
-                </button>
+                {/* Date + provider */}
+                <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateStr} · {timeStr}</span>
+                  {provider && (
+                    <span className="flex items-center gap-1">
+                      {provider.profile_photo_url ? (
+                        <img src={provider.profile_photo_url} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+                      ) : (
+                        <UserIcon className="w-3 h-3 shrink-0" />
+                      )}
+                      <span className="text-primary font-medium">{appt.providerName}</span>
+                    </span>
+                  )}
+                </div>
 
-                {/* Actions always visible */}
+                {/* Actions - always visible */}
                 {isActive && (
                   <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border">
-                    {/* Accept date */}
                     {needsConfirm && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleAcceptDate(appt.id); }}
@@ -215,8 +207,6 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
                         <ThumbsUp className="w-3 h-3" /> Confirm
                       </button>
                     )}
-
-                    {/* Propose new date */}
                     <button
                       onClick={(e) => { e.stopPropagation(); setProposalApptId(appt.id); setProposalDate(appt.appointment_date); }}
                       className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
@@ -224,8 +214,6 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
                     >
                       <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
-
-                    {/* Chat */}
                     {appt.provider_user_id && (
                       <button
                         onClick={(e) => { e.stopPropagation(); onChat?.(appt.provider_user_id!, appt.providerName); }}
@@ -234,16 +222,6 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
                         <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                       </button>
                     )}
-                  </div>
-                )}
-
-                {/* Expanded: address details */}
-                {isExpanded && provider?.address && (
-                  <div className="mt-2 pt-2 border-t border-border">
-                    <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                      <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                      <span className="break-words">{provider.address}</span>
-                    </div>
                   </div>
                 )}
               </motion.div>

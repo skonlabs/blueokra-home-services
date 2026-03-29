@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { DollarSign, CalendarDays, Clock, TrendingUp, AlertCircle, Loader2, User as UserIcon, Camera, Smartphone, ChevronRight, MapPin, CalendarClock, Navigation, MessageSquare, QrCode, Check as CheckIcon } from "lucide-react";
+import { DollarSign, CalendarDays, Clock, TrendingUp, AlertCircle, Loader2, User as UserIcon, Camera, Smartphone, ChevronRight, MapPin, CalendarClock, Navigation, MessageSquare, QrCode, Check as CheckIcon, ThumbsUp } from "lucide-react";
 import { useProviderJobs, useProviderLeads, useProviderEarnings } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +9,11 @@ import { supabase } from "@/integrations/supabase/client";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import DateProposalSheet from "@/components/provider/jobs/DateProposalSheet";
 import { format, addWeeks, isAfter, isBefore } from "date-fns";
+import {
+  getAppointmentStatusInfo,
+  userNeedsToConfirm,
+  canCompleteAppointment,
+} from "@/lib/appointmentStatus";
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -28,7 +33,6 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
   const isLoading = jobsLoading || earningsLoading || leadsLoading;
 
   const jobs = rawJobs || [];
-  // New requests = leads only (pending accept/decline)
   const newRequestLeads = rawLeads || [];
   const newRequests = newRequestLeads;
   const upcomingJobs = jobs.filter((j) => ["confirmed", "in_progress"].includes(j.appointment_status as string));
@@ -37,7 +41,6 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
   const totalEarned = (earnings || []).reduce((sum, e) => sum + (e.provider_amount || 0), 0);
   const pendingPayments = (earnings || []).filter((e) => e.payment_status === "pending").reduce((sum, e) => sum + (e.provider_amount || 0), 0);
 
-  // Upcoming appointments for next 2 weeks
   const upcomingAppointments = useMemo(() => {
     const now = new Date();
     const twoWeeksOut = addWeeks(now, 2);
@@ -52,7 +55,6 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
       .sort((a, b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime());
   }, [jobs]);
 
-  // Action needed items
   const actionItems: { label: string; description: string; icon: React.ReactNode; action: string }[] = [];
   if (!profile?.profile_photo_url) {
     actionItems.push({ label: "Add profile photo", description: "Help customers recognize you", icon: <Camera className="w-4 h-4 text-primary" />, action: "provider-profile" });
@@ -78,7 +80,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
         </h1>
       </div>
 
-      {/* 1. Action Needed - FIRST */}
+      {/* Action Needed */}
       {actionItems.length > 0 && (
         <div>
           <h3 className="font-display text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
@@ -93,9 +95,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
                 onClick={() => onNavigate(item.action)}
                 className="w-full bg-accent/10 border border-accent/20 rounded-xl p-3 flex items-center gap-3 text-left active:scale-[0.98] transition-transform"
               >
-                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  {item.icon}
-                </div>
+                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">{item.icon}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">{item.label}</p>
                   <p className="text-xs text-muted-foreground">{item.description}</p>
@@ -109,64 +109,48 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-3">
-        <motion.button
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
           onClick={() => onNavigate("provider-jobs", { tab: "new" })}
-          className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.97] transition-transform"
-        >
+          className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.97] transition-transform">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-accent/20 flex items-center justify-center">
-              <AlertCircle className="w-4 h-4 text-accent" />
-            </div>
+            <div className="w-8 h-8 rounded-xl bg-accent/20 flex items-center justify-center"><AlertCircle className="w-4 h-4 text-accent" /></div>
           </div>
           <p className="text-2xl font-bold text-foreground">{newRequests.length}</p>
           <p className="text-xs text-muted-foreground">New Requests</p>
         </motion.button>
 
-        <motion.button
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           onClick={() => onNavigate("provider-schedule")}
-          className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.97] transition-transform"
-        >
+          className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.97] transition-transform">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-              <CalendarDays className="w-4 h-4 text-primary" />
-            </div>
+            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center"><CalendarDays className="w-4 h-4 text-primary" /></div>
           </div>
           <p className="text-2xl font-bold text-foreground">{upcomingJobs.length}</p>
           <p className="text-xs text-muted-foreground">Upcoming Jobs</p>
         </motion.button>
 
-        <motion.button
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
           onClick={() => onNavigate("provider-earnings")}
-          className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.97] transition-transform"
-        >
+          className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.97] transition-transform">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-success/20 flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-success" />
-            </div>
+            <div className="w-8 h-8 rounded-xl bg-success/20 flex items-center justify-center"><DollarSign className="w-4 h-4 text-success" /></div>
           </div>
           <p className="text-2xl font-bold text-foreground">${totalEarned.toFixed(0)}</p>
           <p className="text-xs text-muted-foreground">Total Earned</p>
         </motion.button>
 
-        <motion.button
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           onClick={() => onNavigate("provider-earnings")}
-          className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.97] transition-transform"
-        >
+          className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.97] transition-transform">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-warm-100 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-warm-500" />
-            </div>
+            <div className="w-8 h-8 rounded-xl bg-warm-100 flex items-center justify-center"><TrendingUp className="w-4 h-4 text-warm-500" /></div>
           </div>
           <p className="text-2xl font-bold text-foreground">${pendingPayments.toFixed(0)}</p>
           <p className="text-xs text-muted-foreground">Pending Payments</p>
         </motion.button>
       </div>
 
-      {/* New Requests - simplified, clicking goes to jobs */}
+      {/* New Requests */}
       {newRequests.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -182,12 +166,9 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
               const cp = lead.customer_profile;
               const customerName = cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer";
               return (
-                <motion.button
-                  key={lead.id}
-                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                <motion.button key={lead.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                   onClick={() => onNavigate("provider-jobs", { tab: "new" })}
-                  className="w-full bg-card rounded-xl border border-border p-3 flex items-center justify-between text-left active:scale-[0.98] transition-transform"
-                >
+                  className="w-full bg-card rounded-xl border border-border p-3 flex items-center justify-between text-left active:scale-[0.98] transition-transform">
                   <div className="flex items-center gap-3">
                     <ServiceIcon serviceType={svc?.service_type || "lawn"} size="sm" />
                     <div>
@@ -206,7 +187,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
         </div>
       )}
 
-      {/* Upcoming Appointments - next 2 weeks */}
+      {/* Upcoming Appointments */}
       {upcomingAppointments.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -214,57 +195,14 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
             <button onClick={() => onNavigate("provider-schedule")} className="text-xs text-primary font-medium">View Schedule</button>
           </div>
           <div className="space-y-2">
-            {upcomingAppointments.slice(0, 5).map((job, i) => {
-              const service = job.booking_service as any;
-              const cp = (job as any).customer_profile;
-              const apptDate = new Date(job.appointment_date);
-              const timeStr = isNaN(apptDate.getTime()) ? "TBD" : format(apptDate, "h:mm a");
-              const dateLabel = isNaN(apptDate.getTime()) ? "" : format(apptDate, "EEE, MMM d");
-              const customerName = cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer";
-              const revenue = service?.revenue ? Number(service.revenue) : 0;
-              const feeP = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
-              const providerEarnings = Math.round(revenue * (1 - feeP));
-              const ps = job.provider_status as string;
-              const cs = job.customer_status as string;
-              let statusColor = "text-warm-500";
-              let statusText = (job.appointment_status || "pending").replace("_", " ");
-              if (job.appointment_status === "confirmed" || (ps === "confirmed" && cs === "confirmed")) {
-                statusColor = "text-success";
-                statusText = "Confirmed";
-              } else if (ps === "confirmed" && cs === "pending") {
-                statusColor = "text-primary";
-                statusText = "Awaiting their confirmation";
-              } else if (cs === "confirmed" && ps === "pending") {
-                statusColor = "text-warm-500";
-                statusText = "Pending your confirmation";
-              }
-              const address = cp?.address || service?.notes || "Address pending";
-              const customerUserId = cp?.user_id || job.customer_user_id;
-
-              return (
-                <UpcomingAppointmentCard
-                  key={job.id}
-                  index={i}
-                  serviceType={service?.service_type || "lawn"}
-                  serviceName={service?.package_name || service?.service_type || "Service"}
-                  status={statusText}
-                  statusColor={statusColor}
-                  earnings={providerEarnings}
-                  dateLabel={dateLabel}
-                  timeStr={timeStr}
-                  customerName={customerName}
-                  customerUserId={customerUserId}
-                  address={address}
-                  appointmentId={job.id}
-                  rawDate={job.appointment_date}
-                  providerStatus={ps}
-                  customerStatus={cs}
-                  appointmentStatus={job.appointment_status as string}
-                  onChatCustomer={(userId, name) => onNavigate("chat", { userId, userName: name })}
-                  onComplete={(apptId) => onNavigate("provider-completion")}
-                />
-              );
-            })}
+            {upcomingAppointments.slice(0, 5).map((job, i) => (
+              <UpcomingAppointmentCard
+                key={job.id}
+                index={i}
+                job={job}
+                onNavigate={onNavigate}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -279,8 +217,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
           <div className="space-y-2">
             {(earnings || []).slice(0, 3).map((txn, i) => (
               <motion.div key={txn.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                className="bg-card rounded-xl border border-border p-3 flex items-center justify-between"
-              >
+                className="bg-card rounded-xl border border-border p-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${txn.payment_status === "paid" ? "bg-success/10" : "bg-muted"}`}>
                     <DollarSign className={`w-4 h-4 ${txn.payment_status === "paid" ? "text-success" : "text-muted-foreground"}`} />
@@ -302,29 +239,15 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
   );
 };
 
-// Upcoming appointment card with action buttons
+// ---- Upcoming Appointment Card (uses shared status logic) ----
+
 interface UpcomingAppointmentCardProps {
   index: number;
-  serviceType: string;
-  serviceName: string;
-  status: string;
-  statusColor: string;
-  earnings: number;
-  dateLabel: string;
-  timeStr: string;
-  customerName: string;
-  customerUserId?: string;
-  address: string;
-  appointmentId: string;
-  rawDate: string;
-  providerStatus: string;
-  customerStatus: string;
-  appointmentStatus: string;
-  onChatCustomer: (userId: string, name: string) => void;
-  onComplete: (appointmentId: string) => void;
+  job: any;
+  onNavigate: (screen: string, params?: Record<string, string>) => void;
 }
 
-const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, statusColor, earnings, dateLabel, timeStr, customerName, customerUserId, address, appointmentId, rawDate, providerStatus, customerStatus, appointmentStatus, onChatCustomer, onComplete }: UpcomingAppointmentCardProps) => {
+const UpcomingAppointmentCard = ({ index, job, onNavigate }: UpcomingAppointmentCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const [proposalOpen, setProposalOpen] = useState(false);
   const [accepting, setAccepting] = useState(false);
@@ -332,15 +255,35 @@ const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, stat
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const iNeedToConfirm = providerStatus === "pending";
+  const service = job.booking_service as any;
+  const cp = (job as any).customer_profile;
+  const apptDate = new Date(job.appointment_date);
+  const timeStr = isNaN(apptDate.getTime()) ? "TBD" : format(apptDate, "h:mm a");
+  const dateLabel = isNaN(apptDate.getTime()) ? "" : format(apptDate, "EEE, MMM d");
+  const customerName = cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer";
+  const revenue = service?.revenue ? Number(service.revenue) : 0;
+  const feeP = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
+  const providerEarnings = Math.round(revenue * (1 - feeP));
+  const ps = job.provider_status as string;
+  const cs = job.customer_status as string;
+  const appointmentStatus = job.appointment_status as string;
+  const address = cp?.address || service?.notes || "Address pending";
+  const customerUserId = cp?.user_id || job.customer_user_id;
+  const serviceType = service?.service_type || "lawn";
+  const serviceName = service?.package_name || service?.service_type || "Service";
+
+  // Use shared status logic
+  const statusInfo = getAppointmentStatusInfo(appointmentStatus, ps, cs, "provider");
+  const iNeedToConfirm = userNeedsToConfirm(ps, cs, "provider");
   const isCompleted = appointmentStatus === "completed";
   const isActive = !isCompleted;
+  const showDone = canCompleteAppointment(job.appointment_date, appointmentStatus, ps, cs);
 
   const handleAcceptDate = async () => {
     if (!user) return;
     setAccepting(true);
     try {
-      const { data, error } = await supabase.rpc("accept_appointment_date", { _user_id: user.id, _appointment_id: appointmentId });
+      const { data, error } = await supabase.rpc("accept_appointment_date", { _user_id: user.id, _appointment_id: job.id });
       if (error) throw error;
       const result = data as any;
       toast({ title: result?.confirmed ? "Appointment confirmed!" : "Date accepted", description: result?.confirmed ? "Both parties agreed." : "Waiting for other party." });
@@ -351,16 +294,6 @@ const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, stat
       setAccepting(false);
     }
   };
-
-  const canComplete = (() => {
-    try {
-      const sd = new Date(rawDate);
-      const today = new Date();
-      sd.setHours(0, 0, 0, 0);
-      today.setHours(0, 0, 0, 0);
-      return sd <= today && (appointmentStatus === "confirmed" || (providerStatus === "confirmed" && customerStatus === "confirmed"));
-    } catch { return false; }
-  })();
 
   return (
     <>
@@ -373,10 +306,10 @@ const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, stat
             <ServiceIcon serviceType={serviceType} size="sm" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground truncate">{serviceName}</p>
-              <span className={`text-[10px] font-medium ${statusColor}`}>{status}</span>
+              <span className={`text-[10px] font-medium ${statusInfo.color}`}>{statusInfo.label}</span>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-sm font-bold text-foreground">${earnings}</p>
+              <p className="text-sm font-bold text-foreground">${providerEarnings}</p>
               <p className="text-[10px] text-muted-foreground">earnings</p>
             </div>
           </div>
@@ -392,7 +325,7 @@ const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, stat
             {iNeedToConfirm && (
               <button onClick={handleAcceptDate} disabled={accepting}
                 className="h-7 px-2 bg-success/10 text-success text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform">
-                <CheckIcon className="w-3 h-3" /> Accept
+                <ThumbsUp className="w-3 h-3" /> Accept
               </button>
             )}
             <button onClick={() => setProposalOpen(true)}
@@ -404,13 +337,13 @@ const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, stat
               <Navigation className="w-3.5 h-3.5 text-foreground" />
             </button>
             {customerUserId && (
-              <button onClick={() => onChatCustomer(customerUserId, customerName)}
+              <button onClick={() => onNavigate("chat", { userId: customerUserId, userName: customerName })}
                 className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform" title="Chat">
                 <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             )}
-            {canComplete && (
-              <button onClick={() => onComplete(appointmentId)}
+            {showDone && (
+              <button onClick={() => onNavigate("provider-completion")}
                 className="h-7 px-2 bg-success text-success-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform">
                 <QrCode className="w-3 h-3" /> Done
               </button>
@@ -430,8 +363,8 @@ const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, stat
 
       {proposalOpen && (
         <DateProposalSheet
-          appointmentId={appointmentId}
-          currentDate={rawDate}
+          appointmentId={job.id}
+          currentDate={job.appointment_date}
           onClose={() => { setProposalOpen(false); queryClient.invalidateQueries({ queryKey: ["provider-jobs"] }); }}
         />
       )}
