@@ -2,13 +2,16 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, Loader2, MessageSquare, Inbox, ThumbsDown, Calendar } from "lucide-react";
 import ServiceIcon from "@/components/shared/ServiceIcon";
-import { useProviderJobs } from "@/hooks/useBookings";
+import { useProviderJobs, useProviderLeads } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 
 export interface Job {
   id: string;
+  leadId?: string;
   service: string;
   serviceType: string;
   customer: string;
@@ -16,6 +19,7 @@ export interface Job {
   date: string;
   price: string;
   status: string;
+  serviceId?: string;
 }
 
 type TabKey = "all" | "new" | "in_progress" | "completed" | "declined";
@@ -35,9 +39,16 @@ interface ProviderJobsProps {
 
 const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab || "all");
-  const { data: rawJobs, isLoading } = useProviderJobs();
+  const { user } = useAuth();
+  const { data: rawJobs, isLoading: jobsLoading } = useProviderJobs();
+  const { data: rawLeads, isLoading: leadsLoading } = useProviderLeads();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  const jobs: Job[] = (rawJobs || []).map((j) => {
+  const isLoading = jobsLoading || leadsLoading;
+
+  // Map appointments to jobs
+  const appointmentJobs: Job[] = (rawJobs || []).map((j) => {
     const service = j.booking_service as any;
     const customerProfile = (j as any).customer_profile;
     return {
@@ -53,6 +64,27 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
       status: j.appointment_status as string,
     };
   });
+
+  // Map leads to jobs (these are new requests not yet accepted)
+  const leadJobs: Job[] = (rawLeads || []).map((l: any) => {
+    const svc = l.booking_service;
+    const cp = l.customer_profile;
+    return {
+      id: `lead-${l.id}`,
+      leadId: l.id,
+      serviceId: l.service_id,
+      service: svc?.package_name || svc?.service_type || "Service",
+      serviceType: svc?.service_type || "lawn",
+      customer: cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer",
+      address: svc?.notes || cp?.address || "Address pending",
+      date: (() => { try { if (l.appointment_date) { const d = new Date(l.appointment_date); return isNaN(d.getTime()) ? "N/A" : format(d, "MMM d, h:mm a"); } return "TBD"; } catch { return "N/A"; } })(),
+      price: svc?.revenue ? `$${svc.revenue}` : "TBD",
+      status: "new_lead",
+    };
+  });
+
+  // Combine: leads show as "new", appointments show for other statuses
+  const allJobs = [...leadJobs, ...appointmentJobs];
 
   const filterJobs = (tab: TabKey): Job[] => {
     switch (tab) {
