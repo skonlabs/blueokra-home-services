@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2 } from "lucide-react";
+import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2, Camera } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProfileScreenProps {
   isProvider?: boolean;
@@ -13,7 +14,11 @@ type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "ter
 
 const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
+  const { toast } = useToast();
   const [activeSection, setActiveSection] = useState<Section>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
 
   // Account Settings
   const [firstName, setFirstName] = useState(profile?.first_name ?? "");
