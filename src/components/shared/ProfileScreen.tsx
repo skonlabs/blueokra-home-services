@@ -56,6 +56,13 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
   const [notifReminders, setNotifReminders] = useState(true);
   const [notifPromos, setNotifPromos] = useState(false);
 
+  // Provider: services & areas
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [savingServices, setSavingServices] = useState(false);
+  const [savingAreas, setSavingAreas] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
+
 
   // Load venmo_phone and profile photo from DB
   useEffect(() => {
