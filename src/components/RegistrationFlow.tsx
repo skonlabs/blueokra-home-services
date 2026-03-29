@@ -105,12 +105,16 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
       });
       if (roleError) throw roleError;
 
+      // Extract phone from fake email for display purposes
+      const signupPhone = user.email?.replace("@blueokra.local", "").replace(/^(\d{1})(\d{3})(\d{3})(\d{4})$/, "+$1 ($2) $3-$4") || null;
+
       // Upsert profile with address info
       const { error: profileError } = await supabase.from("profiles").upsert({
         user_id: user.id,
         first_name: firstName.trim() || null,
         last_name: lastName.trim() || null,
         display_name: firstName.trim() ? `${firstName.trim()} ${lastName.trim()}`.trim() : null,
+        phone: signupPhone,
         address: homeAddress.trim() || null,
         city: homeCity.trim() || null,
         state: homeState.trim() || null,
@@ -123,6 +127,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
         await supabase.from("user_homes").insert({
           user_id: user.id,
           address: homeAddress.trim(),
+          nickname: "My Home",
           city: homeCity.trim() || null,
           state: homeState.trim() || null,
           zip_code: homeZip.trim() || null,
@@ -153,11 +158,15 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
       });
       if (roleError) throw roleError;
 
+      // Extract phone from fake email for display purposes
+      const signupPhone = user.email?.replace("@blueokra.local", "").replace(/^(\d{1})(\d{3})(\d{3})(\d{4})$/, "+$1 ($2) $3-$4") || null;
+
       // Upsert profile with provider details
       const { error: profileError } = await supabase.from("profiles").upsert({
         user_id: user.id,
         first_name: firstName.trim() || null,
         last_name: lastName.trim() || null,
+        phone: signupPhone,
         company_name: providerType === "company" ? businessName.trim() || null : null,
         display_name: providerType === "company"
           ? businessName.trim() || null

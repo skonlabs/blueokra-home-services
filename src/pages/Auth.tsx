@@ -37,8 +37,8 @@ const Auth = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Welcome!", description: "You're signed in." });
-      // No OTP step needed — user is already authenticated
+      // User is signed in — AuthContext will handle the transition
+      // No toast needed here since new users go to registration flow
     }
   };
 

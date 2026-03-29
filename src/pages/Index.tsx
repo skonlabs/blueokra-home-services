@@ -135,7 +135,7 @@ const Index = () => {
       case "quote":
         return { title: "Your Quote", onBack: () => navigate("intake") };
       case "booked":
-        return { title: "Confirmation", onBack: goHome };
+        return { title: "Confirmation" };
       case "bookings":
         return { title: "My Bookings" };
       case "payment":
@@ -143,7 +143,7 @@ const Index = () => {
       case "dispute":
         return { title: "Report Issue", onBack: () => navigate("bookings") };
       case "property":
-        return { title: "My Property" };
+        return { title: "My Properties" };
       case "profile":
         return { title: "Profile" };
       case "provider-home":
