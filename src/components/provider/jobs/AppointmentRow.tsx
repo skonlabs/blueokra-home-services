@@ -84,6 +84,21 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
           <div className="min-w-0">
             <p className="text-xs font-medium text-foreground truncate">{appointment.date}</p>
             <p className="text-[10px] text-muted-foreground capitalize">{statusLabel}</p>
+            {/* Always show service name and customer when available */}
+            {appointment.serviceName && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">{appointment.serviceName}</p>
+            )}
+            {appointment.customerName && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onChat) onChat(appointment);
+                }}
+                className="text-[10px] text-primary font-medium mt-0.5 block"
+              >
+                {appointment.customerName}
+              </button>
+            )}
           </div>
         </div>
 

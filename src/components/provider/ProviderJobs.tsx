@@ -48,6 +48,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
       const recurringPrice = isRecurring ? Math.round(revenue * 0.85) : 0;
 
       // Map appointments
+      const customerName = cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer";
       const mappedAppts: Appointment[] = appts.map((a: any) => ({
         id: a.id,
         date: (() => { try { const d = new Date(a.appointment_date); return isNaN(d.getTime()) ? "N/A" : format(d, "MMM d, h:mm a"); } catch { return "N/A"; } })(),
@@ -56,6 +57,8 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
         customerStatus: a.customer_status,
         providerStatus: a.provider_status,
         customerUserId: a.customer_user_id || svc?.customer_user_id || "",
+        serviceName: svc?.package_name || svc?.service_type || "Service",
+        customerName,
       }));
 
       const completedCount = mappedAppts.filter(a => a.status === "completed").length;

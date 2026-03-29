@@ -16,15 +16,17 @@ const ScreenHeader = ({ title, onBack, rightActions, onLogoClick, profilePhotoUr
     <div className="px-4 pt-12 pb-2.5 flex items-center justify-between">
       <button
         onClick={onLogoClick}
-        className="flex items-center gap-2 active:opacity-70 transition-opacity"
+        className="flex items-center gap-2.5 active:opacity-70 transition-opacity"
         aria-label="Go to home"
       >
-        <img src={blueokraLogo} alt="BlueOkra" className="w-7 h-7" aria-hidden="true" />
-        <span className="font-display text-base font-semibold tracking-tight text-gradient-primary leading-none">
-          BlueOkra
+        <img src={blueokraLogo} alt="BlueOkra" className="w-8 h-8" aria-hidden="true" />
+        <span className="flex items-baseline gap-0">
+          <span className="font-display text-[22px] font-bold tracking-tight text-gradient-primary leading-none">
+            BlueOkra
+          </span>
+          <sup className="text-[9px] font-semibold text-primary leading-none ml-[1px] -top-[0.6em] relative">®</sup>
         </span>
-        <sup className="text-[8px] font-medium text-primary leading-none -ml-0.5 mt-[-4px]">®</sup>
-        <span className="text-[9px] font-medium text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full leading-none ml-0.5">beta</span>
+        <span className="text-[10px] font-semibold text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded-full leading-none ml-1 self-center">beta</span>
       </button>
       {rightActions && <div className="flex gap-2">{rightActions}</div>}
     </div>

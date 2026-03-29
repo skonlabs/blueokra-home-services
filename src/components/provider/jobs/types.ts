@@ -6,6 +6,8 @@ export interface Appointment {
   customerStatus: string;
   providerStatus: string;
   customerUserId?: string;
+  serviceName?: string;
+  customerName?: string;
 }
 
 export interface ProviderJob {
