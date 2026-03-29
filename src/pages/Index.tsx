@@ -370,7 +370,7 @@ const Index = () => {
           {screen === "provider-schedule" && (
             <motion.div key="provider-schedule" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <ProviderSchedule
-                onChat={(userId, name) => navigate("chat", { userId, userName: name })}
+                onChat={(userId, name) => { setChatTarget({ userId, name }); navigate("chat"); }}
                 onComplete={(apptId) => {
                   setSelectedJobForCompletion({ id: apptId } as any);
                   navigate("provider-completion");
