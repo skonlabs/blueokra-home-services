@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2, Wrench } from "lucide-react";
+import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2, Wrench, Building2, ExternalLink, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -8,7 +8,7 @@ interface ProfileScreenProps {
   isProvider?: boolean;
 }
 
-type Section = "account" | "payment" | "notifications" | "help" | "privacy" | "terms" | null;
+type Section = "account" | "payment" | "bank" | "notifications" | "help" | "privacy" | "terms" | null;
 
 const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
@@ -27,11 +27,50 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const [notifReminders, setNotifReminders] = useState(true);
   const [notifPromos, setNotifPromos] = useState(false);
 
-  // Payment methods (mock — no Stripe integration)
+  // Payment methods (mock — for homeowners)
   const [paymentMethods] = useState([
     { id: "1", last4: "4242", brand: "Visa", exp: "12/26" },
   ]);
   const [showAddCard, setShowAddCard] = useState(false);
+
+  // Stripe Connect state (for providers)
+  const [connectStatus, setConnectStatus] = useState<"loading" | "not_created" | "pending" | "active">("loading");
+  const [connectLoading, setConnectLoading] = useState(false);
+
+  useEffect(() => {
+    if (isProvider && user) {
+      checkConnectStatus();
+    }
+  }, [isProvider, user]);
+
+  const checkConnectStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect", {
+        body: { action: "check_status" },
+      });
+      if (error) throw error;
+      setConnectStatus(data.status || "not_created");
+    } catch {
+      setConnectStatus("not_created");
+    }
+  };
+
+  const handleStripeConnect = async () => {
+    setConnectLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect", {
+        body: { action: "create_account" },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err) {
+      console.error("Stripe Connect error:", err);
+    } finally {
+      setConnectLoading(false);
+    }
+  };
 
   const shownName = profile?.display_name
     || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : null)
@@ -66,8 +105,18 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
 
   const inputCls = "w-full bg-muted rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent text-foreground";
 
-  const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }>; badge?: React.ReactNode }[] = [
     { key: "account", label: "Account Settings", icon: User },
+    ...(isProvider ? [{
+      key: "bank" as Section,
+      label: "Bank & Payouts",
+      icon: Building2,
+      badge: connectStatus === "active"
+        ? <CheckCircle2 className="w-3.5 h-3.5 text-secondary" />
+        : connectStatus === "pending"
+        ? <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+        : null,
+    }] : []),
     { key: "payment", label: "Payment Methods", icon: CreditCard },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "help", label: "Help & Support", icon: HelpCircle },
@@ -103,6 +152,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
               >
                 <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
                 <span className="flex-1 font-medium">{item.label}</span>
+                {item.badge && <span className="shrink-0">{item.badge}</span>}
                 {isOpen
                   ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   : <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -150,6 +200,73 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                             {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : profileSaved ? <Check className="w-4 h-4" /> : null}
                             {profileSaved ? "Saved!" : "Save Changes"}
                           </button>
+                        </>
+                      )}
+
+                      {/* BANK & PAYOUTS (Provider only) */}
+                      {item.key === "bank" && (
+                        <>
+                          {connectStatus === "loading" ? (
+                            <div className="flex justify-center py-4">
+                              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                            </div>
+                          ) : connectStatus === "active" ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 bg-secondary/10 rounded-xl p-3">
+                                <CheckCircle2 className="w-5 h-5 text-secondary shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">Bank account connected</p>
+                                  <p className="text-xs text-muted-foreground">Your Stripe account is verified and ready to receive payouts from BlueOkra.</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={handleStripeConnect}
+                                disabled={connectLoading}
+                                className="w-full flex items-center justify-center gap-2 bg-muted rounded-xl py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                {connectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                                Manage Stripe Account
+                              </button>
+                            </div>
+                          ) : connectStatus === "pending" ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 bg-amber-50 rounded-xl p-3">
+                                <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">Setup incomplete</p>
+                                  <p className="text-xs text-muted-foreground">Please complete your Stripe onboarding to start receiving payouts.</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={handleStripeConnect}
+                                disabled={connectLoading}
+                                className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                {connectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                                Complete Setup
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <p className="text-xs text-muted-foreground">
+                                Connect your bank account via Stripe to receive payouts for completed services. Stripe handles all identity verification and security.
+                              </p>
+                              <div className="bg-muted rounded-xl p-3 space-y-1.5 text-xs text-muted-foreground">
+                                <p className="font-medium text-foreground text-sm">How it works</p>
+                                <p>1. Complete Stripe's secure onboarding (ID + bank details)</p>
+                                <p>2. Once verified, BlueOkra admin will transfer your earnings</p>
+                                <p>3. Payouts arrive in your bank within 2–3 business days</p>
+                              </div>
+                              <button
+                                onClick={handleStripeConnect}
+                                disabled={connectLoading}
+                                className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                {connectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Building2 className="w-4 h-4" />}
+                                Set Up Bank Account
+                              </button>
+                            </div>
+                          )}
                         </>
                       )}
 
