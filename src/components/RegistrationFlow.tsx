@@ -70,6 +70,29 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
     );
   };
 
+  // Venmo phone OTP — bypassed for testing
+  const sendVenmoOtp = async () => {
+    if (!venmoPhone.trim()) return;
+    setVenmoSending(true);
+    try {
+      // In production, call supabase.rpc("send_otp", { _phone: venmoPhone.trim() })
+      // Bypassed for testing: auto-mark as sent
+      await new Promise(r => setTimeout(r, 500)); // simulate network
+      setVenmoOtpSent(true);
+      // Auto-verify bypass for testing
+      setVenmoVerified(true);
+    } catch {
+      setError("Failed to send verification code");
+    } finally {
+      setVenmoSending(false);
+    }
+  };
+
+  const verifyVenmoOtp = async () => {
+    // Bypassed for testing: any code is accepted
+    setVenmoVerified(true);
+  };
+
   const saveHomeowner = async () => {
     if (!user) return;
     setSaving(true);
