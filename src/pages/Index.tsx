@@ -48,6 +48,10 @@ const Index = () => {
   const [selectedJobForCompletion, setSelectedJobForCompletion] = useState<Job | null>(null);
   const [navParams, setNavParams] = useState<Record<string, string>>({});
 
+  // Notifications hook must be before any early returns
+  const { data: notifData } = useNotifications();
+  const unreadCount = (notifData || []).filter(n => !n.is_read).length;
+
   // Set mode based on user role
   useEffect(() => {
     if (roles.length === 0) return; // still loading or onboarding
@@ -162,10 +166,6 @@ const Index = () => {
   };
 
   const headerConfig = getHeaderConfig();
-
-  // Dynamic unread notification count
-  const { data: notifData } = useNotifications();
-  const unreadCount = (notifData || []).filter(n => !n.is_read).length;
 
   // Always-visible header right actions: bell + profile
   const headerRightActions = (
