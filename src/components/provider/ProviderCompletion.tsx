@@ -7,7 +7,8 @@ interface JobSummary {
   service: string;
   customer: string;
   address: string;
-  price: string;
+  price?: string;
+  firstServicePrice?: number;
 }
 
 interface ProviderCompletionProps {
