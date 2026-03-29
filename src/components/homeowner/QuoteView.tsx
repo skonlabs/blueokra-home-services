@@ -20,6 +20,42 @@ export interface ScheduleData {
 }
 
 // ---------------------------------------------------------------------------
+// Total-number-of-services helper
+// ---------------------------------------------------------------------------
+
+const FREQUENCY_INTERVAL_DAYS: Record<string, number> = {
+  weekly: 7,
+  biweekly: 14,
+  monthly: 30,
+  quarterly: 91,
+};
+
+export function calcTotalServices(
+  frequency: string,
+  startDate: string,
+  endMonth: number,   // 1-based
+  endYear: number,
+): number {
+  const intervalDays = FREQUENCY_INTERVAL_DAYS[frequency];
+  if (!intervalDays || !startDate) return 1;
+
+  const start = new Date(startDate + "T12:00:00");
+  // End date = last day of the selected end month
+  const end = new Date(endYear, endMonth, 0, 23, 59, 59); // day 0 of next month = last day
+
+  if (end <= start) return 1;
+
+  let count = 1; // first service
+  let current = new Date(start);
+  while (true) {
+    current.setDate(current.getDate() + intervalDays);
+    if (current > end) break;
+    count++;
+  }
+  return count;
+}
+
+// ---------------------------------------------------------------------------
 // Calendar helpers
 // ---------------------------------------------------------------------------
 
@@ -127,6 +163,15 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
   const canBook = isRecurring
     ? !!firstServiceDate
     : selectedDates.length > 0;
+
+  // TNS & total price for recurring services
+  const tns = isRecurring && firstServiceDate && quote.frequency
+    ? calcTotalServices(quote.frequency, firstServiceDate, recurringEndMonth, recurringEndYear)
+    : 1;
+  const recurringPerVisit = quote.recurringVisitPrice ?? quote.low;
+  const totalContractPrice = isRecurring
+    ? quote.low + (tns - 1) * recurringPerVisit
+    : quote.low;
 
   const handleBook = () => {
     if (isRecurring) {
@@ -406,6 +451,25 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
               </select>
             </div>
           </div>
+
+          {/* Total contract summary */}
+          {firstServiceDate && tns > 1 && (
+            <div className="bg-primary/5 rounded-xl p-3 border border-primary/20 space-y-1.5">
+              <p className="text-xs font-semibold text-foreground">Estimated Total</p>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">First visit</span>
+                <span className="font-medium">${quote.low}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">{tns - 1} subsequent visit{tns - 1 !== 1 ? "s" : ""} × ${recurringPerVisit}</span>
+                <span className="font-medium">${(tns - 1) * recurringPerVisit}</span>
+              </div>
+              <div className="border-t border-primary/20 pt-1.5 flex justify-between text-sm font-semibold">
+                <span>Total ({tns} visits)</span>
+                <span className="text-primary">${totalContractPrice}</span>
+              </div>
+            </div>
+          )}
 
           <p className="text-[11px] text-muted-foreground">
             Remaining visits auto-scheduled based on your selected frequency and end date.
