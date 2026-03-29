@@ -14,10 +14,10 @@ const ScreenHeader = ({ title, onBack, rightActions }: ScreenHeaderProps) => (
     <div className="px-4 pt-12 pb-2.5 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <img src={blueokraLogo} alt="BlueOkra" className="w-7 h-7" aria-hidden="true" />
-        <span className="font-display text-base font-semibold tracking-tight text-gradient-primary">
-          BlueOkra<sup className="text-[8px] text-primary" style={{ verticalAlign: 'top', position: 'relative', top: '2px', left: '1px' }}>®</sup>
+        <span className="font-display text-base font-semibold tracking-tight text-gradient-primary relative">
+          BlueOkra<sup className="text-[7px] text-primary absolute" style={{ top: '0px', right: '-10px' }}>®</sup>
         </span>
-        <span className="text-[9px] font-medium text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full leading-none -ml-0.5">beta</span>
+        <span className="text-[9px] font-medium text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full leading-none self-end mb-[1px]" style={{ marginLeft: '6px' }}>beta</span>
       </div>
       {rightActions && <div className="flex gap-2">{rightActions}</div>}
     </div>

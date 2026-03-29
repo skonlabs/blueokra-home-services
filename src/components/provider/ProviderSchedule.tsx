@@ -140,8 +140,8 @@ const ProviderSchedule = () => {
         {dayEarnings > 0 && <span className="text-xs font-medium text-foreground">${dayEarnings} estimated</span>}
       </div>
 
-      {/* Timeline */}
-      <div className="space-y-0">
+      {/* Appointments list */}
+      <div className="space-y-2">
         {jobs.length === 0 ? (
           <div className="text-center py-12">
             <Inbox className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
@@ -152,30 +152,22 @@ const ProviderSchedule = () => {
           jobs.map((job, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="flex gap-3"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className="bg-card rounded-xl border border-border p-3"
             >
-              <div className="flex flex-col items-center">
-                <div className="w-3 h-3 rounded-full bg-primary border-2 border-background shadow-sm mt-1" />
-                {i < jobs.length - 1 && <div className="w-0.5 flex-1 bg-border my-1" />}
+              <div className="flex items-center gap-2.5 mb-2">
+                <ServiceIcon serviceType={job.serviceType} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{job.service}</p>
+                  <p className="text-xs text-muted-foreground truncate">{job.customer}</p>
+                </div>
+                <span className="text-sm font-bold text-foreground shrink-0">{job.price}</span>
               </div>
-              <div className="flex-1 bg-card rounded-2xl border border-border p-3.5 mb-3">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <ServiceIcon serviceType={job.serviceType} size="sm" />
-                    <div>
-                      <p className="font-semibold text-sm text-foreground">{job.service}</p>
-                      <p className="text-xs text-muted-foreground">{job.customer}</p>
-                    </div>
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">{job.price}</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{job.time}</span>
-                  <span className="flex items-center gap-1 truncate"><MapPin className="w-3 h-3 shrink-0" />{job.address}</span>
-                </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{job.time}</span>
+                <span className="flex items-center gap-1 truncate max-w-[180px]"><MapPin className="w-3 h-3 shrink-0" />{job.address}</span>
               </div>
             </motion.div>
           ))

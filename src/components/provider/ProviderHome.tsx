@@ -39,12 +39,13 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
 
   return (
     <div className="px-4 py-4 pb-24 space-y-5">
-      {/* Greeting */}
-      <div className="bg-primary rounded-2xl px-4 pt-4 pb-5">
-        <p className="text-primary-foreground/70 text-sm">{getGreeting()}</p>
-        <p className="font-display text-xl font-bold text-primary-foreground">
-          {[profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || profile?.display_name || "Provider"}
-        </p>
+      {/* Greeting - compact */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-baseline gap-1.5">
+          <h1 className="font-display text-lg font-bold text-foreground">
+            {getGreeting()}, {profile?.first_name || profile?.display_name || "Pro"} 👋
+          </h1>
+        </div>
       </div>
 
       {/* Stats row */}

@@ -89,10 +89,10 @@ const HomeScreen = ({
 
   return (
     <div className="px-4 pt-4 pb-24">
-      {/* Greeting */}
-      <div className="mb-5">
-        <h1 className="font-display text-xl font-bold text-foreground">Welcome back{userName ? `, ${userName}` : ""}!</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">What can we help with today?</p>
+      {/* Greeting - compact inline */}
+      <div className="mb-4 flex items-baseline gap-1.5">
+        <h1 className="font-display text-lg font-bold text-foreground">Hi{userName ? ` ${userName.split(' ')[0]}` : ""} 👋</h1>
+        <span className="text-sm text-muted-foreground">What can we help with?</span>
       </div>
 
       {/* Search / Quick input */}
