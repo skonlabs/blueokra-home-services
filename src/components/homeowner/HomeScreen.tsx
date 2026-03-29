@@ -152,21 +152,6 @@ const HomeScreen = ({
         <span className="text-sm text-muted-foreground">What do you need help with?</span>
       </button>
 
-      {/* Quick actions */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-4 px-4">
-        <button
-          onClick={onBookAgain}
-          className="shrink-0 bg-card border border-border rounded-full px-4 py-2 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1.5"
-        >
-          <RotateCcw className="w-3 h-3" /> Book Again
-        </button>
-        <button
-          onClick={() => onOpenIntake("recurring")}
-          className="shrink-0 bg-card border border-border rounded-full px-4 py-2 text-xs font-medium text-foreground active:scale-[0.97] transition-transform flex items-center gap-1.5"
-        >
-          <Calendar className="w-3 h-3" /> Recurring
-        </button>
-      </div>
 
       {/* Trust badge */}
       <div className="flex items-center gap-2 bg-okra-50 rounded-2xl p-3 mb-6 border border-okra-100">
