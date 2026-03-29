@@ -305,8 +305,8 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
       ? (() => { try { return format(new Date(job.receivedAt), "MMM d, yyyy 'at' h:mm a"); } catch { return ""; } })()
       : "";
     const startDateFormatted = job.firstServiceDate
-      ? (() => { try { return format(new Date(job.firstServiceDate), "EEE, MMM d, yyyy"); } catch { return "TBD"; } })()
-      : "TBD";
+      ? (() => { try { return format(new Date(job.firstServiceDate), "EEE, MMM d, yyyy"); } catch { return "Requested (date pending)"; } })()
+      : "Requested (date pending)";
 
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
@@ -369,10 +369,15 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
           )}
 
           {/* Net earnings estimate */}
-          {job.totalRevenue ? (
-            <p className="text-[11px] text-muted-foreground italic">
-              ~${Math.round(job.totalRevenue * 0.88).toLocaleString()} after platform fees (12%)
-            </p>
+          {job.totalRevenue ? (() => {
+            const feeP = job.firstServicePrice && job.firstServicePrice < 150 ? 20 : job.firstServicePrice && job.firstServicePrice <= 400 ? 25 : 30;
+            const earningsP = 100 - feeP;
+            return (
+              <p className="text-[11px] text-muted-foreground italic">
+                ~${Math.round(job.totalRevenue * earningsP / 100).toLocaleString()} your earnings ({earningsP}% after {feeP}% platform fee)
+              </p>
+            );
+          })() : null}
           ) : null}
         </div>
 
