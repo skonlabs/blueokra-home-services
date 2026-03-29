@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Bell, User } from "lucide-react";
+import { Loader2, Bell, User, MessageSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useBookings";
+import { useConversations } from "@/hooks/useChat";
 import Auth from "./Auth";
 import BottomNav from "@/components/shared/BottomNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
@@ -25,6 +26,7 @@ import ProviderSchedule from "@/components/provider/ProviderSchedule";
 import ProviderServiceHistory from "@/components/provider/ProviderServiceHistory";
 import ProfileScreen from "@/components/shared/ProfileScreen";
 import RegistrationFlow from "@/components/RegistrationFlow";
+import ChatScreen from "@/components/chat/ChatScreen";
 import type { QuoteData } from "@/components/homeowner/AIIntakeChat";
 import { SERVICE_NAMES } from "@/components/homeowner/AIIntakeChat";
 import type { ScheduleData } from "@/components/homeowner/QuoteView";
@@ -32,8 +34,8 @@ import type { IntakeFormData } from "@/lib/quoteCalculator";
 import type { Job } from "@/components/provider/ProviderJobs";
 
 type Screen =
-  | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile"
-  | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-service-history" | "provider-profile";
+  | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile" | "chat"
+  | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-service-history" | "provider-profile" | "provider-chat";
 
 const Index = () => {
   const { user, loading, roles, refreshProfile } = useAuth();
