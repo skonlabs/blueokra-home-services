@@ -6,22 +6,31 @@ interface ScreenHeaderProps {
   title?: string;
   onBack?: () => void;
   rightActions?: ReactNode;
+  onLogoClick?: () => void;
+  profilePhotoUrl?: string | null;
 }
 
-const ScreenHeader = ({ title, onBack, rightActions }: ScreenHeaderProps) => (
+const ScreenHeader = ({ title, onBack, rightActions, onLogoClick, profilePhotoUrl }: ScreenHeaderProps) => (
   <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50">
     {/* Always-visible brand bar */}
     <div className="px-4 pt-12 pb-2.5 flex items-center justify-between">
-      <div className="flex items-end gap-2">
+      <button
+        onClick={onLogoClick}
+        className="flex items-end gap-2 active:opacity-70 transition-opacity"
+        aria-label="Go to home"
+      >
         <img src={blueokraLogo} alt="BlueOkra" className="w-7 h-7" aria-hidden="true" />
         <div className="relative inline-flex items-end">
           <span className="font-display text-base font-semibold tracking-tight text-gradient-primary leading-none">
-            BlueOkra
+            BlueOkr
           </span>
-          <span className="text-[7px] text-primary leading-none absolute -top-1 -right-2">®</span>
+          <span className="relative inline-block">
+            <span className="font-display text-base font-semibold tracking-tight text-gradient-primary leading-none">a</span>
+            <span className="text-[7px] text-primary leading-none absolute -top-2 -right-2">®</span>
+          </span>
         </div>
-        <span className="text-[9px] font-medium text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full leading-none mb-[1px]">beta</span>
-      </div>
+        <span className="text-[9px] font-medium text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full leading-none mb-[1px] ml-1">beta</span>
+      </button>
       {rightActions && <div className="flex gap-2">{rightActions}</div>}
     </div>
 
