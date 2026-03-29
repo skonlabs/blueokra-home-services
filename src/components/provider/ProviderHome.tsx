@@ -331,9 +331,20 @@ const UpcomingAppointmentCard = ({ index, job, onNavigate }: UpcomingAppointment
               <p className="text-[10px] text-muted-foreground">earnings</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateLabel} · {timeStr}</span>
-            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3 shrink-0" />{customerName}</span>
+          <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground">
+            <div className="shrink-0">
+              {cp?.profile_photo_url ? (
+                <img src={cp.profile_photo_url} alt={customerName} className="w-8 h-8 rounded-full object-cover border border-border" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border border-border">
+                  <UserIcon className="w-4 h-4 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs text-primary font-medium truncate">{customerName}</span>
+              <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateLabel} · {timeStr}</span>
+            </div>
           </div>
         </button>
 
