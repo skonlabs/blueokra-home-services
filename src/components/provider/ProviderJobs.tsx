@@ -143,7 +143,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
       city: cp?.city || "",
       state: cp?.state || "WA",
       frequency,
-      firstServiceDate: l.appointment_date || null,
+      firstServiceDate: l.appointment_dates?.[0] || l.appointment_date || svc?.created_at || null,
       receivedAt: l.created_at || null,
       totalRevenue,
       firstServicePrice,
@@ -372,12 +372,15 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
           {job.totalRevenue ? (() => {
             const feeP = job.firstServicePrice && job.firstServicePrice < 150 ? 20 : job.firstServicePrice && job.firstServicePrice <= 400 ? 25 : 30;
             const earningsP = 100 - feeP;
+            const earnings = Math.round(job.totalRevenue * earningsP / 100);
             return (
-              <p className="text-[11px] text-muted-foreground italic">
-                ~${Math.round(job.totalRevenue * earningsP / 100).toLocaleString()} your earnings ({earningsP}% after {feeP}% platform fee)
-              </p>
+              <div className="border-t border-border pt-2 flex justify-between items-center">
+                <span className="text-xs font-medium text-foreground">Your Earnings</span>
+                <span className="text-base font-bold text-secondary">${earnings.toLocaleString()}</span>
+              </div>
             );
           })() : null}
+          <p className="text-[10px] text-muted-foreground italic">After platform fee</p>
         </div>
 
         {/* Details grid */}
