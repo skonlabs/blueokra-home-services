@@ -334,6 +334,12 @@ const Index = () => {
             </motion.div>
           )}
 
+          {screen === "payments" && (
+            <motion.div key="payments" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <HomeownerPayments />
+            </motion.div>
+          )}
+
           {screen === "provider-chat" && (
             <motion.div key="provider-chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 h-full flex flex-col" style={{ minHeight: "calc(100vh - 120px)" }}>
               <ChatScreen initialUserId={chatTarget?.userId} initialUserName={chatTarget?.name} />
