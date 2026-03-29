@@ -203,6 +203,73 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                         </>
                       )}
 
+                      {/* BANK & PAYOUTS (Provider only) */}
+                      {item.key === "bank" && (
+                        <>
+                          {connectStatus === "loading" ? (
+                            <div className="flex justify-center py-4">
+                              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                            </div>
+                          ) : connectStatus === "active" ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 bg-secondary/10 rounded-xl p-3">
+                                <CheckCircle2 className="w-5 h-5 text-secondary shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">Bank account connected</p>
+                                  <p className="text-xs text-muted-foreground">Your Stripe account is verified and ready to receive payouts from BlueOkra.</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={handleStripeConnect}
+                                disabled={connectLoading}
+                                className="w-full flex items-center justify-center gap-2 bg-muted rounded-xl py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                {connectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                                Manage Stripe Account
+                              </button>
+                            </div>
+                          ) : connectStatus === "pending" ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 bg-amber-50 rounded-xl p-3">
+                                <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">Setup incomplete</p>
+                                  <p className="text-xs text-muted-foreground">Please complete your Stripe onboarding to start receiving payouts.</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={handleStripeConnect}
+                                disabled={connectLoading}
+                                className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                {connectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                                Complete Setup
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <p className="text-xs text-muted-foreground">
+                                Connect your bank account via Stripe to receive payouts for completed services. Stripe handles all identity verification and security.
+                              </p>
+                              <div className="bg-muted rounded-xl p-3 space-y-1.5 text-xs text-muted-foreground">
+                                <p className="font-medium text-foreground text-sm">How it works</p>
+                                <p>1. Complete Stripe's secure onboarding (ID + bank details)</p>
+                                <p>2. Once verified, BlueOkra admin will transfer your earnings</p>
+                                <p>3. Payouts arrive in your bank within 2–3 business days</p>
+                              </div>
+                              <button
+                                onClick={handleStripeConnect}
+                                disabled={connectLoading}
+                                className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                {connectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Building2 className="w-4 h-4" />}
+                                Set Up Bank Account
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+
                       {/* PAYMENT METHODS */}
                       {item.key === "payment" && (
                         <>
