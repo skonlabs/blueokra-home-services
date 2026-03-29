@@ -16,6 +16,7 @@ interface Profile {
   profile_photo_url: string | null;
   phone_verified: boolean | null;
   approval_status: string | null;
+  venmo_phone: string | null;
 }
 
 interface AuthContextType {
