@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { computeEconomics } from "@/lib/quoteCalculator";
 import { motion } from "framer-motion";
 import { DollarSign, CalendarDays, Clock, TrendingUp, AlertCircle, Loader2, User as UserIcon, Camera, Smartphone, ChevronRight, MapPin, CalendarClock, Navigation, MessageSquare, QrCode, Check as CheckIcon, ThumbsUp } from "lucide-react";
 import { useProviderJobs, useProviderLeads, useProviderEarnings } from "@/hooks/useBookings";
@@ -279,8 +280,7 @@ const UpcomingAppointmentCard = ({ index, job, onNavigate }: UpcomingAppointment
   const dateLabel = isNaN(apptDate.getTime()) ? "" : format(apptDate, "EEE, MMM d");
   const customerName = cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer";
   const revenue = service?.revenue ? Number(service.revenue) : 0;
-  const feeP = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
-  const providerEarnings = Math.round(revenue * (1 - feeP));
+  const { providerPayout: providerEarnings } = computeEconomics(revenue);
   const ps = job.provider_status as string;
   const cs = job.customer_status as string;
   const appointmentStatus = job.appointment_status as string;

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { computeEconomics } from "@/lib/quoteCalculator";
 import { Clock, MapPin, ChevronLeft, ChevronRight, Loader2, Inbox, DollarSign, User, CalendarClock, Navigation, MessageSquare, QrCode, ThumbsUp, Check } from "lucide-react";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useState, useMemo } from "react";
@@ -78,8 +79,7 @@ const ProviderSchedule = ({ onChat, onComplete }: ProviderScheduleProps) => {
         const service = job.booking_service as any;
         const cp = job.customer_profile;
         const revenue = service?.revenue ? Number(service.revenue) : 0;
-        const feeP = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
-        const providerEarnings = Math.round(revenue * (1 - feeP));
+        const { providerPayout: providerEarnings } = computeEconomics(revenue);
         if (!result[key]) result[key] = [];
         result[key].push({
           id: job.id,

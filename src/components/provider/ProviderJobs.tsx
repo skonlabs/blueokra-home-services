@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { computeEconomics } from "@/lib/quoteCalculator";
 import { Loader2, Inbox } from "lucide-react";
 import { useProviderJobs, useProviderLeads } from "@/hooks/useBookings";
 import { format, addMonths } from "date-fns";
@@ -43,7 +44,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
       const perYear = FREQUENCY_PER_YEAR[frequency] || 1;
       const isRecurring = frequency !== "one-time";
 
-      const feePercent = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
+      const { marginPercent: feePercent } = computeEconomics(revenue);
       const firstServicePrice = revenue;
       const recurringPrice = isRecurring ? Math.round(revenue * 0.85) : 0;
 
