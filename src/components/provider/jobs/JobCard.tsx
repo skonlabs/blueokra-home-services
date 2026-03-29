@@ -15,9 +15,10 @@ interface JobCardProps {
   job: ProviderJob;
   index: number;
   onCompleteAppointment: (job: ProviderJob, appointment: Appointment) => void;
+  onChat?: (userId: string, name: string) => void;
 }
 
-const JobCard = ({ job, index, onCompleteAppointment }: JobCardProps) => {
+const JobCard = ({ job, index, onCompleteAppointment, onChat }: JobCardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
