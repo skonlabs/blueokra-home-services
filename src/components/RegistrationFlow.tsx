@@ -21,6 +21,22 @@ const AVAILABLE_SERVICES = [
   { name: "Fence Installation", description: "Wood, vinyl & chain-link fencing, repairs, staining & sealing" },
 ];
 
+const WA_CITIES = [
+  "Aberdeen", "Anacortes", "Auburn", "Bainbridge Island", "Battle Ground", "Bellevue", "Bellingham",
+  "Bonney Lake", "Bothell", "Bremerton", "Burien", "Burlington", "Camas", "Centralia", "Chelan",
+  "Cheney", "Covington", "Des Moines", "DuPont", "East Wenatchee", "Edmonds", "Ellensburg",
+  "Enumclaw", "Ephrata", "Everett", "Federal Way", "Ferndale", "Gig Harbor", "Issaquah",
+  "Kenmore", "Kennewick", "Kent", "Kirkland", "Lacey", "Lake Forest Park", "Lake Stevens",
+  "Lakewood", "Liberty Lake", "Longview", "Lynnwood", "Maple Valley", "Marysville", "Mercer Island",
+  "Mill Creek", "Monroe", "Moses Lake", "Mount Vernon", "Mountlake Terrace", "Mukilteo",
+  "Newcastle", "Oak Harbor", "Olympia", "Orting", "Pasco", "Port Angeles", "Port Orchard",
+  "Port Townsend", "Poulsbo", "Pullman", "Puyallup", "Redmond", "Renton", "Richland",
+  "Sammamish", "SeaTac", "Seattle", "Sedro-Woolley", "Sequim", "Shelton", "Shoreline",
+  "Snohomish", "Snoqualmie", "Spokane", "Spokane Valley", "Stanwood", "Sumner", "Sunnyside",
+  "Tacoma", "Tukwila", "Tumwater", "University Place", "Vancouver", "Walla Walla", "Washougal",
+  "Wenatchee", "West Richland", "Woodinville", "Yakima",
+];
+
 const inputCls =
   "w-full bg-muted rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 border border-transparent";
 
