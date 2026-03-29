@@ -72,13 +72,11 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }>; badge?: React.ReactNode }[] = [
     { key: "account", label: "Account Settings", icon: User },
     ...(isProvider ? [{
-      key: "bank" as Section,
-      label: "Bank & Payouts",
-      icon: Building2,
-      badge: connectStatus === "active"
+      key: "venmo" as Section,
+      label: "Venmo Payouts",
+      icon: Smartphone,
+      badge: providerVenmoPhone
         ? <CheckCircle2 className="w-3.5 h-3.5 text-secondary" />
-        : connectStatus === "pending"
-        ? <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
         : null,
     }] : []),
     { key: "payment", label: "Payment Methods", icon: CreditCard },
