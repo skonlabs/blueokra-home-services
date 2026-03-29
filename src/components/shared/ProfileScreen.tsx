@@ -360,7 +360,7 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
                             <Home className="w-4 h-4" /> View My Properties
                           </button>
                         </div>
-                      )
+                      )}
 
                     </div>
                   </motion.div>
