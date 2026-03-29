@@ -1,6 +1,6 @@
 import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, Wrench, Building2, User, ChevronRight, Check, Loader2, MapPin, PartyPopper } from "lucide-react";
+import { Home, Wrench, Building2, User, ChevronRight, Check, Loader2, MapPin, PartyPopper, Smartphone, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import blueokraLogo from "@/assets/blueokra-logo.svg";
@@ -54,12 +54,43 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
 
+  // Venmo phone (step 4)
+  const [venmoPhone, setVenmoPhone] = useState("");
+  const [venmoOtpSent, setVenmoOtpSent] = useState(false);
+  const [venmoOtp, setVenmoOtp] = useState("");
+  const [venmoVerified, setVenmoVerified] = useState(false);
+  const [venmoSending, setVenmoSending] = useState(false);
+  const [venmoOwnershipAgreed, setVenmoOwnershipAgreed] = useState(false);
+
   const [expandedService, setExpandedService] = useState<string | null>(null);
 
   const toggleService = (s: string) => {
     setSelectedServices(prev =>
       prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
     );
+  };
+
+  // Venmo phone OTP — bypassed for testing
+  const sendVenmoOtp = async () => {
+    if (!venmoPhone.trim()) return;
+    setVenmoSending(true);
+    try {
+      // In production, call supabase.rpc("send_otp", { _phone: venmoPhone.trim() })
+      // Bypassed for testing: auto-mark as sent
+      await new Promise(r => setTimeout(r, 500)); // simulate network
+      setVenmoOtpSent(true);
+      // Auto-verify bypass for testing
+      setVenmoVerified(true);
+    } catch {
+      setError("Failed to send verification code");
+    } finally {
+      setVenmoSending(false);
+    }
+  };
+
+  const verifyVenmoOtp = async () => {
+    // Bypassed for testing: any code is accepted
+    setVenmoVerified(true);
   };
 
   const saveHomeowner = async () => {
@@ -133,7 +164,8 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
           : firstName.trim() ? `${firstName.trim()} ${lastName.trim()}`.trim() : null,
         address: businessAddress.trim() || null,
         services_offered: selectedServices,
-      }, { onConflict: "user_id" });
+        venmo_phone: venmoPhone.trim() || null,
+      } as any, { onConflict: "user_id" });
       if (profileError) throw profileError;
 
       await refreshProfile();
@@ -328,7 +360,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
             >
               {/* Progress bar */}
               <div className="flex gap-2">
-                {[1, 2, 3].map(s => (
+                {[1, 2, 3, 4].map(s => (
                   <div key={s} className={`flex-1 h-1.5 rounded-full transition-colors ${s <= providerStep ? "bg-primary" : "bg-muted"}`} />
                 ))}
               </div>
@@ -531,13 +563,127 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                     <div className="flex gap-2">
                       <button onClick={() => setProviderStep(2)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
                       <button
+                        onClick={() => setProviderStep(4)}
+                        className="flex-1 bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm"
+                      >
+                        Continue →
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Provider step 4: Venmo Phone for Payouts */}
+                {providerStep === 4 && (
+                  <motion.div key="p4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                    <div>
+                      <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center mb-3">
+                        <Smartphone className="w-6 h-6 text-secondary" />
+                      </div>
+                      <h2 className="font-display text-xl font-bold text-foreground">Payment Setup</h2>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Enter the phone number linked to your Venmo account. BlueOkra will send your earnings to this number.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1.5">Venmo phone number</label>
+                      <div className="flex gap-2">
+                        <input
+                          className={`${inputCls} flex-1`}
+                          value={venmoPhone}
+                          onChange={e => { setVenmoPhone(e.target.value); setVenmoVerified(false); setVenmoOtpSent(false); }}
+                          placeholder="(555) 123-4567"
+                          inputMode="tel"
+                          disabled={venmoVerified}
+                        />
+                        {!venmoVerified && (
+                          <button
+                            onClick={sendVenmoOtp}
+                            disabled={!venmoPhone.trim() || venmoSending}
+                            className="px-4 bg-primary text-primary-foreground font-medium rounded-xl text-sm disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+                          >
+                            {venmoSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : venmoOtpSent ? "Resend" : "Verify"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* OTP input — shown when sent but not yet verified (bypassed: auto-verified) */}
+                    {venmoOtpSent && !venmoVerified && (
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1.5">Enter verification code</label>
+                        <div className="flex gap-2">
+                          <input
+                            className={`${inputCls} flex-1`}
+                            value={venmoOtp}
+                            onChange={e => setVenmoOtp(e.target.value)}
+                            placeholder="6-digit code"
+                            maxLength={6}
+                            inputMode="numeric"
+                          />
+                          <button
+                            onClick={verifyVenmoOtp}
+                            disabled={venmoOtp.length < 4}
+                            className="px-4 bg-primary text-primary-foreground font-medium rounded-xl text-sm disabled:opacity-50"
+                          >
+                            Confirm
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Verified badge */}
+                    {venmoVerified && (
+                      <div className="flex items-center gap-2 bg-secondary/10 rounded-xl p-3">
+                        <ShieldCheck className="w-5 h-5 text-secondary shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Phone verified</p>
+                          <p className="text-xs text-muted-foreground">Earnings will be sent to <span className="font-semibold">{venmoPhone}</span> via Venmo</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Ownership agreement */}
+                    <button
+                      onClick={() => setVenmoOwnershipAgreed(!venmoOwnershipAgreed)}
+                      className="flex items-start gap-3 w-full text-left"
+                    >
+                      <div
+                        className={`w-5 h-5 mt-0.5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                          venmoOwnershipAgreed ? "bg-primary border-primary" : "border-muted-foreground/40"
+                        }`}
+                      >
+                        {venmoOwnershipAgreed && <Check className="w-3 h-3 text-primary-foreground" />}
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        I confirm that the Venmo phone number provided above belongs to me and I authorize BlueOkra to send my service earnings to this Venmo account.
+                      </p>
+                    </button>
+
+                    {/* How payouts work */}
+                    <div className="bg-muted rounded-xl p-3 space-y-1.5 text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground text-sm">How payouts work</p>
+                      <p>1. Customer pays BlueOkra directly (card, debit, etc.)</p>
+                      <p>2. After service is confirmed complete, admin releases payment</p>
+                      <p>3. BlueOkra sends your earnings to your Venmo</p>
+                    </div>
+
+                    {error && <p className="text-xs text-destructive">{error}</p>}
+
+                    <div className="flex gap-2">
+                      <button onClick={() => setProviderStep(3)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
+                      <button
                         onClick={saveProvider}
-                        disabled={saving}
+                        disabled={saving || !venmoVerified || !venmoOwnershipAgreed}
                         className="flex-1 bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Launch My Profile</span><PartyPopper className="w-4 h-4" /></>}
                       </button>
                     </div>
+
+                    <p className="text-[11px] text-muted-foreground text-center">
+                      You can update your Venmo number later from Profile → Account Settings
+                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>
