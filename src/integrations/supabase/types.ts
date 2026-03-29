@@ -1588,6 +1588,10 @@ export type Database = {
         }
         Returns: number
       }
+      provider_has_lead_for_service: {
+        Args: { p_provider_id: string; p_service_id: string }
+        Returns: boolean
+      }
       provider_respond_service: {
         Args: {
           _decline_reason?: string
