@@ -1,17 +1,38 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2, Camera, Home } from "lucide-react";
+import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2, Camera, Home, MapPin, Briefcase } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+const AVAILABLE_SERVICES = [
+  "Lawn Care", "House Cleaning", "Gutter Cleaning", "Roof Cleaning",
+  "Pressure Washing", "Duct Cleaning", "Backwater Testing", "Fence Installation",
+];
+
+const WA_CITIES = [
+  "Aberdeen", "Anacortes", "Auburn", "Bainbridge Island", "Battle Ground", "Bellevue", "Bellingham",
+  "Bonney Lake", "Bothell", "Bremerton", "Burien", "Burlington", "Camas", "Centralia", "Chelan",
+  "Cheney", "Covington", "Des Moines", "DuPont", "East Wenatchee", "Edmonds", "Ellensburg",
+  "Enumclaw", "Ephrata", "Everett", "Federal Way", "Ferndale", "Gig Harbor", "Issaquah",
+  "Kenmore", "Kennewick", "Kent", "Kirkland", "Lacey", "Lake Forest Park", "Lake Stevens",
+  "Lakewood", "Liberty Lake", "Longview", "Lynnwood", "Maple Valley", "Marysville", "Mercer Island",
+  "Mill Creek", "Monroe", "Moses Lake", "Mount Vernon", "Mountlake Terrace", "Mukilteo",
+  "Newcastle", "Oak Harbor", "Olympia", "Orting", "Pasco", "Port Angeles", "Port Orchard",
+  "Port Townsend", "Poulsbo", "Pullman", "Puyallup", "Redmond", "Renton", "Richland",
+  "Sammamish", "SeaTac", "Seattle", "Sedro-Woolley", "Sequim", "Shelton", "Shoreline",
+  "Snohomish", "Snoqualmie", "Spokane", "Spokane Valley", "Stanwood", "Sumner", "Sunnyside",
+  "Tacoma", "Tukwila", "Tumwater", "University Place", "Vancouver", "Walla Walla", "Washougal",
+  "Wenatchee", "West Richland", "Woodinville", "Yakima",
+];
 
 interface ProfileScreenProps {
   isProvider?: boolean;
   onNavigateProperty?: () => void;
 }
 
-type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | "properties" | null;
+type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | "properties" | "services" | "areas" | null;
 
 const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
@@ -35,13 +56,56 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
   const [notifReminders, setNotifReminders] = useState(true);
   const [notifPromos, setNotifPromos] = useState(false);
 
+  // Provider: services & areas
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [savingServices, setSavingServices] = useState(false);
+  const [savingAreas, setSavingAreas] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
+
+
+  const handleSaveServices = async () => {
+    if (!user) return;
+    setSavingServices(true);
+    try {
+      const { error } = await supabase.from("profiles").update({ services_offered: selectedServices } as any).eq("user_id", user.id);
+      if (error) throw error;
+      await refreshProfile();
+      toast({ title: "Services updated!" });
+    } catch (err: any) {
+      toast({ title: "Failed to save", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingServices(false);
+    }
+  };
+
+  const handleSaveAreas = async () => {
+    if (!user) return;
+    setSavingAreas(true);
+    try {
+      const { error } = await supabase.from("profiles").update({ service_areas: selectedAreas } as any).eq("user_id", user.id);
+      if (error) throw error;
+      await refreshProfile();
+      toast({ title: "Service areas updated!" });
+    } catch (err: any) {
+      toast({ title: "Failed to save", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingAreas(false);
+    }
+  };
+
+  const toggleService = (s: string) => setSelectedServices(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  const toggleArea = (a: string) => setSelectedAreas(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
+  const filteredCities = citySearch ? WA_CITIES.filter(c => c.toLowerCase().includes(citySearch.toLowerCase())) : WA_CITIES;
 
   // Load venmo_phone and profile photo from DB
   useEffect(() => {
     if (user) {
-      supabase.from("profiles").select("venmo_phone, profile_photo_url").eq("user_id", user.id).single().then(({ data }) => {
+      supabase.from("profiles").select("venmo_phone, profile_photo_url, services_offered, service_areas").eq("user_id", user.id).single().then(({ data }) => {
         if (data?.venmo_phone) setVenmoPhone(data.venmo_phone);
         if (data?.profile_photo_url) setProfilePhotoUrl(data.profile_photo_url);
+        if (data?.services_offered) setSelectedServices(data.services_offered as string[]);
+        if (data?.service_areas) setSelectedAreas(data.service_areas as string[]);
       });
     }
   }, [user]);
@@ -139,6 +203,10 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
         ? <CheckCircle2 className="w-3.5 h-3.5 text-secondary" />
         : <Smartphone className="w-3.5 h-3.5 text-muted-foreground" />,
     }] : []),
+    ...(isProvider ? [
+      { key: "services" as Section, label: "Services Offered", icon: Briefcase },
+      { key: "areas" as Section, label: "Service Areas", icon: MapPin },
+    ] : []),
     ...(!isProvider ? [{ key: "properties" as Section, label: "My Properties", icon: Home }] : []),
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "help", label: "Help & Support", icon: HelpCircle },
@@ -358,6 +426,76 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
                             className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2"
                           >
                             <Home className="w-4 h-4" /> View My Properties
+                          </button>
+                        </div>
+                      )}
+
+                      {/* SERVICES OFFERED (Provider only) */}
+                      {item.key === "services" && (
+                        <div className="space-y-3">
+                          <p className="text-xs text-muted-foreground">Select the services you provide. This determines which job leads you receive.</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {AVAILABLE_SERVICES.map(s => (
+                              <button
+                                key={s}
+                                onClick={() => toggleService(s)}
+                                className={`text-left text-xs px-3 py-2.5 rounded-xl border transition-colors ${
+                                  selectedServices.includes(s)
+                                    ? "bg-primary/10 border-primary text-primary font-medium"
+                                    : "bg-muted border-transparent text-foreground"
+                                }`}
+                              >
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            onClick={handleSaveServices}
+                            disabled={savingServices || selectedServices.length === 0}
+                            className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {savingServices ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            Save Services
+                          </button>
+                        </div>
+                      )}
+
+                      {/* SERVICE AREAS (Provider only) */}
+                      {item.key === "areas" && (
+                        <div className="space-y-3">
+                          <p className="text-xs text-muted-foreground">Choose the cities where you're available to work.</p>
+                          <input
+                            className={inputCls}
+                            placeholder="Search cities…"
+                            value={citySearch}
+                            onChange={e => setCitySearch(e.target.value)}
+                          />
+                          <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                            {filteredCities.map(c => (
+                              <button
+                                key={c}
+                                onClick={() => toggleArea(c)}
+                                className={`w-full text-left text-xs px-3 py-2 rounded-xl border transition-colors flex items-center gap-2 ${
+                                  selectedAreas.includes(c)
+                                    ? "bg-primary/10 border-primary text-primary font-medium"
+                                    : "bg-muted border-transparent text-foreground"
+                                }`}
+                              >
+                                {selectedAreas.includes(c) && <Check className="w-3 h-3 shrink-0" />}
+                                {c}
+                              </button>
+                            ))}
+                          </div>
+                          {selectedAreas.length > 0 && (
+                            <p className="text-xs text-muted-foreground">{selectedAreas.length} cities selected</p>
+                          )}
+                          <button
+                            onClick={handleSaveAreas}
+                            disabled={savingAreas || selectedAreas.length === 0}
+                            className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {savingAreas ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            Save Areas
                           </button>
                         </div>
                       )}
