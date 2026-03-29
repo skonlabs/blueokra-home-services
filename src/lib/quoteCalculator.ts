@@ -69,7 +69,7 @@ export interface IntakeFormData {
 // > $400               → 70%         → 30%
 // ---------------------------------------------------------------------------
 
-function computeEconomics(customerPrice: number): {
+export function computeEconomics(customerPrice: number): {
   providerPayout: number;
   platformMargin: number;
   marginPercent: number;

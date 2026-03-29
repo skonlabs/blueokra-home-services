@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { computeEconomics } from "@/lib/quoteCalculator";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, X, MapPin, DollarSign, Loader2, Calendar, Repeat, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import ServiceIcon from "@/components/shared/ServiceIcon";
@@ -80,9 +81,8 @@ const JobCard = ({ job, index, onCompleteAppointment, onChat }: JobCardProps) =>
   };
 
   // Earnings calculation - show what provider actually receives
-  const feeP = (job.firstServicePrice || 0) < 150 ? 0.20 : (job.firstServicePrice || 0) <= 400 ? 0.25 : 0.30;
-  const firstEarnings = Math.round((job.firstServicePrice || 0) * (1 - feeP));
-  const recurringEarnings = Math.round((job.recurringPrice || 0) * (1 - feeP));
+  const { providerPayout: firstEarnings } = computeEconomics(job.firstServicePrice || 0);
+  const { providerPayout: recurringEarnings } = computeEconomics(job.recurringPrice || 0);
 
   const statusBadge = isNewLead
     ? { bg: "bg-warm-50 text-warm-500", label: "New Request" }
