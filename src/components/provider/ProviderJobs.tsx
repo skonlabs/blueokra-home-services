@@ -170,7 +170,9 @@ interface JobCardProps {
 }
 
 const JobCard = ({ job, index, onComplete }: JobCardProps) => {
+  const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const isNewLead = job.status === "new_lead";
   const isPending = ["scheduled", "new", "pending", "new_lead"].includes(job.status);
   const isActive = ["confirmed", "in_progress"].includes(job.status);
@@ -181,6 +183,45 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
 
   const rawPrice = parseFloat(job.price.replace(/[^0-9.]/g, ""));
   const netEarnings = !isNaN(rawPrice) ? `(~$${Math.round(rawPrice * 0.88)} after fees)` : null;
+
+  const handleAcceptLead = async () => {
+    if (!user || !job.leadId || !job.serviceId) return;
+    setAccepting(true);
+    try {
+      const { data, error } = await supabase.rpc("provider_respond_service", {
+        _user_id: user.id,
+        _service_id: job.serviceId,
+        _response_type: "accepted",
+      });
+      if (error) throw error;
+      toast({ title: "Job accepted!", description: "You've been assigned this service." });
+      queryClient.invalidateQueries({ queryKey: ["provider-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["provider-jobs"] });
+    } catch (err: any) {
+      toast({ title: "Failed to accept", description: err.message, variant: "destructive" });
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const handleDeclineLead = async () => {
+    if (!user || !job.leadId || !job.serviceId) return;
+    setDeclining(true);
+    try {
+      const { data, error } = await supabase.rpc("provider_respond_service", {
+        _user_id: user.id,
+        _service_id: job.serviceId,
+        _response_type: "declined",
+      });
+      if (error) throw error;
+      toast({ title: "Job declined" });
+      queryClient.invalidateQueries({ queryKey: ["provider-leads"] });
+    } catch (err: any) {
+      toast({ title: "Failed to decline", description: err.message, variant: "destructive" });
+    } finally {
+      setDeclining(false);
+    }
+  };
 
   const statusBadge = isPending
     ? { bg: "bg-warm-50 text-warm-500", label: "New" }
@@ -215,6 +256,26 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
         <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.address}</span>
         <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{job.price}</span>
       </div>
+
+      {/* Accept / Decline for new leads */}
+      {isNewLead && (
+        <div className="flex gap-2">
+          <button
+            onClick={handleDeclineLead}
+            disabled={declining || accepting}
+            className="flex-1 bg-muted text-destructive text-sm font-medium py-2.5 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+          >
+            {declining ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />} Decline
+          </button>
+          <button
+            onClick={handleAcceptLead}
+            disabled={accepting || declining}
+            className="flex-1 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+          >
+            {accepting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Accept
+          </button>
+        </div>
+      )}
 
       {isActive && onComplete && (
         <div className="flex gap-2">
