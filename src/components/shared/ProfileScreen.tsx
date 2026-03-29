@@ -46,9 +46,26 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   // Provider Venmo phone
   const providerVenmoPhone = venmoPhone || profile?.phone || user?.phone || "";
 
+  // Extract phone from fake email if profile.phone is not set
+  const extractedPhone = (() => {
+    if (profile?.phone) return profile.phone;
+    const email = user?.email;
+    if (email?.endsWith("@blueokra.local")) {
+      const digits = email.replace("@blueokra.local", "");
+      if (digits.length === 11 && digits.startsWith("1")) {
+        return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+      }
+      if (digits.length === 10) {
+        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+      }
+      return digits;
+    }
+    return user?.phone || "";
+  })();
+
   const shownName = profile?.display_name
     || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : null)
-    || user?.phone
+    || extractedPhone
     || "User";
 
   const toggle = (s: Section) => setActiveSection(prev => prev === s ? null : s);
@@ -109,7 +126,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
         </div>
         <div>
           <h2 className="font-display text-lg font-bold text-foreground">{shownName}</h2>
-          <p className="text-sm text-muted-foreground">{profile?.phone || user?.phone || ""}</p>
+          <p className="text-sm text-muted-foreground">{extractedPhone}</p>
           {isProvider && (
             <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Provider</span>
           )}
@@ -165,7 +182,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                           </div>
                           <div>
                             <label className="block text-xs text-muted-foreground mb-1.5">Phone (sign-up)</label>
-                            <input className={`${inputCls} opacity-60 cursor-not-allowed`} value={profile?.phone || user?.phone || ""} readOnly />
+                            <input className={`${inputCls} opacity-60 cursor-not-allowed`} value={extractedPhone} readOnly />
                           </div>
                           {isProvider && (
                             <div>
