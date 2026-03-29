@@ -147,7 +147,10 @@ const HomeScreen = ({
                   <p className="text-xs text-muted-foreground">{booking.date} · {booking.price}</p>
                 </div>
                 <button
-                  onClick={() => onRebook(booking.serviceType)}
+                  onClick={() => {
+                    const raw = (rawBookings || []).find(b => b.id === booking.id);
+                    onRebook(booking.serviceType, raw?.customizations || undefined);
+                  }}
                   className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full font-medium active:scale-[0.97] transition-transform"
                 >
                   Rebook

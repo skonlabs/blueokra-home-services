@@ -243,7 +243,7 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
                     </button>
                   )}
                   {selectedBooking.status === "completed" && (
-                    <button onClick={() => { setSelectedId(null); onRebook(selectedBooking.serviceType); }}
+                    <button onClick={() => { setSelectedId(null); onRebook(selectedBooking.serviceType, selectedRaw?.customizations || undefined); }}
                       className="flex-1 bg-muted text-foreground text-xs font-medium py-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
                       <RotateCcw className="w-3.5 h-3.5" /> Rebook
                     </button>
