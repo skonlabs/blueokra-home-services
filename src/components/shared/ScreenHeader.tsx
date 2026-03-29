@@ -16,20 +16,15 @@ const ScreenHeader = ({ title, onBack, rightActions, onLogoClick, profilePhotoUr
     <div className="px-4 pt-12 pb-2.5 flex items-center justify-between">
       <button
         onClick={onLogoClick}
-        className="flex items-end gap-2 active:opacity-70 transition-opacity"
+        className="flex items-center gap-2 active:opacity-70 transition-opacity"
         aria-label="Go to home"
       >
         <img src={blueokraLogo} alt="BlueOkra" className="w-7 h-7" aria-hidden="true" />
-        <div className="relative inline-flex items-end">
-          <span className="font-display text-base font-semibold tracking-tight text-gradient-primary leading-none">
-            BlueOkr
-          </span>
-          <span className="relative inline-block">
-            <span className="font-display text-base font-semibold tracking-tight text-gradient-primary leading-none">a</span>
-            <span className="text-[7px] text-primary leading-none absolute -top-2 -right-2">®</span>
-          </span>
-        </div>
-        <span className="text-[9px] font-medium text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full leading-none mb-[1px] ml-1">beta</span>
+        <span className="font-display text-base font-semibold tracking-tight text-gradient-primary leading-none">
+          BlueOkra
+        </span>
+        <sup className="text-[8px] font-medium text-primary leading-none -ml-0.5 mt-[-4px]">®</sup>
+        <span className="text-[9px] font-medium text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full leading-none ml-0.5">beta</span>
       </button>
       {rightActions && <div className="flex gap-2">{rightActions}</div>}
     </div>

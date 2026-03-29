@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Briefcase, DollarSign, CalendarDays, Clock, TrendingUp, AlertCircle, Loader2, MapPin, User as UserIcon } from "lucide-react";
+import { Briefcase, DollarSign, CalendarDays, Clock, TrendingUp, AlertCircle, Loader2, User as UserIcon, Camera, Smartphone, ChevronRight, MapPin } from "lucide-react";
 import { useProviderJobs, useProviderEarnings } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
 import ServiceIcon from "@/components/shared/ServiceIcon";
@@ -29,6 +30,15 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
   const totalEarned = (earnings || []).reduce((sum, e) => sum + (e.provider_amount || 0), 0);
   const pendingPayments = (earnings || []).filter((e) => e.payment_status === "pending").reduce((sum, e) => sum + (e.provider_amount || 0), 0);
 
+  // Action needed items
+  const actionItems: { label: string; description: string; icon: React.ReactNode; action: string }[] = [];
+  if (!profile?.profile_photo_url) {
+    actionItems.push({ label: "Add profile photo", description: "Help customers recognize you", icon: <Camera className="w-4 h-4 text-primary" />, action: "provider-profile" });
+  }
+  if (!profile?.venmo_phone) {
+    actionItems.push({ label: "Set up Venmo", description: "Required to receive payments", icon: <Smartphone className="w-4 h-4 text-primary" />, action: "provider-profile" });
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -47,6 +57,35 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
           </h1>
         </div>
       </div>
+
+      {/* Action Needed */}
+      {actionItems.length > 0 && (
+        <div>
+          <h3 className="font-display text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+            <AlertCircle className="w-4 h-4 text-accent" />
+            Action Needed
+          </h3>
+          <div className="space-y-2">
+            {actionItems.map((item, i) => (
+              <motion.button
+                key={item.label}
+                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                onClick={() => onNavigate(item.action)}
+                className="w-full bg-accent/10 border border-accent/20 rounded-xl p-3 flex items-center gap-3 text-left active:scale-[0.98] transition-transform"
+              >
+                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  {item.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-3">
@@ -107,7 +146,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
         </motion.button>
       </div>
 
-      {/* Upcoming jobs preview */}
+      {/* Upcoming jobs preview - clickable like schedule */}
       {upcomingJobs.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -125,26 +164,21 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
               const feeP = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
               const providerEarnings = Math.round(revenue * (1 - feeP));
               const statusColor = job.appointment_status === "confirmed" ? "text-success" : "text-warm-500";
+              const address = cp?.address || service?.notes || "Address pending";
               return (
-                <motion.div key={job.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                  className="bg-card rounded-xl border border-border p-3"
-                >
-                  <div className="flex items-center gap-2.5 mb-2">
-                    <ServiceIcon serviceType={service?.service_type || "lawn"} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{service?.package_name || service?.service_type || "Service"}</p>
-                      <span className={`text-[10px] font-medium capitalize ${statusColor}`}>{(job.appointment_status || "pending").replace("_", " ")}</span>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-foreground">${providerEarnings}</p>
-                      <p className="text-[10px] text-muted-foreground">earnings</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateLabel} {dateStr}</span>
-                    <span className="flex items-center gap-1"><UserIcon className="w-3 h-3 shrink-0" />{customerName}</span>
-                  </div>
-                </motion.div>
+                <ExpandableJobCard
+                  key={job.id}
+                  index={i}
+                  serviceType={service?.service_type || "lawn"}
+                  serviceName={service?.package_name || service?.service_type || "Service"}
+                  status={job.appointment_status || "pending"}
+                  statusColor={statusColor}
+                  earnings={providerEarnings}
+                  dateLabel={dateLabel}
+                  timeStr={dateStr}
+                  customerName={customerName}
+                  address={address}
+                />
               );
             })}
           </div>
@@ -213,6 +247,55 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
         </div>
       )}
     </div>
+  );
+};
+
+// Expandable job card sub-component (matches schedule screen)
+interface ExpandableJobCardProps {
+  index: number;
+  serviceType: string;
+  serviceName: string;
+  status: string;
+  statusColor: string;
+  earnings: number;
+  dateLabel: string;
+  timeStr: string;
+  customerName: string;
+  address: string;
+}
+
+const ExpandableJobCard = ({ index, serviceType, serviceName, status, statusColor, earnings, dateLabel, timeStr, customerName, address }: ExpandableJobCardProps) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <motion.button
+      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}
+      onClick={() => setExpanded(!expanded)}
+      className="w-full text-left bg-card rounded-xl border border-border p-3 active:scale-[0.99] transition-transform"
+    >
+      <div className="flex items-center gap-2.5 mb-2">
+        <ServiceIcon serviceType={serviceType} size="sm" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{serviceName}</p>
+          <span className={`text-[10px] font-medium capitalize ${statusColor}`}>{(status).replace("_", " ")}</span>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-sm font-bold text-foreground">${earnings}</p>
+          <p className="text-[10px] text-muted-foreground">earnings</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateLabel} {timeStr}</span>
+        <span className="flex items-center gap-1"><UserIcon className="w-3 h-3 shrink-0" />{customerName}</span>
+      </div>
+      {expanded && (
+        <div className="mt-3 pt-3 border-t border-border">
+          <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span className="break-words">{address}</span>
+          </div>
+        </div>
+      )}
+    </motion.button>
   );
 };
 
