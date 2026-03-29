@@ -128,16 +128,30 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
                   <ServiceIcon serviceType={booking.serviceType} size="sm" />
                   <div>
                     <p className="font-semibold text-sm text-foreground">{booking.service}</p>
-                    <p className="text-xs text-muted-foreground">{booking.provider}</p>
                   </div>
                 </div>
                 <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${statusColors[booking.status]}`}>
                   {statusLabels[booking.status]}
                 </span>
               </div>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{booking.date}</span>
-                <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{String(booking.price).replace('$', '')}</span>
+              {/* Provider + date row */}
+              <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground">
+                <div className="shrink-0">
+                  {booking.providerPhoto ? (
+                    <img src={booking.providerPhoto} alt={booking.provider} className="w-8 h-8 rounded-full object-cover border border-border" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border border-border">
+                      <UserIcon className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs text-primary font-medium truncate">{booking.provider}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{booking.date}</span>
+                    <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{String(booking.price).replace('$', '')}</span>
+                  </div>
+                </div>
               </div>
               {booking.rating && (
                 <div className="flex items-center gap-1">
