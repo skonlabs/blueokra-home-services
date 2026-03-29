@@ -430,6 +430,76 @@ const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) =
                         </div>
                       )}
 
+                      {/* SERVICES OFFERED (Provider only) */}
+                      {item.key === "services" && (
+                        <div className="space-y-3">
+                          <p className="text-xs text-muted-foreground">Select the services you provide. This determines which job leads you receive.</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {AVAILABLE_SERVICES.map(s => (
+                              <button
+                                key={s}
+                                onClick={() => toggleService(s)}
+                                className={`text-left text-xs px-3 py-2.5 rounded-xl border transition-colors ${
+                                  selectedServices.includes(s)
+                                    ? "bg-primary/10 border-primary text-primary font-medium"
+                                    : "bg-muted border-transparent text-foreground"
+                                }`}
+                              >
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            onClick={handleSaveServices}
+                            disabled={savingServices || selectedServices.length === 0}
+                            className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {savingServices ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            Save Services
+                          </button>
+                        </div>
+                      )}
+
+                      {/* SERVICE AREAS (Provider only) */}
+                      {item.key === "areas" && (
+                        <div className="space-y-3">
+                          <p className="text-xs text-muted-foreground">Choose the cities where you're available to work.</p>
+                          <input
+                            className={inputCls}
+                            placeholder="Search cities…"
+                            value={citySearch}
+                            onChange={e => setCitySearch(e.target.value)}
+                          />
+                          <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                            {filteredCities.map(c => (
+                              <button
+                                key={c}
+                                onClick={() => toggleArea(c)}
+                                className={`w-full text-left text-xs px-3 py-2 rounded-xl border transition-colors flex items-center gap-2 ${
+                                  selectedAreas.includes(c)
+                                    ? "bg-primary/10 border-primary text-primary font-medium"
+                                    : "bg-muted border-transparent text-foreground"
+                                }`}
+                              >
+                                {selectedAreas.includes(c) && <Check className="w-3 h-3 shrink-0" />}
+                                {c}
+                              </button>
+                            ))}
+                          </div>
+                          {selectedAreas.length > 0 && (
+                            <p className="text-xs text-muted-foreground">{selectedAreas.length} cities selected</p>
+                          )}
+                          <button
+                            onClick={handleSaveAreas}
+                            disabled={savingAreas || selectedAreas.length === 0}
+                            className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {savingAreas ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            Save Areas
+                          </button>
+                        </div>
+                      )}
+
                     </div>
                   </motion.div>
                 )}
