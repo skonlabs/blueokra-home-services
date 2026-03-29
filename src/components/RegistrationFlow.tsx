@@ -164,7 +164,8 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
           : firstName.trim() ? `${firstName.trim()} ${lastName.trim()}`.trim() : null,
         address: businessAddress.trim() || null,
         services_offered: selectedServices,
-      }, { onConflict: "user_id" });
+        venmo_phone: venmoPhone.trim() || null,
+      } as any, { onConflict: "user_id" });
       if (profileError) throw profileError;
 
       await refreshProfile();
