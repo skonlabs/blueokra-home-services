@@ -142,15 +142,26 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
                 <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
 
-              {/* Complete (only for confirmed) */}
-              {(isConfirmed || bothConfirmed || isActive) && !isPending && (
-                <button
-                  onClick={() => onComplete(appointment)}
-                  className="h-7 px-2 bg-success text-success-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform"
-                >
-                  <QrCode className="w-3 h-3" /> Done
-                </button>
-              )}
+              {/* Complete (only for confirmed AND on/after scheduled date) */}
+              {(isConfirmed || bothConfirmed || isActive) && !isPending && (() => {
+                const scheduledDate = new Date(appointment.rawDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                scheduledDate.setHours(0, 0, 0, 0);
+                const canComplete = scheduledDate <= today;
+                return canComplete ? (
+                  <button
+                    onClick={() => onComplete(appointment)}
+                    className="h-7 px-2 bg-success text-success-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform"
+                  >
+                    <QrCode className="w-3 h-3" /> Done
+                  </button>
+                ) : (
+                  <span className="h-7 px-2 bg-muted text-muted-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60" title="Available on service date">
+                    <Clock className="w-3 h-3" /> Done
+                  </span>
+                );
+              })()}
             </>
           )}
         </div>

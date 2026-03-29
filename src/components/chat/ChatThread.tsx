@@ -96,8 +96,8 @@ const ChatThread = ({ otherUserId, otherUserName, onBack }: ChatThreadProps) => 
     }
   };
 
-  return (
-    <div className="flex flex-col h-full" style={{ minHeight: "calc(100vh - 120px)" }}>
+   return (
+    <div className="flex flex-col h-full pb-20" style={{ minHeight: "calc(100vh - 120px)" }}>
       {/* Chat header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card">
         <button onClick={onBack} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -179,8 +179,8 @@ const ChatThread = ({ otherUserId, otherUserName, onBack }: ChatThreadProps) => 
         </div>
       )}
 
-      {/* Input */}
-      <div className="px-4 py-3 border-t border-border bg-card flex items-end gap-2">
+      {/* Input - fixed above bottom nav */}
+      <div className="fixed bottom-[72px] left-0 right-0 max-w-md mx-auto px-4 py-3 border-t border-border bg-card flex items-end gap-2 z-50">
         <input type="file" accept="image/*" ref={fileRef} hidden onChange={handleFileSelect} />
         <button
           onClick={() => fileRef.current?.click()}
