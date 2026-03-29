@@ -43,7 +43,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
       <div className="bg-primary rounded-2xl px-4 pt-4 pb-5">
         <p className="text-primary-foreground/70 text-sm">{getGreeting()}</p>
         <p className="font-display text-xl font-bold text-primary-foreground">
-          {profile?.display_name || profile?.first_name || "Provider"}
+          {[profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || profile?.display_name || "Provider"}
         </p>
       </div>
 
