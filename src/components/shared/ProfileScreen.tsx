@@ -58,7 +58,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
     setSavingProfile(true);
     setProfileError("");
     try {
-      const upsertData: Record<string, unknown> = {
+      const upsertData: Record<string, string | null> = {
         user_id: user.id,
         display_name: displayName.trim() || null,
         first_name: firstName.trim() || null,
@@ -67,7 +67,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
       if (isProvider && venmoPhone.trim()) {
         upsertData.venmo_phone = venmoPhone.trim();
       }
-      const { error } = await supabase.from("profiles").upsert(upsertData, { onConflict: "user_id" });
+      const { error } = await supabase.from("profiles").upsert(upsertData as any, { onConflict: "user_id" });
       if (error) throw error;
       await refreshProfile();
       setProfileSaved(true);
