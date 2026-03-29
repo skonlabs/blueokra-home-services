@@ -955,6 +955,7 @@ export type Database = {
           phone: string | null
           phone_verified: boolean | null
           profile_photo_url: string | null
+          service_areas: string[] | null
           services_offered: string[] | null
           state: string | null
           updated_at: string
@@ -978,6 +979,7 @@ export type Database = {
           phone?: string | null
           phone_verified?: boolean | null
           profile_photo_url?: string | null
+          service_areas?: string[] | null
           services_offered?: string[] | null
           state?: string | null
           updated_at?: string
@@ -1001,6 +1003,7 @@ export type Database = {
           phone?: string | null
           phone_verified?: boolean | null
           profile_photo_url?: string | null
+          service_areas?: string[] | null
           services_offered?: string[] | null
           state?: string | null
           updated_at?: string
