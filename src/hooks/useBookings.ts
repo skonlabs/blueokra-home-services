@@ -75,6 +75,68 @@ export const useProviderJobs = () => {
   });
 };
 
+export const useProviderLeads = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["provider-leads", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("booking_lead")
+        .select(`
+          id, lead_status, provider_user_id, service_id, created_at,
+          booking_service!inner (
+            id, service_type, package_name, customer_user_id, revenue, notes, customizations, created_at
+          )
+        `)
+        .eq("provider_user_id", user!.id)
+        .in("lead_status", ["new", "sent", "viewed"])
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch customer profiles
+      const customerIds = [...new Set((data || []).map(d => (d.booking_service as any)?.customer_user_id).filter(Boolean))] as string[];
+      let customerProfiles: Record<string, any> = {};
+      if (customerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, first_name, last_name, display_name, address, city, state")
+          .in("user_id", customerIds);
+        (profiles || []).forEach((p: any) => {
+          customerProfiles[p.user_id] = p;
+        });
+      }
+
+      // Fetch appointment dates for each service
+      const serviceIds = [...new Set((data || []).map(d => d.service_id).filter(Boolean))] as string[];
+      let appointmentDates: Record<string, string> = {};
+      if (serviceIds.length > 0) {
+        const { data: appts } = await supabase
+          .from("booking_appointment")
+          .select("service_id, appointment_date")
+          .in("service_id", serviceIds)
+          .order("appointment_date", { ascending: true });
+        (appts || []).forEach((a: any) => {
+          if (!appointmentDates[a.service_id]) {
+            appointmentDates[a.service_id] = a.appointment_date;
+          }
+        });
+      }
+
+      return (data || []).map(d => {
+        const svc = d.booking_service as any;
+        return {
+          ...d,
+          customer_profile: customerProfiles[svc?.customer_user_id] || null,
+          appointment_date: appointmentDates[d.service_id] || null,
+        };
+      });
+    },
+  });
+};
+
 export const useProviderEarnings = () => {
   const { user } = useAuth();
 
