@@ -12,9 +12,10 @@ export type Job = ProviderJob;
 interface ProviderJobsProps {
   initialTab?: TabKey;
   onCompleteJob: (job: ProviderJob) => void;
+  onChat?: (userId: string, name: string) => void;
 }
 
-const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
+const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) => {
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab || "all");
   const { data: rawJobs, isLoading: jobsLoading } = useProviderJobs();
   const { data: rawLeads, isLoading: leadsLoading } = useProviderLeads();
@@ -54,6 +55,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
         status: a.appointment_status,
         customerStatus: a.customer_status,
         providerStatus: a.provider_status,
+        customerUserId: a.customer_user_id || svc?.customer_user_id || "",
       }));
 
       const completedCount = mappedAppts.filter(a => a.status === "completed").length;
@@ -231,6 +233,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
               job={job}
               index={i}
               onCompleteAppointment={handleCompleteAppointment}
+              onChat={onChat}
             />
           ))}
         </div>

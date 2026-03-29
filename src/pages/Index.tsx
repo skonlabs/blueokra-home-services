@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Bell, User } from "lucide-react";
+import { Loader2, Bell, User, MessageSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useBookings";
+import { useConversations } from "@/hooks/useChat";
 import Auth from "./Auth";
 import BottomNav from "@/components/shared/BottomNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
@@ -25,6 +26,7 @@ import ProviderSchedule from "@/components/provider/ProviderSchedule";
 import ProviderServiceHistory from "@/components/provider/ProviderServiceHistory";
 import ProfileScreen from "@/components/shared/ProfileScreen";
 import RegistrationFlow from "@/components/RegistrationFlow";
+import ChatScreen from "@/components/chat/ChatScreen";
 import type { QuoteData } from "@/components/homeowner/AIIntakeChat";
 import { SERVICE_NAMES } from "@/components/homeowner/AIIntakeChat";
 import type { ScheduleData } from "@/components/homeowner/QuoteView";
@@ -32,8 +34,8 @@ import type { IntakeFormData } from "@/lib/quoteCalculator";
 import type { Job } from "@/components/provider/ProviderJobs";
 
 type Screen =
-  | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile"
-  | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-service-history" | "provider-profile";
+  | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile" | "chat"
+  | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-service-history" | "provider-profile" | "provider-chat";
 
 const Index = () => {
   const { user, loading, roles, refreshProfile } = useAuth();
@@ -47,10 +49,13 @@ const Index = () => {
   const [reviewBooking, setReviewBooking] = useState<any>(null);
   const [selectedJobForCompletion, setSelectedJobForCompletion] = useState<Job | null>(null);
   const [navParams, setNavParams] = useState<Record<string, string>>({});
+  const [chatTarget, setChatTarget] = useState<{ userId: string; name: string } | null>(null);
 
   // Notifications hook must be before any early returns
   const { data: notifData } = useNotifications();
+  const { data: convData } = useConversations();
   const unreadCount = (notifData || []).filter(n => !n.is_read).length;
+  const unreadChatCount = (convData || []).reduce((sum, c) => sum + (c.unread_count || 0), 0);
 
   // Set mode based on user role
   useEffect(() => {
@@ -147,6 +152,8 @@ const Index = () => {
         return { title: "My Properties" };
       case "profile":
         return { title: "Profile" };
+      case "chat":
+        return { title: "Messages" };
       case "provider-home":
         return null;
       case "provider-jobs":
@@ -161,6 +168,8 @@ const Index = () => {
         return { title: "Service History", onBack: () => navigate("provider-earnings") };
       case "provider-profile":
         return { title: "Profile" };
+      case "provider-chat":
+        return { title: "Messages" };
       default:
         return null;
     }
@@ -171,6 +180,17 @@ const Index = () => {
   // Always-visible header right actions: bell + profile
   const headerRightActions = (
     <div className="flex gap-2">
+      <button
+        onClick={() => navigate(isProvider ? "provider-chat" : "chat")}
+        className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground relative"
+      >
+        <MessageSquare className="w-4 h-4" />
+        {unreadChatCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-background text-[9px] font-bold text-primary-foreground flex items-center justify-center">
+            {unreadChatCount > 9 ? "9+" : unreadChatCount}
+          </span>
+        )}
+      </button>
       <button
         onClick={() => setNotificationsOpen(true)}
         className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground relative"
@@ -284,6 +304,17 @@ const Index = () => {
             </motion.div>
           )}
 
+          {screen === "chat" && (
+            <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 h-full flex flex-col" style={{ minHeight: "calc(100vh - 120px)" }}>
+              <ChatScreen initialUserId={chatTarget?.userId} initialUserName={chatTarget?.name} />
+            </motion.div>
+          )}
+
+          {screen === "provider-chat" && (
+            <motion.div key="provider-chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 h-full flex flex-col" style={{ minHeight: "calc(100vh - 120px)" }}>
+              <ChatScreen initialUserId={chatTarget?.userId} initialUserName={chatTarget?.name} />
+            </motion.div>
+          )}
           {screen === "provider-home" && (
             <motion.div key="provider-home" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <ProviderHome onNavigate={handleNavigation} />
@@ -295,6 +326,7 @@ const Index = () => {
               <ProviderJobs
                 initialTab={navParams.tab as any}
                 onCompleteJob={(job) => { setSelectedJobForCompletion(job); navigate("provider-completion"); }}
+                onChat={(userId, name) => { setChatTarget({ userId, name }); navigate("provider-chat"); }}
               />
             </motion.div>
           )}
