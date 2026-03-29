@@ -19,6 +19,7 @@ interface Booking {
   serviceType: string;
   service: string;
   provider: string;
+  providerPhoto?: string;
   provider_user_id?: string;
   date: string;
   price: string;
@@ -58,16 +59,22 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
     } catch { return "N/A"; }
   };
 
-  const bookings: Booking[] = (rawBookings || []).map((b) => {
+  const bookings: Booking[] = (rawBookings || []).map((b: any) => {
     const hasProvider = !!(b.booking_appointment || []).find((a: any) => a.provider_user_id);
     const appts = b.booking_appointment || [];
     const allApptsCompleted = appts.length > 0 && appts.every((a: any) => a.appointment_status === "completed");
+    const providerUserId = b.booking_appointment?.[0]?.provider_user_id;
+    const providerProfile = providerUserId && b.provider_profiles ? b.provider_profiles[providerUserId] : null;
+    const providerName = providerProfile
+      ? providerProfile.display_name || [providerProfile.first_name, providerProfile.last_name].filter(Boolean).join(" ") || "Provider"
+      : hasProvider ? "Assigned Provider" : "Pending Assignment";
     return {
       id: b.id,
       serviceType: b.service_type,
       service: b.package_name || b.service_type,
-      provider: "Assigned Provider",
-      provider_user_id: b.booking_appointment?.[0]?.provider_user_id ?? undefined,
+      provider: providerName,
+      providerPhoto: providerProfile?.profile_photo_url || undefined,
+      provider_user_id: providerUserId ?? undefined,
       date: b.booking_appointment?.[0]?.appointment_date
         ? safeFmt(b.booking_appointment[0].appointment_date, "MMM d, h:mm a")
         : safeFmt(b.created_at, "MMM d"),
