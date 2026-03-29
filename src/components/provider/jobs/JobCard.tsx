@@ -265,6 +265,10 @@ const JobCard = ({ job, index, onCompleteAppointment, onChat }: JobCardProps) =>
                       appointment={appt}
                       address={job.address}
                       onComplete={(a) => onCompleteAppointment(job, a)}
+                      onChat={() => {
+                        // Navigate to chat with the customer
+                        if (onChat) onChat(appt.customerUserId || "", job.customer);
+                      }}
                     />
                   ))}
                 </div>
