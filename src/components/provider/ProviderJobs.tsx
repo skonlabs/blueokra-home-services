@@ -335,52 +335,40 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
         <div className="bg-muted/60 rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-2 mb-1">
             <DollarSign className="w-4 h-4 text-primary" />
-            <span className="text-xs font-semibold text-foreground">Pricing Breakdown</span>
+            <span className="text-xs font-semibold text-foreground">Earnings Breakdown</span>
           </div>
           
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">First service</span>
-            <span className="text-sm font-bold text-primary">
-              ${job.firstServicePrice?.toFixed(0) || job.price}
-            </span>
-          </div>
-
-          {isRecurring && job.recurringPrice ? (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">2nd service onwards</span>
-                <span className="text-sm font-semibold text-foreground">${job.recurringPrice.toFixed(0)}</span>
-              </div>
-              <div className="border-t border-border pt-2 flex justify-between items-center">
-                <span className="text-xs font-medium text-foreground">Total contract value</span>
-                <span className="text-base font-bold text-primary">${job.totalRevenue?.toLocaleString() || "TBD"}</span>
-              </div>
-              {job.expectedEndDate && (
-                <p className="text-[11px] text-muted-foreground">
-                  Expected through {job.expectedEndDate}
-                </p>
-              )}
-            </>
-          ) : (
-            <div className="border-t border-border pt-2 flex justify-between items-center">
-              <span className="text-xs font-medium text-foreground">Total job value</span>
-              <span className="text-base font-bold text-primary">${job.totalRevenue?.toLocaleString() || job.price}</span>
-            </div>
-          )}
-
-          {/* Net earnings estimate */}
-          {job.totalRevenue ? (() => {
+          {(() => {
             const feeP = job.firstServicePrice && job.firstServicePrice < 150 ? 20 : job.firstServicePrice && job.firstServicePrice <= 400 ? 25 : 30;
-            const earningsP = 100 - feeP;
-            const earnings = Math.round(job.totalRevenue * earningsP / 100);
+            const earningsP = (100 - feeP) / 100;
+            const firstEarnings = Math.round((job.firstServicePrice || 0) * earningsP);
+            const recurringEarnings = Math.round((job.recurringPrice || 0) * earningsP);
+            const totalEarnings = job.totalRevenue ? Math.round(job.totalRevenue * earningsP) : firstEarnings;
+
             return (
-              <div className="border-t border-border pt-2 flex justify-between items-center">
-                <span className="text-xs font-medium text-foreground">Your Earnings</span>
-                <span className="text-base font-bold text-secondary">${earnings.toLocaleString()}</span>
-              </div>
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">First service</span>
+                  <span className="text-sm font-bold text-foreground">${firstEarnings}</span>
+                </div>
+
+                {isRecurring && job.recurringPrice ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">2nd service onwards</span>
+                    <span className="text-sm font-semibold text-foreground">${recurringEarnings}</span>
+                  </div>
+                ) : null}
+
+                <div className="border-t border-border pt-2 flex justify-between items-center">
+                  <span className="text-xs font-semibold text-foreground">Your Earnings</span>
+                  <span className="text-base font-bold text-secondary">${totalEarnings.toLocaleString()}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground italic">
+                  After platform fee{job.expectedEndDate ? `, expected through ${job.expectedEndDate}` : ""}
+                </p>
+              </>
             );
-          })() : null}
-          <p className="text-[10px] text-muted-foreground italic">After platform fee</p>
+          })()}
         </div>
 
         {/* Details grid */}
