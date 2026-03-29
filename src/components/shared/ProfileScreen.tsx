@@ -138,6 +138,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
         ? <CheckCircle2 className="w-3.5 h-3.5 text-secondary" />
         : <Smartphone className="w-3.5 h-3.5 text-muted-foreground" />,
     }] : []),
+    ...(!isProvider ? [{ key: "properties" as Section, label: "My Properties", icon: Home }] : []),
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "help", label: "Help & Support", icon: HelpCircle },
     { key: "privacy", label: "Privacy Policy", icon: Lock },

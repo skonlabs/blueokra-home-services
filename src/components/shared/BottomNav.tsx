@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { Home, ClipboardList, Building, User, Briefcase, CalendarDays, Wallet } from "lucide-react";
+import { Home, ClipboardList, User, Briefcase, CalendarDays, Wallet } from "lucide-react";
 
 interface BottomNavProps {
   active: string;
@@ -12,7 +12,7 @@ const BottomNav = forwardRef<HTMLDivElement, BottomNavProps>(({ active, onNaviga
     { id: "home", icon: Home, label: "Home" },
     { id: "bookings", icon: ClipboardList, label: "Bookings" },
     { id: "schedule", icon: CalendarDays, label: "Schedule" },
-    { id: "property", icon: Building, label: "Property" },
+    { id: "payments", icon: Wallet, label: "Payments" },
     { id: "profile", icon: User, label: "Profile" },
   ];
 

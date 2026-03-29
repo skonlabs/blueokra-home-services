@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, Navigation, User as UserIcon } from "lucide-react";
+import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon } from "lucide-react";
 import { useHomeownerAppointments } from "@/hooks/useHomeownerAppointments";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -224,16 +224,6 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
                     >
                       <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
-
-                    {/* Navigate */}
-                    {provider?.address && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); window.open(`https://maps.google.com/?q=${encodeURIComponent(provider.address)}`, "_blank"); }}
-                        className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
-                      >
-                        <Navigation className="w-3.5 h-3.5 text-foreground" />
-                      </button>
-                    )}
 
                     {/* Chat */}
                     {appt.provider_user_id && (
