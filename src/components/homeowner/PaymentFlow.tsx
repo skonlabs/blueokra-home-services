@@ -291,7 +291,7 @@ const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
           className="w-full bg-success text-success-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Check className="w-4 h-4" />
-          {method === "direct_debit" ? `Confirm & Pay $${finalAmount.toFixed(2)}` : `Confirm & Pay $${finalAmount.toFixed(2)}`}
+          Confirm &amp; Pay ${finalAmount.toFixed(2)}
         </button>
         {rating === 0 && (
           <p className="text-xs text-center text-muted-foreground">Please rate your experience before confirming</p>
