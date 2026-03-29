@@ -1493,6 +1493,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_appointment_date: {
+        Args: { _appointment_id: string; _user_id: string }
+        Returns: Json
+      }
       add_user_role: {
         Args: { _role: string; _user_id: string }
         Returns: Json
@@ -1587,6 +1591,15 @@ export type Database = {
           _user_id: string
         }
         Returns: number
+      }
+      propose_appointment_date: {
+        Args: {
+          _appointment_id: string
+          _notes?: string
+          _proposed_date: string
+          _user_id: string
+        }
+        Returns: Json
       }
       provider_has_lead_for_service: {
         Args: { p_provider_id: string; p_service_id: string }
