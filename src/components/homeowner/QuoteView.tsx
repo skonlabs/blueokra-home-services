@@ -452,6 +452,25 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
             </div>
           </div>
 
+          {/* Total contract summary */}
+          {firstServiceDate && tns > 1 && (
+            <div className="bg-primary/5 rounded-xl p-3 border border-primary/20 space-y-1.5">
+              <p className="text-xs font-semibold text-foreground">Estimated Total</p>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">First visit</span>
+                <span className="font-medium">${quote.low}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">{tns - 1} subsequent visit{tns - 1 !== 1 ? "s" : ""} × ${recurringPerVisit}</span>
+                <span className="font-medium">${(tns - 1) * recurringPerVisit}</span>
+              </div>
+              <div className="border-t border-primary/20 pt-1.5 flex justify-between text-sm font-semibold">
+                <span>Total ({tns} visits)</span>
+                <span className="text-primary">${totalContractPrice}</span>
+              </div>
+            </div>
+          )}
+
           <p className="text-[11px] text-muted-foreground">
             Remaining visits auto-scheduled based on your selected frequency and end date.
           </p>
