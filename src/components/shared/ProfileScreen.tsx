@@ -195,26 +195,29 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                       {/* VENMO PAYOUTS (Provider only) */}
                       {item.key === "venmo" && (
                         <div className="space-y-3">
-                          <div className="flex items-center gap-2 bg-secondary/10 rounded-xl p-3">
-                            <CheckCircle2 className="w-5 h-5 text-secondary shrink-0" />
-                            <div>
-                              <p className="text-sm font-medium text-foreground">Venmo payouts enabled</p>
-                              <p className="text-xs text-muted-foreground">BlueOkra will send your earnings to your Venmo account.</p>
+                          {venmoPhone ? (
+                            <div className="flex items-center gap-2 bg-secondary/10 rounded-xl p-3">
+                              <CheckCircle2 className="w-5 h-5 text-secondary shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-foreground">Venmo payouts enabled</p>
+                                <p className="text-xs text-muted-foreground">Earnings will be sent to <span className="font-semibold">{venmoPhone}</span></p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="bg-muted rounded-xl p-3 space-y-1.5">
-                            <p className="text-xs text-muted-foreground">Your Venmo phone number</p>
-                            <p className="text-sm font-semibold text-foreground">{providerVenmoPhone || "No phone on file"}</p>
-                          </div>
+                          ) : (
+                            <div className="flex items-center gap-2 bg-destructive/10 rounded-xl p-3">
+                              <Smartphone className="w-5 h-5 text-destructive shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-foreground">Venmo phone not set</p>
+                                <p className="text-xs text-muted-foreground">Go to Account Settings to add your Venmo phone number.</p>
+                              </div>
+                            </div>
+                          )}
                           <div className="bg-muted rounded-xl p-3 space-y-1.5 text-xs text-muted-foreground">
                             <p className="font-medium text-foreground text-sm">How payouts work</p>
                             <p>1. Customer pays BlueOkra directly (card, debit, etc.)</p>
                             <p>2. After service is confirmed complete, admin releases payment</p>
                             <p>3. BlueOkra sends your earnings to your Venmo</p>
                           </div>
-                          {!providerVenmoPhone && (
-                            <p className="text-xs text-destructive">Please add your phone number in Account Settings to receive Venmo payouts.</p>
-                          )}
                         </div>
                       )}
 
