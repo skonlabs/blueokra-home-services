@@ -55,15 +55,30 @@ const HomeScreen = ({
   onViewProperty,
   onBookAgain,
   onRebook,
+  onViewSchedule,
 }: HomeScreenProps) => {
   const { profile } = useAuth();
   const { data: rawBookings } = useBookings();
+  const { data: appointments } = useHomeownerAppointments();
   const seasonalRecs = getSeasonalRecs();
 
   const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
 
+  // Count appointments needing homeowner confirmation
+  const pendingConfirmations = (appointments || []).filter(
+    (a) => a.customer_status === "pending" && !["completed", "declined", "cancelled"].includes(a.appointment_status)
+  );
+
   // Action needed items for homeowners
   const actionItems: { label: string; description: string; icon: React.ReactNode; action: () => void }[] = [];
+  if (pendingConfirmations.length > 0) {
+    actionItems.push({
+      label: `${pendingConfirmations.length} appointment${pendingConfirmations.length > 1 ? "s" : ""} need${pendingConfirmations.length === 1 ? "s" : ""} your confirmation`,
+      description: "A new date/time has been proposed — review and confirm",
+      icon: <CalendarClock className="w-4 h-4 text-primary" />,
+      action: () => onViewSchedule?.(),
+    });
+  }
   if (!profile?.profile_photo_url) {
     actionItems.push({ label: "Add profile photo", description: "Personalize your account", icon: <Camera className="w-4 h-4 text-primary" />, action: () => onViewProperty() });
   }
