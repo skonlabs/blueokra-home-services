@@ -9,7 +9,11 @@ const NET_EARNINGS = 2221;
 const PAYOUT_AMOUNT = "$2,221";
 const BANK_LAST4 = "4832";
 
-const ProviderEarnings = () => {
+interface ProviderEarningsProps {
+  onViewHistory?: () => void;
+}
+
+const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
   const { toast } = useToast();
   const [showPayoutModal, setShowPayoutModal] = useState(false);
 
@@ -206,6 +210,25 @@ const ProviderEarnings = () => {
           ))}
         </div>
       </div>
+
+      {/* Service History link */}
+      {onViewHistory && (
+        <button
+          onClick={onViewHistory}
+          className="w-full bg-card border border-border rounded-2xl p-4 flex items-center justify-between active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-primary" />
+            </div>
+            <div className="text-left">
+              <p className="font-semibold text-sm text-foreground">Service History</p>
+              <p className="text-xs text-muted-foreground">View all completed services &amp; payments by year</p>
+            </div>
+          </div>
+          <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+        </button>
+      )}
 
       {/* Payout confirmation modal */}
       {showPayoutModal && (
