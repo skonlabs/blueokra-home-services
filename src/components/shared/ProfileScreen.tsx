@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2 } from "lucide-react";
+import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2, Camera } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProfileScreenProps {
   isProvider?: boolean;
@@ -13,7 +14,11 @@ type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "ter
 
 const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
+  const { toast } = useToast();
   const [activeSection, setActiveSection] = useState<Section>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
 
   // Account Settings
   const [firstName, setFirstName] = useState(profile?.first_name ?? "");
@@ -30,14 +35,41 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const [notifPromos, setNotifPromos] = useState(false);
 
 
-  // Load venmo_phone from DB
+  // Load venmo_phone and profile photo from DB
   useEffect(() => {
-    if (user && isProvider) {
-      supabase.from("profiles").select("venmo_phone").eq("user_id", user.id).single().then(({ data }) => {
+    if (user) {
+      supabase.from("profiles").select("venmo_phone, profile_photo_url").eq("user_id", user.id).single().then(({ data }) => {
         if (data?.venmo_phone) setVenmoPhone(data.venmo_phone);
+        if (data?.profile_photo_url) setProfilePhotoUrl(data.profile_photo_url);
       });
     }
-  }, [user, isProvider]);
+  }, [user]);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please select an image file", variant: "destructive" });
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("profile-pictures").upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from("profile-pictures").getPublicUrl(path);
+      const photoUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      await supabase.from("profiles").upsert({ user_id: user.id, profile_photo_url: photoUrl } as any, { onConflict: "user_id" });
+      setProfilePhotoUrl(photoUrl);
+      await refreshProfile();
+      toast({ title: "Profile photo updated!" });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   // Provider Venmo phone
   const providerVenmoPhone = venmoPhone || profile?.phone || user?.phone || "";
@@ -116,8 +148,24 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
     <div className="px-4 py-6 pb-24 space-y-4">
       {/* Avatar + name */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-          {isProvider ? <Wrench className="w-7 h-7 text-primary" /> : <User className="w-7 h-7 text-primary" />}
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+            {profilePhotoUrl ? (
+              <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+            ) : isProvider ? (
+              <Wrench className="w-7 h-7 text-primary" />
+            ) : (
+              <User className="w-7 h-7 text-primary" />
+            )}
+          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingPhoto}
+            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition-transform"
+          >
+            {uploadingPhoto ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
         </div>
         <div>
           <h2 className="font-display text-lg font-bold text-foreground">{shownName}</h2>

@@ -102,12 +102,15 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
     const apptCount = l.appointment_count || 1;
     const perYear = FREQUENCY_PER_YEAR[frequency] || 1;
     
-    // Calculate pricing: first service has surcharge (~15%), recurring is base price
+    // Calculate pricing using actual platform economics
+    // < $150 → 20% fee, $150-$400 → 25% fee, > $400 → 30% fee
+    const feePercent = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
     const firstServicePrice = revenue;
     const recurringPrice = frequency !== "one-time" ? Math.round(revenue * 0.85) : 0;
     const totalRevenue = frequency === "one-time" 
       ? revenue 
       : firstServicePrice + (recurringPrice * (apptCount > 1 ? apptCount - 1 : Math.max(perYear - 1, 0)));
+    const providerEarningsPercent = 1 - feePercent;
 
     // Expected end date
     let expectedEnd = "";
@@ -302,8 +305,8 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
       ? (() => { try { return format(new Date(job.receivedAt), "MMM d, yyyy 'at' h:mm a"); } catch { return ""; } })()
       : "";
     const startDateFormatted = job.firstServiceDate
-      ? (() => { try { return format(new Date(job.firstServiceDate), "EEE, MMM d, yyyy"); } catch { return "TBD"; } })()
-      : "TBD";
+      ? (() => { try { return format(new Date(job.firstServiceDate), "EEE, MMM d, yyyy"); } catch { return "Requested (date pending)"; } })()
+      : "Requested (date pending)";
 
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
@@ -366,11 +369,15 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
           )}
 
           {/* Net earnings estimate */}
-          {job.totalRevenue ? (
-            <p className="text-[11px] text-muted-foreground italic">
-              ~${Math.round(job.totalRevenue * 0.88).toLocaleString()} after platform fees (12%)
-            </p>
-          ) : null}
+          {job.totalRevenue ? (() => {
+            const feeP = job.firstServicePrice && job.firstServicePrice < 150 ? 20 : job.firstServicePrice && job.firstServicePrice <= 400 ? 25 : 30;
+            const earningsP = 100 - feeP;
+            return (
+              <p className="text-[11px] text-muted-foreground italic">
+                ~${Math.round(job.totalRevenue * earningsP / 100).toLocaleString()} your earnings ({earningsP}% after {feeP}% platform fee)
+              </p>
+            );
+          })() : null}
         </div>
 
         {/* Details grid */}
