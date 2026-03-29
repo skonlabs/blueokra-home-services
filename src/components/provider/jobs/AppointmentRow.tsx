@@ -68,10 +68,16 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
     ? "bg-warm-400"
     : "bg-muted-foreground";
 
+  // Provider view status labels:
+  // If provider confirmed, customer pending → "Awaiting their confirmation"
+  // If customer confirmed, provider pending → "Needs your confirmation" 
+  // Both confirmed → "Confirmed"
   const statusLabel = bothConfirmed || isConfirmed
     ? "Confirmed"
-    : otherNeedsToConfirm
+    : myStatus === "confirmed" && otherStatus === "pending"
     ? "Awaiting their confirmation"
+    : myStatus === "pending" && otherStatus === "confirmed"
+    ? "Pending your confirmation"
     : iNeedToConfirm
     ? "Needs your confirmation"
     : appointment.status.replace("_", " ");

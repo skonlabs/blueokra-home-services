@@ -220,7 +220,20 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
               const revenue = service?.revenue ? Number(service.revenue) : 0;
               const feeP = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
               const providerEarnings = Math.round(revenue * (1 - feeP));
-              const statusColor = job.appointment_status === "confirmed" ? "text-success" : "text-warm-500";
+              const ps = job.provider_status as string;
+              const cs = job.customer_status as string;
+              let statusColor = "text-warm-500";
+              let statusText = (job.appointment_status || "pending").replace("_", " ");
+              if (job.appointment_status === "confirmed" || (ps === "confirmed" && cs === "confirmed")) {
+                statusColor = "text-success";
+                statusText = "Confirmed";
+              } else if (ps === "confirmed" && cs === "pending") {
+                statusColor = "text-primary";
+                statusText = "Awaiting their confirmation";
+              } else if (cs === "confirmed" && ps === "pending") {
+                statusColor = "text-warm-500";
+                statusText = "Pending your confirmation";
+              }
               const address = cp?.address || service?.notes || "Address pending";
               const customerUserId = cp?.user_id || job.customer_user_id;
 
@@ -230,7 +243,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
                   index={i}
                   serviceType={service?.service_type || "lawn"}
                   serviceName={service?.package_name || service?.service_type || "Service"}
-                  status={job.appointment_status || "pending"}
+                  status={statusText}
                   statusColor={statusColor}
                   earnings={providerEarnings}
                   dateLabel={dateLabel}
@@ -308,7 +321,7 @@ const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, stat
         <ServiceIcon serviceType={serviceType} size="sm" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{serviceName}</p>
-          <span className={`text-[10px] font-medium capitalize ${statusColor}`}>{status.replace("_", " ")}</span>
+          <span className={`text-[10px] font-medium ${statusColor}`}>{status}</span>
         </div>
         <div className="text-right shrink-0">
           <p className="text-sm font-bold text-foreground">${earnings}</p>
