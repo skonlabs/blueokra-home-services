@@ -109,7 +109,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
         </div>
         <div>
           <h2 className="font-display text-lg font-bold text-foreground">{shownName}</h2>
-          <p className="text-sm text-muted-foreground">{user?.phone || ""}</p>
+          <p className="text-sm text-muted-foreground">{profile?.phone || user?.phone || ""}</p>
           {isProvider && (
             <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Provider</span>
           )}
@@ -165,7 +165,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                           </div>
                           <div>
                             <label className="block text-xs text-muted-foreground mb-1.5">Phone (sign-up)</label>
-                            <input className={`${inputCls} opacity-60 cursor-not-allowed`} value={user?.phone || ""} readOnly />
+                            <input className={`${inputCls} opacity-60 cursor-not-allowed`} value={profile?.phone || user?.phone || ""} readOnly />
                           </div>
                           {isProvider && (
                             <div>
