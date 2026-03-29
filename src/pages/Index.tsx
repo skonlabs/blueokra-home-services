@@ -104,8 +104,9 @@ const Index = () => {
     navigate(isProvider ? "provider-home" : "home");
   };
 
-  const handleServiceSelect = (serviceId: string) => {
+  const handleServiceSelect = (serviceId: string, rebookData?: IntakeFormData) => {
     setSelectedService(serviceId);
+    if (rebookData) setLastIntakeData(rebookData);
     navigate("intake");
   };
 
@@ -135,7 +136,7 @@ const Index = () => {
       case "quote":
         return { title: "Your Quote", onBack: () => navigate("intake") };
       case "booked":
-        return { title: "Confirmation", onBack: goHome };
+        return { title: "Confirmation" };
       case "bookings":
         return { title: "My Bookings" };
       case "payment":
@@ -143,7 +144,7 @@ const Index = () => {
       case "dispute":
         return { title: "Report Issue", onBack: () => navigate("bookings") };
       case "property":
-        return { title: "My Property" };
+        return { title: "My Properties" };
       case "profile":
         return { title: "Profile" };
       case "provider-home":
@@ -208,7 +209,7 @@ const Index = () => {
                 onViewBookings={() => navigate("bookings")}
                 onViewProperty={() => navigate("property")}
                 onBookAgain={() => navigate("bookings")}
-                onRebook={(id) => { setSelectedService(id); navigate("intake"); }}
+                onRebook={(id, customizations) => handleServiceSelect(id, customizations as IntakeFormData | undefined)}
               />
             </motion.div>
           )}
@@ -254,7 +255,7 @@ const Index = () => {
                 onPaymentFlow={() => navigate("payment")}
                 onReview={(booking) => { setReviewBooking(booking); }}
                 onDispute={() => navigate("dispute")}
-                onRebook={(serviceId) => { setSelectedService(serviceId); navigate("intake"); }}
+                onRebook={(serviceId, customizations) => handleServiceSelect(serviceId, customizations as IntakeFormData | undefined)}
               />
             </motion.div>
           )}

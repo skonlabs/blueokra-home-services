@@ -21,6 +21,22 @@ const AVAILABLE_SERVICES = [
   { name: "Fence Installation", description: "Wood, vinyl & chain-link fencing, repairs, staining & sealing" },
 ];
 
+const WA_CITIES = [
+  "Aberdeen", "Anacortes", "Auburn", "Bainbridge Island", "Battle Ground", "Bellevue", "Bellingham",
+  "Bonney Lake", "Bothell", "Bremerton", "Burien", "Burlington", "Camas", "Centralia", "Chelan",
+  "Cheney", "Covington", "Des Moines", "DuPont", "East Wenatchee", "Edmonds", "Ellensburg",
+  "Enumclaw", "Ephrata", "Everett", "Federal Way", "Ferndale", "Gig Harbor", "Issaquah",
+  "Kenmore", "Kennewick", "Kent", "Kirkland", "Lacey", "Lake Forest Park", "Lake Stevens",
+  "Lakewood", "Liberty Lake", "Longview", "Lynnwood", "Maple Valley", "Marysville", "Mercer Island",
+  "Mill Creek", "Monroe", "Moses Lake", "Mount Vernon", "Mountlake Terrace", "Mukilteo",
+  "Newcastle", "Oak Harbor", "Olympia", "Orting", "Pasco", "Port Angeles", "Port Orchard",
+  "Port Townsend", "Poulsbo", "Pullman", "Puyallup", "Redmond", "Renton", "Richland",
+  "Sammamish", "SeaTac", "Seattle", "Sedro-Woolley", "Sequim", "Shelton", "Shoreline",
+  "Snohomish", "Snoqualmie", "Spokane", "Spokane Valley", "Stanwood", "Sumner", "Sunnyside",
+  "Tacoma", "Tukwila", "Tumwater", "University Place", "Vancouver", "Walla Walla", "Washougal",
+  "Wenatchee", "West Richland", "Woodinville", "Yakima",
+];
+
 const inputCls =
   "w-full bg-muted rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 border border-transparent";
 
@@ -45,8 +61,9 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
 
   // Provider-specific fields
   const [providerType, setProviderType] = useState<"individual" | "company" | null>(null);
-  const [providerStep, setProviderStep] = useState(1); // 1=type, 2=services, 3=details
+  const [providerStep, setProviderStep] = useState(1); // 1=type, 2=services, 3=service areas, 4=credentials, 5=venmo
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedServiceAreas, setSelectedServiceAreas] = useState<string[]>([]);
   const [isBonded, setIsBonded] = useState(false);
   const [bondNumber, setBondNumber] = useState("");
   const [isLicensed, setIsLicensed] = useState(false);
@@ -54,7 +71,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
 
-  // Venmo phone (step 4)
+  // Venmo phone (step 5)
   const [venmoPhone, setVenmoPhone] = useState("");
   const [venmoOtpSent, setVenmoOtpSent] = useState(false);
   const [venmoOtp, setVenmoOtp] = useState("");
@@ -63,6 +80,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
   const [venmoOwnershipAgreed, setVenmoOwnershipAgreed] = useState(false);
 
   const [expandedService, setExpandedService] = useState<string | null>(null);
+  const [areaSearch, setAreaSearch] = useState("");
 
   const toggleService = (s: string) => {
     setSelectedServices(prev =>
@@ -105,12 +123,16 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
       });
       if (roleError) throw roleError;
 
+      // Extract phone from fake email for display purposes
+      const signupPhone = user.email?.replace("@blueokra.local", "").replace(/^(\d{1})(\d{3})(\d{3})(\d{4})$/, "+$1 ($2) $3-$4") || null;
+
       // Upsert profile with address info
       const { error: profileError } = await supabase.from("profiles").upsert({
         user_id: user.id,
         first_name: firstName.trim() || null,
         last_name: lastName.trim() || null,
         display_name: firstName.trim() ? `${firstName.trim()} ${lastName.trim()}`.trim() : null,
+        phone: signupPhone,
         address: homeAddress.trim() || null,
         city: homeCity.trim() || null,
         state: homeState.trim() || null,
@@ -123,6 +145,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
         await supabase.from("user_homes").insert({
           user_id: user.id,
           address: homeAddress.trim(),
+          nickname: "My Home",
           city: homeCity.trim() || null,
           state: homeState.trim() || null,
           zip_code: homeZip.trim() || null,
@@ -153,17 +176,22 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
       });
       if (roleError) throw roleError;
 
+      // Extract phone from fake email for display purposes
+      const signupPhone = user.email?.replace("@blueokra.local", "").replace(/^(\d{1})(\d{3})(\d{3})(\d{4})$/, "+$1 ($2) $3-$4") || null;
+
       // Upsert profile with provider details
       const { error: profileError } = await supabase.from("profiles").upsert({
         user_id: user.id,
         first_name: firstName.trim() || null,
         last_name: lastName.trim() || null,
+        phone: signupPhone,
         company_name: providerType === "company" ? businessName.trim() || null : null,
         display_name: providerType === "company"
           ? businessName.trim() || null
           : firstName.trim() ? `${firstName.trim()} ${lastName.trim()}`.trim() : null,
         address: businessAddress.trim() || null,
         services_offered: selectedServices,
+        service_areas: selectedServiceAreas,
         venmo_phone: venmoPhone.trim() || null,
       } as any, { onConflict: "user_id" });
       if (profileError) throw profileError;
@@ -360,7 +388,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
             >
               {/* Progress bar */}
               <div className="flex gap-2">
-                {[1, 2, 3, 4].map(s => (
+                {[1, 2, 3, 4, 5].map(s => (
                   <div key={s} className={`flex-1 h-1.5 rounded-full transition-colors ${s <= providerStep ? "bg-primary" : "bg-muted"}`} />
                 ))}
               </div>
@@ -496,9 +524,80 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                   </motion.div>
                 )}
 
-                {/* Provider step 3: License & Bond */}
+                {/* Provider step 3: Service Areas */}
                 {providerStep === 3 && (
                   <motion.div key="p3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                    <div>
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                        <MapPin className="w-6 h-6 text-primary" />
+                      </div>
+                      <h2 className="font-display text-xl font-bold text-foreground">Service Areas</h2>
+                      <p className="text-sm text-muted-foreground mt-1">Select the cities in Washington state where you provide services</p>
+                    </div>
+
+                    <div>
+                      <input
+                        className={inputCls}
+                        placeholder="Search cities…"
+                        value={areaSearch}
+                        onChange={e => setAreaSearch(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto space-y-1.5">
+                      {WA_CITIES.filter(c => c.toLowerCase().includes(areaSearch.toLowerCase())).map(city => {
+                        const selected = selectedServiceAreas.includes(city);
+                        return (
+                          <button
+                            key={city}
+                            type="button"
+                            onClick={() => setSelectedServiceAreas(prev => selected ? prev.filter(c => c !== city) : [...prev, city])}
+                            className={`w-full flex items-center gap-3 p-2.5 rounded-xl border transition-all text-left text-sm ${
+                              selected ? "bg-primary/10 border-primary" : "bg-card border-border hover:border-primary/40"
+                            }`}
+                          >
+                            <div
+                              className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                                selected ? "bg-primary border-primary" : "border-muted-foreground/40"
+                              }`}
+                            >
+                              {selected && <Check className="w-3 h-3 text-primary-foreground" />}
+                            </div>
+                            <span className={selected ? "text-primary font-medium" : "text-foreground"}>{city}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {selectedServiceAreas.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedServiceAreas.map(area => (
+                          <span key={area} className="bg-primary/10 text-primary text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+                            {area}
+                            <button onClick={() => setSelectedServiceAreas(prev => prev.filter(c => c !== area))} className="hover:text-destructive">
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button onClick={() => setProviderStep(2)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
+                      <button
+                        onClick={() => setProviderStep(4)}
+                        disabled={selectedServiceAreas.length === 0}
+                        className="flex-1 bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm disabled:opacity-50"
+                      >
+                        Continue →
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Provider step 4: License & Bond */}
+                {providerStep === 4 && (
+                  <motion.div key="p4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                     <div>
                       <h2 className="font-display text-xl font-bold text-foreground">Credentials</h2>
                       <p className="text-sm text-muted-foreground mt-1">Verified credentials build customer trust</p>
@@ -561,9 +660,9 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                     {error && <p className="text-xs text-destructive">{error}</p>}
 
                     <div className="flex gap-2">
-                      <button onClick={() => setProviderStep(2)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
+                      <button onClick={() => setProviderStep(3)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
                       <button
-                        onClick={() => setProviderStep(4)}
+                        onClick={() => setProviderStep(5)}
                         className="flex-1 bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm"
                       >
                         Continue →
@@ -572,9 +671,9 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                   </motion.div>
                 )}
 
-                {/* Provider step 4: Venmo Phone for Payouts */}
-                {providerStep === 4 && (
-                  <motion.div key="p4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                {/* Provider step 5: Venmo Phone for Payouts */}
+                {providerStep === 5 && (
+                  <motion.div key="p5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                     <div>
                       <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center mb-3">
                         <Smartphone className="w-6 h-6 text-secondary" />
@@ -671,7 +770,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                     {error && <p className="text-xs text-destructive">{error}</p>}
 
                     <div className="flex gap-2">
-                      <button onClick={() => setProviderStep(3)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
+                      <button onClick={() => setProviderStep(4)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
                       <button
                         onClick={saveProvider}
                         disabled={saving || !venmoVerified || !venmoOwnershipAgreed}

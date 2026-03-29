@@ -74,6 +74,53 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
           }
         }
 
+        // Auto-match providers: find providers who offer this service type and serve this city
+        try {
+          const serviceCity = intakeData?.serviceAddress?.split(",").map(s => s.trim())[1] || "";
+          const serviceName = quote.serviceName || "";
+          
+          // Find providers whose services_offered includes this service and service_areas includes the city
+          const { data: matchingProviders } = await supabase
+            .from("profiles")
+            .select("user_id")
+            .contains("services_offered", [serviceName])
+            .not("user_id", "eq", user.id);
+
+          if (matchingProviders?.length) {
+            // Filter by service area if city is known
+            let providerIds = matchingProviders.map(p => p.user_id);
+            
+            if (serviceCity) {
+              const { data: areaFiltered } = await supabase
+                .from("profiles")
+                .select("user_id")
+                .in("user_id", providerIds)
+                .contains("service_areas", [serviceCity]);
+              if (areaFiltered?.length) {
+                providerIds = areaFiltered.map(p => p.user_id);
+              }
+            }
+
+            // Create leads and notifications for matching providers
+            for (const providerId of providerIds) {
+              await supabase.from("booking_lead").insert({
+                service_id: bookingData.id,
+                provider_user_id: providerId,
+                lead_status: "new",
+              });
+              await supabase.from("booking_notification").insert({
+                recipient_user_id: providerId,
+                service_id: bookingData.id,
+                notification_type: "new_service_request",
+                title: "New Service Request",
+                message: `A customer needs ${serviceName}${serviceCity ? ` in ${serviceCity}` : ""}. Accept to get the job!`,
+              });
+            }
+          }
+        } catch (matchErr) {
+          console.warn("Provider matching failed (non-critical):", matchErr);
+        }
+
         // Refresh the booking history cache so the new booking appears immediately
         queryClient.invalidateQueries({ queryKey: ["bookings", user.id] });
 

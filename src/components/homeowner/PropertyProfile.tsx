@@ -281,10 +281,10 @@ const PropertyProfile = () => {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-muted rounded-xl p-1 overflow-x-auto">
-        {(["details", "appliances", "history", "warranties"] as const).map((tab) => (
+        {(["details", "history"] as const).map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => setActiveTab(tab as any)}
             className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all whitespace-nowrap px-2 ${
               activeTab === tab ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
             }`}

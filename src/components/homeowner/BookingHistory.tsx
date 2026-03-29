@@ -9,10 +9,10 @@ interface BookingHistoryProps {
   onPaymentFlow: () => void;
   onReview: (booking: Booking) => void;
   onDispute: () => void;
-  onRebook: (serviceId: string) => void;
+  onRebook: (serviceId: string, customizations?: any) => void;
 }
 
-type BookingStatus = "upcoming" | "in_progress" | "completed" | "disputed";
+type BookingStatus = "pending" | "upcoming" | "in_progress" | "completed" | "disputed";
 
 interface Booking {
   id: string;
@@ -28,15 +28,17 @@ interface Booking {
 
 const mapStatus = (status: string): BookingStatus => {
   switch (status) {
-    case "purchased": case "pending": case "scheduled": return "upcoming";
+    case "pending": return "pending";
+    case "purchased": case "scheduled": return "upcoming";
     case "in_progress": return "in_progress";
     case "completed": return "completed";
     case "disputed": return "disputed";
-    default: return "upcoming";
+    default: return "pending";
   }
 };
 
 const statusColors: Record<BookingStatus, string> = {
+  pending: "bg-amber-50 text-amber-600",
   upcoming: "bg-blue-50 text-blue-500",
   in_progress: "bg-warm-50 text-warm-500",
   completed: "bg-okra-50 text-okra-600",
@@ -44,11 +46,11 @@ const statusColors: Record<BookingStatus, string> = {
 };
 
 const statusLabels: Record<BookingStatus, string> = {
-  upcoming: "Upcoming", in_progress: "In Progress", completed: "Completed", disputed: "Disputed",
+  pending: "Pending", upcoming: "Upcoming", in_progress: "In Progress", completed: "Completed", disputed: "Disputed",
 };
 
 const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaymentFlow, onReview, onDispute, onRebook }, ref) => {
-  const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "completed">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "pending" | "upcoming" | "completed">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: rawBookings, isLoading, error: bookingsError } = useBookings();
 
@@ -74,6 +76,7 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
   }));
 
   const filtered = activeTab === "all" ? bookings :
+    activeTab === "pending" ? bookings.filter(b => b.status === "pending") :
     activeTab === "upcoming" ? bookings.filter(b => b.status === "upcoming" || b.status === "in_progress") :
     bookings.filter(b => b.status === "completed");
 
@@ -83,7 +86,7 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
   return (
     <div className="px-4 py-4 pb-24 space-y-4 relative">
       <div className="flex gap-1 bg-muted rounded-xl p-1">
-        {(["all", "upcoming", "completed"] as const).map((tab) => (
+        {(["all", "pending", "upcoming", "completed"] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${activeTab === tab ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -194,6 +197,24 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
                   )}
                 </div>
 
+                {/* QR Code */}
+                {(selectedBooking.status === "pending" || selectedBooking.status === "upcoming" || selectedBooking.status === "in_progress") && (
+                  <div className="bg-muted/50 rounded-2xl p-4 flex flex-col items-center gap-2">
+                    <p className="text-xs font-semibold text-foreground">Show this QR code to your provider</p>
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`blueokra-booking-BK${selectedRaw.id.replace(/-/g, "").slice(-8).toUpperCase()}`)}&bgcolor=FFFFFF&color=000000`}
+                      className="w-36 h-36 rounded-xl border border-border"
+                      alt="Booking QR code"
+                    />
+                    <p className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-1 rounded">
+                      BK{selectedRaw.id.replace(/-/g, "").slice(-8).toUpperCase()}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground text-center">
+                      Provider scans this to confirm service
+                    </p>
+                  </div>
+                )}
+
                 {/* Appointments */}
                 {selectedRaw.booking_appointment?.length > 0 && (
                   <div className="space-y-1.5">
@@ -222,7 +243,7 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
                     </button>
                   )}
                   {selectedBooking.status === "completed" && (
-                    <button onClick={() => { setSelectedId(null); onRebook(selectedBooking.serviceType); }}
+                    <button onClick={() => { setSelectedId(null); onRebook(selectedBooking.serviceType, selectedRaw?.customizations || undefined); }}
                       className="flex-1 bg-muted text-foreground text-xs font-medium py-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
                       <RotateCcw className="w-3.5 h-3.5" /> Rebook
                     </button>
