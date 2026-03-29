@@ -247,9 +247,12 @@ const ProviderServiceHistory = () => {
                 >
                   <div className="flex items-center gap-3">
                     <ServiceIcon serviceType={job.serviceType} size="sm" />
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-semibold text-sm text-foreground capitalize">
                         {job.serviceType.replace(/_/g, " ")}
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <User className="w-3 h-3 shrink-0" />{job.customerName}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {safeDateFormat(job.appointmentDate, "MMM d, yyyy")} · {job.packageName}
