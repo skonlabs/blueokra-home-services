@@ -280,6 +280,14 @@ const ProviderServiceHistory = () => {
                   >
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
+                        <p className="text-muted-foreground">Customer</p>
+                        <p className="font-medium text-foreground">{job.customerName}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Address</p>
+                        <p className="font-medium text-foreground">{job.customerAddress}</p>
+                      </div>
+                      <div>
                         <p className="text-muted-foreground">Service Date</p>
                         <p className="font-medium text-foreground">
                           {safeDateFormat(job.appointmentDate, "MMM d, yyyy h:mm a")}
