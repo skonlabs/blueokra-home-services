@@ -7,7 +7,8 @@ interface JobSummary {
   service: string;
   customer: string;
   address: string;
-  price: string;
+  price?: string;
+  firstServicePrice?: number;
 }
 
 interface ProviderCompletionProps {
@@ -39,7 +40,8 @@ const REASONS = [
 
 const ProviderCompletion = ({ job: jobProp, onDone }: ProviderCompletionProps) => {
   const job = jobProp ?? DEFAULT_JOB;
-  const rawPrice = parseFloat(job.price.replace(/[^0-9.]/g, "")) || 195;
+  const priceStr = job.price || (job.firstServicePrice ? `$${job.firstServicePrice}` : "$195");
+  const rawPrice = parseFloat(priceStr.replace(/[^0-9.]/g, "")) || 195;
   const QUOTE_LOW = Math.round(rawPrice * 0.9);
   const QUOTE_HIGH = Math.round(rawPrice * 1.25);
 
