@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2, Wrench } from "lucide-react";
+import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2, Wrench, Building2, ExternalLink, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -8,7 +8,7 @@ interface ProfileScreenProps {
   isProvider?: boolean;
 }
 
-type Section = "account" | "payment" | "notifications" | "help" | "privacy" | "terms" | null;
+type Section = "account" | "payment" | "bank" | "notifications" | "help" | "privacy" | "terms" | null;
 
 const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
