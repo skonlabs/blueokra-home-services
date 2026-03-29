@@ -135,6 +135,9 @@ const Index = () => {
   };
 
   const handleNavigation = (target: string, params?: Record<string, string>) => {
+    if (params?.userId && params?.userName) {
+      setChatTarget({ userId: params.userId, name: params.userName });
+    }
     setNavParams(params || {});
     navigate(target as Screen);
   };

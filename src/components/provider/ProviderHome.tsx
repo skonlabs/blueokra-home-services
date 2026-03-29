@@ -338,7 +338,7 @@ const UpcomingAppointmentCard = ({ index, job, onNavigate }: UpcomingAppointment
               <Navigation className="w-3.5 h-3.5 text-foreground" />
             </button>
             {customerUserId && (
-              <button onClick={() => onNavigate("chat", { userId: customerUserId, userName: customerName })}
+              <button onClick={() => onNavigate("provider-chat", { userId: customerUserId, userName: customerName })}
                 className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform" title="Chat">
                 <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
