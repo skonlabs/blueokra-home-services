@@ -44,7 +44,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
       const perYear = FREQUENCY_PER_YEAR[frequency] || 1;
       const isRecurring = frequency !== "one-time";
 
-      const _econ = computeEconomics(revenue); // used for centralized fee logic
+      
       const firstServicePrice = revenue;
       const recurringPrice = isRecurring ? Math.round(revenue * 0.85) : 0;
 
