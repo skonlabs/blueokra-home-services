@@ -105,8 +105,18 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
 
   const inputCls = "w-full bg-muted rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent text-foreground";
 
-  const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }>; badge?: React.ReactNode }[] = [
     { key: "account", label: "Account Settings", icon: User },
+    ...(isProvider ? [{
+      key: "bank" as Section,
+      label: "Bank & Payouts",
+      icon: Building2,
+      badge: connectStatus === "active"
+        ? <CheckCircle2 className="w-3.5 h-3.5 text-secondary" />
+        : connectStatus === "pending"
+        ? <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+        : null,
+    }] : []),
     { key: "payment", label: "Payment Methods", icon: CreditCard },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "help", label: "Help & Support", icon: HelpCircle },
