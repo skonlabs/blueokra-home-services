@@ -257,15 +257,15 @@ const JobCard = ({ job, index, onCompleteAppointment, onChat }: JobCardProps) =>
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="bg-muted/30 rounded-xl p-3">
+                <div className="space-y-0">
                   {job.appointments.map((appt) => (
                     <AppointmentRow
                       key={appt.id}
                       appointment={appt}
                       address={job.address}
+                      serviceType={job.serviceType}
                       onComplete={(a) => onCompleteAppointment(job, a)}
                       onChat={() => {
-                        // Navigate to chat with the customer
                         if (onChat) onChat(appt.customerUserId || "", job.customer);
                       }}
                     />
