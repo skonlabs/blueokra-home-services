@@ -1,6 +1,6 @@
 import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, Wrench, Building2, User, ChevronRight, Check, Loader2, MapPin, PartyPopper } from "lucide-react";
+import { Home, Wrench, Building2, User, ChevronRight, Check, Loader2, MapPin, PartyPopper, Smartphone, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import blueokraLogo from "@/assets/blueokra-logo.svg";
@@ -53,6 +53,14 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
   const [licenseNumber, setLicenseNumber] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
+
+  // Venmo phone (step 4)
+  const [venmoPhone, setVenmoPhone] = useState("");
+  const [venmoOtpSent, setVenmoOtpSent] = useState(false);
+  const [venmoOtp, setVenmoOtp] = useState("");
+  const [venmoVerified, setVenmoVerified] = useState(false);
+  const [venmoSending, setVenmoSending] = useState(false);
+  const [venmoOwnershipAgreed, setVenmoOwnershipAgreed] = useState(false);
 
   const [expandedService, setExpandedService] = useState<string | null>(null);
 
