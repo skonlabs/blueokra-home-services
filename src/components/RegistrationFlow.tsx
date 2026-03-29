@@ -45,8 +45,9 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
 
   // Provider-specific fields
   const [providerType, setProviderType] = useState<"individual" | "company" | null>(null);
-  const [providerStep, setProviderStep] = useState(1); // 1=type, 2=services, 3=details
+  const [providerStep, setProviderStep] = useState(1); // 1=type, 2=services, 3=service areas, 4=credentials, 5=venmo
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedServiceAreas, setSelectedServiceAreas] = useState<string[]>([]);
   const [isBonded, setIsBonded] = useState(false);
   const [bondNumber, setBondNumber] = useState("");
   const [isLicensed, setIsLicensed] = useState(false);
@@ -54,7 +55,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
 
-  // Venmo phone (step 4)
+  // Venmo phone (step 5)
   const [venmoPhone, setVenmoPhone] = useState("");
   const [venmoOtpSent, setVenmoOtpSent] = useState(false);
   const [venmoOtp, setVenmoOtp] = useState("");
@@ -63,6 +64,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
   const [venmoOwnershipAgreed, setVenmoOwnershipAgreed] = useState(false);
 
   const [expandedService, setExpandedService] = useState<string | null>(null);
+  const [areaSearch, setAreaSearch] = useState("");
 
   const toggleService = (s: string) => {
     setSelectedServices(prev =>
