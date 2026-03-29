@@ -87,7 +87,7 @@ export const useProviderLeads = () => {
         .select(`
           id, lead_status, provider_user_id, service_id, created_at,
           booking_service!inner (
-            id, service_type, package_name, customer_user_id, revenue, notes, customizations, created_at
+            id, service_type, package_name, customer_user_id, revenue, notes, customizations, created_at, frequency
           )
         `)
         .eq("provider_user_id", user!.id)
@@ -109,9 +109,9 @@ export const useProviderLeads = () => {
         });
       }
 
-      // Fetch appointment dates for each service
+      // Fetch all appointments for each service (dates + count)
       const serviceIds = [...new Set((data || []).map(d => d.service_id).filter(Boolean))] as string[];
-      let appointmentDates: Record<string, string> = {};
+      let appointmentsByService: Record<string, { dates: string[]; count: number }> = {};
       if (serviceIds.length > 0) {
         const { data: appts } = await supabase
           .from("booking_appointment")
@@ -119,18 +119,23 @@ export const useProviderLeads = () => {
           .in("service_id", serviceIds)
           .order("appointment_date", { ascending: true });
         (appts || []).forEach((a: any) => {
-          if (!appointmentDates[a.service_id]) {
-            appointmentDates[a.service_id] = a.appointment_date;
+          if (!appointmentsByService[a.service_id]) {
+            appointmentsByService[a.service_id] = { dates: [], count: 0 };
           }
+          appointmentsByService[a.service_id].dates.push(a.appointment_date);
+          appointmentsByService[a.service_id].count++;
         });
       }
 
       return (data || []).map(d => {
         const svc = d.booking_service as any;
+        const apptInfo = appointmentsByService[d.service_id] || { dates: [], count: 0 };
         return {
           ...d,
           customer_profile: customerProfiles[svc?.customer_user_id] || null,
-          appointment_date: appointmentDates[d.service_id] || null,
+          appointment_date: apptInfo.dates[0] || null,
+          appointment_dates: apptInfo.dates,
+          appointment_count: apptInfo.count,
         };
       });
     },

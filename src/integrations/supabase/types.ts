@@ -1592,16 +1592,27 @@ export type Database = {
         Args: { p_provider_id: string; p_service_id: string }
         Returns: boolean
       }
-      provider_respond_service: {
-        Args: {
-          _decline_reason?: string
-          _proposed_date?: string
-          _response_type: string
-          _service_id: string
-          _user_id: string
-        }
-        Returns: Json
-      }
+      provider_respond_service:
+        | {
+            Args: {
+              _decline_reason?: string
+              _proposed_date?: string
+              _response_type: string
+              _service_id: string
+              _user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _decline_reason?: string
+              _proposed_date?: string
+              _response_type: string
+              _service_id: string
+              _user_id: string
+            }
+            Returns: Json
+          }
       rpc_create_stripe_payment: {
         Args: {
           _amount: number
