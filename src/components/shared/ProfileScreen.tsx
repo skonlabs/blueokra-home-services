@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2, Camera } from "lucide-react";
+import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2, Camera, Home } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,11 +8,12 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ProfileScreenProps {
   isProvider?: boolean;
+  onNavigateProperty?: () => void;
 }
 
-type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | null;
+type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | "properties" | null;
 
-const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
+const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState<Section>(null);
@@ -138,6 +139,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
         ? <CheckCircle2 className="w-3.5 h-3.5 text-secondary" />
         : <Smartphone className="w-3.5 h-3.5 text-muted-foreground" />,
     }] : []),
+    ...(!isProvider ? [{ key: "properties" as Section, label: "My Properties", icon: Home }] : []),
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "help", label: "Help & Support", icon: HelpCircle },
     { key: "privacy", label: "Privacy Policy", icon: Lock },
@@ -344,6 +346,19 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                           <p><strong className="text-foreground">Cancellations:</strong> Cancellations within 2 hours of scheduled service may incur a $25 cancellation fee.</p>
                           <p><strong className="text-foreground">Liability:</strong> BlueOkra's maximum liability is limited to the amount paid for the disputed service.</p>
                           <p className="text-[11px]">Last updated: January 2025</p>
+                        </div>
+                      )}
+
+                      {/* MY PROPERTIES (Homeowner only) */}
+                      {item.key === "properties" && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">Manage your properties, appliances and warranties.</p>
+                          <button
+                            onClick={() => onNavigateProperty?.()}
+                            className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2"
+                          >
+                            <Home className="w-4 h-4" /> View My Properties
+                          </button>
                         </div>
                       )}
 

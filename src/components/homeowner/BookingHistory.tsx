@@ -201,24 +201,6 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
                   )}
                 </div>
 
-                {/* QR Code */}
-                {(selectedBooking.status === "pending" || selectedBooking.status === "upcoming" || selectedBooking.status === "in_progress") && (
-                  <div className="bg-muted/50 rounded-2xl p-4 flex flex-col items-center gap-2">
-                    <p className="text-xs font-semibold text-foreground">Show this QR code to your provider</p>
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`blueokra-booking-BK${selectedRaw.id.replace(/-/g, "").slice(-8).toUpperCase()}`)}&bgcolor=FFFFFF&color=000000`}
-                      className="w-36 h-36 rounded-xl border border-border"
-                      alt="Booking QR code"
-                    />
-                    <p className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-1 rounded">
-                      BK{selectedRaw.id.replace(/-/g, "").slice(-8).toUpperCase()}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground text-center">
-                      Provider scans this to confirm service
-                    </p>
-                  </div>
-                )}
-
                 {/* Appointments */}
                 {selectedRaw.booking_appointment?.length > 0 && (
                   <div className="space-y-1.5">
@@ -234,12 +216,6 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-1">
-                  {selectedBooking.status === "in_progress" && (
-                    <button onClick={() => { setSelectedId(null); onPaymentFlow(); }}
-                      className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
-                      <QrCode className="w-3.5 h-3.5" /> Confirm &amp; Pay
-                    </button>
-                  )}
                   {selectedBooking.status === "completed" && !selectedBooking.rating && (
                     <button onClick={() => { setSelectedId(null); onReview(selectedBooking); }}
                       className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform">
