@@ -9,7 +9,11 @@ const NET_EARNINGS = 2221;
 const PAYOUT_AMOUNT = "$2,221";
 const BANK_LAST4 = "4832";
 
-const ProviderEarnings = () => {
+interface ProviderEarningsProps {
+  onViewHistory?: () => void;
+}
+
+const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
   const { toast } = useToast();
   const [showPayoutModal, setShowPayoutModal] = useState(false);
 

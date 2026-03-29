@@ -21,6 +21,7 @@ import ProviderJobs from "@/components/provider/ProviderJobs";
 import ProviderCompletion from "@/components/provider/ProviderCompletion";
 import ProviderEarnings from "@/components/provider/ProviderEarnings";
 import ProviderSchedule from "@/components/provider/ProviderSchedule";
+import ProviderServiceHistory from "@/components/provider/ProviderServiceHistory";
 import ProfileScreen from "@/components/shared/ProfileScreen";
 import RegistrationFlow from "@/components/RegistrationFlow";
 import type { QuoteData } from "@/components/homeowner/AIIntakeChat";
@@ -31,7 +32,7 @@ import type { Job } from "@/components/provider/ProviderJobs";
 
 type Screen =
   | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile"
-  | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-profile";
+  | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-service-history" | "provider-profile";
 
 const Index = () => {
   const { user, loading, roles, refreshProfile } = useAuth();
