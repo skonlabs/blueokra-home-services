@@ -59,6 +59,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
         customerUserId: a.customer_user_id || svc?.customer_user_id || "",
         serviceName: svc?.package_name || svc?.service_type || "Service",
         customerName,
+        customerPhoto: cp?.profile_photo_url || undefined,
       }));
 
       const completedCount = mappedAppts.filter(a => a.status === "completed").length;
