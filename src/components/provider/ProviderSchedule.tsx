@@ -41,6 +41,7 @@ interface ScheduleJob {
   serviceType: string;
   customer: string;
   customerUserId: string;
+  customerPhoto?: string;
   address: string;
   revenue: number;
   appointmentStatus: string;
@@ -88,6 +89,7 @@ const ProviderSchedule = ({ onChat, onComplete }: ProviderScheduleProps) => {
           serviceType: service?.service_type || "general",
           customer: cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer",
           customerUserId: cp?.user_id || job.customer_user_id || service?.customer_user_id || "",
+          customerPhoto: cp?.profile_photo_url || undefined,
           address: cp?.address || service?.notes || "Address pending",
           revenue: providerEarnings,
           appointmentStatus: job.appointment_status || "pending",
@@ -229,9 +231,20 @@ const ProviderSchedule = ({ onChat, onComplete }: ProviderScheduleProps) => {
                   </div>
 
                   {/* Info row */}
-                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{job.time}</span>
-                    <span className="flex items-center gap-1"><User className="w-3 h-3 shrink-0" />{job.customer}</span>
+                  <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground">
+                    <div className="shrink-0">
+                      {job.customerPhoto ? (
+                        <img src={job.customerPhoto} alt={job.customer} className="w-8 h-8 rounded-full object-cover border border-border" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border border-border">
+                          <User className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs text-primary font-medium truncate">{job.customer}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{job.time}</span>
+                    </div>
                   </div>
                 </button>
 
