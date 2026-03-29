@@ -181,6 +181,17 @@ const Index = () => {
   const headerRightActions = (
     <div className="flex gap-2">
       <button
+        onClick={() => navigate(isProvider ? "provider-chat" : "chat")}
+        className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground relative"
+      >
+        <MessageSquare className="w-4 h-4" />
+        {unreadChatCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-background text-[9px] font-bold text-primary-foreground flex items-center justify-center">
+            {unreadChatCount > 9 ? "9+" : unreadChatCount}
+          </span>
+        )}
+      </button>
+      <button
         onClick={() => setNotificationsOpen(true)}
         className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground relative"
       >
