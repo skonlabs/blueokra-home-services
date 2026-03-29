@@ -1630,26 +1630,48 @@ export type Database = {
         }
         Returns: Json
       }
-      save_profile: {
-        Args: {
-          _address?: string
-          _approval_status?: string
-          _business_license?: string
-          _city?: string
-          _company_name?: string
-          _display_name?: string
-          _first_name?: string
-          _last_name?: string
-          _phone?: string
-          _phone_verified?: boolean
-          _profile_photo_url?: string
-          _services_offered?: string[]
-          _state?: string
-          _user_id: string
-          _zip?: string
-        }
-        Returns: Json
-      }
+      save_profile:
+        | {
+            Args: {
+              _address?: string
+              _approval_status?: string
+              _business_license?: string
+              _city?: string
+              _company_name?: string
+              _display_name?: string
+              _first_name?: string
+              _last_name?: string
+              _phone?: string
+              _phone_verified?: boolean
+              _profile_photo_url?: string
+              _services_offered?: string[]
+              _state?: string
+              _user_id: string
+              _zip?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _address?: string
+              _approval_status?: string
+              _business_license?: string
+              _city?: string
+              _company_name?: string
+              _display_name?: string
+              _first_name?: string
+              _last_name?: string
+              _phone?: string
+              _phone_verified?: boolean
+              _profile_photo_url?: string
+              _services_offered?: string[]
+              _state?: string
+              _user_id: string
+              _venmo_phone?: string
+              _zip?: string
+            }
+            Returns: Json
+          }
       save_user_home: {
         Args: {
           _address?: string

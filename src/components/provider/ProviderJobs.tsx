@@ -39,12 +39,15 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
 
   const jobs: Job[] = (rawJobs || []).map((j) => {
     const service = j.booking_service as any;
+    const customerProfile = (j as any).customer_profile;
     return {
       id: j.id,
       service: service?.package_name || service?.service_type || "Service",
       serviceType: service?.service_type || "lawn",
-      customer: "Customer",
-      address: "123 Main St",
+      customer: customerProfile?.display_name || 
+                [customerProfile?.first_name, customerProfile?.last_name].filter(Boolean).join(" ") || 
+                "Customer",
+      address: service?.notes || customerProfile?.address || "Address pending",
       date: (() => { try { const d = new Date(j.appointment_date); return isNaN(d.getTime()) ? "N/A" : format(d, "MMM d, h:mm a"); } catch { return "N/A"; } })(),
       price: service?.revenue ? `$${service.revenue}` : "TBD",
       status: j.appointment_status as string,

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Bell, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useNotifications } from "@/hooks/useBookings";
 import Auth from "./Auth";
 import BottomNav from "@/components/shared/BottomNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
@@ -162,6 +163,10 @@ const Index = () => {
 
   const headerConfig = getHeaderConfig();
 
+  // Dynamic unread notification count
+  const { data: notifData } = useNotifications();
+  const unreadCount = (notifData || []).filter(n => !n.is_read).length;
+
   // Always-visible header right actions: bell + profile
   const headerRightActions = (
     <div className="flex gap-2">
@@ -170,7 +175,11 @@ const Index = () => {
         className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground relative"
       >
         <Bell className="w-4 h-4" />
-        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full border-2 border-background" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-accent rounded-full border-2 border-background text-[9px] font-bold text-accent-foreground flex items-center justify-center">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
       </button>
       <button
         onClick={() => navigate(isProvider ? "provider-profile" : "profile")}
