@@ -38,7 +38,7 @@ type Screen =
   | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-service-history" | "provider-profile" | "provider-chat";
 
 const Index = () => {
-  const { user, loading, roles, refreshProfile } = useAuth();
+  const { user, loading, roles, profile, refreshProfile } = useAuth();
   const [screen, setScreen] = useState<Screen>("home");
   const [selectedService, setSelectedService] = useState<string | undefined>();
   const [currentQuote, setCurrentQuote] = useState<QuoteData | null>(null);
@@ -50,6 +50,7 @@ const Index = () => {
   const [selectedJobForCompletion, setSelectedJobForCompletion] = useState<Job | null>(null);
   const [navParams, setNavParams] = useState<Record<string, string>>({});
   const [chatTarget, setChatTarget] = useState<{ userId: string; name: string } | null>(null);
+  const [initialModeSet, setInitialModeSet] = useState(false);
 
   // Notifications hook must be before any early returns
   const { data: notifData } = useNotifications();
@@ -57,9 +58,9 @@ const Index = () => {
   const unreadCount = (notifData || []).filter(n => !n.is_read).length;
   const unreadChatCount = (convData || []).reduce((sum, c) => sum + (c.unread_count || 0), 0);
 
-  // Set mode based on user role
+  // Set mode based on user role — only on first load
   useEffect(() => {
-    if (roles.length === 0) return; // still loading or onboarding
+    if (roles.length === 0 || initialModeSet) return;
     if (roles.includes("provider") && !roles.includes("homeowner")) {
       setMode("provider");
       setScreen("provider-home");
@@ -67,7 +68,8 @@ const Index = () => {
       setMode("homeowner");
       setScreen("home");
     }
-  }, [roles]);
+    setInitialModeSet(true);
+  }, [roles, initialModeSet]);
 
   // Show loading spinner
   if (loading) {
@@ -204,9 +206,13 @@ const Index = () => {
       </button>
       <button
         onClick={() => navigate(isProvider ? "provider-profile" : "profile")}
-        className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground"
+        className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden"
       >
-        <User className="w-4 h-4" />
+        {profile?.profile_photo_url ? (
+          <img src={profile.profile_photo_url} alt="Profile" className="w-full h-full object-cover" />
+        ) : (
+          <User className="w-4 h-4" />
+        )}
       </button>
     </div>
   );
@@ -217,6 +223,8 @@ const Index = () => {
         title={headerConfig?.title}
         onBack={headerConfig?.onBack}
         rightActions={headerRightActions}
+        onLogoClick={goHome}
+        profilePhotoUrl={profile?.profile_photo_url}
       />
 
       <div className="flex-1 overflow-y-auto">
