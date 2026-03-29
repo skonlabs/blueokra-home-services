@@ -14,6 +14,7 @@ interface HomeScreenProps {
   onViewProperty: () => void;
   onBookAgain: () => void;
   onRebook: (serviceId: string, customizations?: any) => void;
+  onViewSchedule?: () => void;
 }
 
 // Dynamic seasonal picks based on current month
