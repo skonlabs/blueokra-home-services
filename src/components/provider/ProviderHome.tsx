@@ -1,9 +1,13 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { DollarSign, CalendarDays, Clock, TrendingUp, AlertCircle, Loader2, User as UserIcon, Camera, Smartphone, ChevronRight, MapPin } from "lucide-react";
+import { DollarSign, CalendarDays, Clock, TrendingUp, AlertCircle, Loader2, User as UserIcon, Camera, Smartphone, ChevronRight, MapPin, CalendarClock, Navigation, MessageSquare, QrCode, Check as CheckIcon } from "lucide-react";
 import { useProviderJobs, useProviderLeads, useProviderEarnings } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import ServiceIcon from "@/components/shared/ServiceIcon";
+import DateProposalSheet from "@/components/provider/jobs/DateProposalSheet";
 import { format, addWeeks, isAfter, isBefore } from "date-fns";
 
 const getGreeting = () => {
@@ -292,7 +296,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
   );
 };
 
-// Upcoming appointment card - matches schedule screen style
+// Upcoming appointment card with action buttons
 interface UpcomingAppointmentCardProps {
   index: number;
   serviceType: string;
@@ -305,54 +309,127 @@ interface UpcomingAppointmentCardProps {
   customerName: string;
   customerUserId?: string;
   address: string;
+  appointmentId: string;
+  rawDate: string;
+  providerStatus: string;
+  customerStatus: string;
+  appointmentStatus: string;
   onChatCustomer: (userId: string, name: string) => void;
+  onComplete: (appointmentId: string) => void;
 }
 
-const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, statusColor, earnings, dateLabel, timeStr, customerName, customerUserId, address, onChatCustomer }: UpcomingAppointmentCardProps) => {
+const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, statusColor, earnings, dateLabel, timeStr, customerName, customerUserId, address, appointmentId, rawDate, providerStatus, customerStatus, appointmentStatus, onChatCustomer, onComplete }: UpcomingAppointmentCardProps) => {
   const [expanded, setExpanded] = useState(false);
+  const [proposalOpen, setProposalOpen] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const iNeedToConfirm = providerStatus === "pending";
+  const isCompleted = appointmentStatus === "completed";
+  const isActive = !isCompleted;
+
+  const handleAcceptDate = async () => {
+    if (!user) return;
+    setAccepting(true);
+    try {
+      const { data, error } = await supabase.rpc("accept_appointment_date", { _user_id: user.id, _appointment_id: appointmentId });
+      if (error) throw error;
+      const result = data as any;
+      toast({ title: result?.confirmed ? "Appointment confirmed!" : "Date accepted", description: result?.confirmed ? "Both parties agreed." : "Waiting for other party." });
+      queryClient.invalidateQueries({ queryKey: ["provider-jobs"] });
+    } catch (err: any) {
+      toast({ title: "Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const canComplete = (() => {
+    try {
+      const sd = new Date(rawDate);
+      const today = new Date();
+      sd.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      return sd <= today && (appointmentStatus === "confirmed" || (providerStatus === "confirmed" && customerStatus === "confirmed"));
+    } catch { return false; }
+  })();
+
   return (
-    <motion.button
-      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}
-      onClick={() => setExpanded(!expanded)}
-      className="w-full text-left bg-card rounded-xl border border-border p-3 active:scale-[0.99] transition-transform"
-    >
-      {/* Top row: service + earnings */}
-      <div className="flex items-center gap-2.5 mb-2">
-        <ServiceIcon serviceType={serviceType} size="sm" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate">{serviceName}</p>
-          <span className={`text-[10px] font-medium ${statusColor}`}>{status}</span>
-        </div>
-        <div className="text-right shrink-0">
-          <p className="text-sm font-bold text-foreground">${earnings}</p>
-          <p className="text-[10px] text-muted-foreground">earnings</p>
-        </div>
-      </div>
-
-      {/* Key info row */}
-      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-        <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateLabel} · {timeStr}</span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (customerUserId) onChatCustomer(customerUserId, customerName);
-          }}
-          className="flex items-center gap-1 text-primary font-medium"
-        >
-          <UserIcon className="w-3 h-3 shrink-0" />{customerName}
-        </button>
-      </div>
-
-      {/* Expanded details */}
-      {expanded && (
-        <div className="mt-3 pt-3 border-t border-border">
-          <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-            <span className="break-words">{address}</span>
+    <>
+      <motion.div
+        initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}
+        className="w-full text-left bg-card rounded-xl border border-border p-3 active:scale-[0.99] transition-transform"
+      >
+        <button onClick={() => setExpanded(!expanded)} className="w-full text-left">
+          <div className="flex items-center gap-2.5 mb-2">
+            <ServiceIcon serviceType={serviceType} size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground truncate">{serviceName}</p>
+              <span className={`text-[10px] font-medium ${statusColor}`}>{status}</span>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-bold text-foreground">${earnings}</p>
+              <p className="text-[10px] text-muted-foreground">earnings</p>
+            </div>
           </div>
-        </div>
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateLabel} · {timeStr}</span>
+            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3 shrink-0" />{customerName}</span>
+          </div>
+        </button>
+
+        {/* Action buttons - always visible */}
+        {isActive && (
+          <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border">
+            {iNeedToConfirm && (
+              <button onClick={handleAcceptDate} disabled={accepting}
+                className="h-7 px-2 bg-success/10 text-success text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform">
+                <CheckIcon className="w-3 h-3" /> Accept
+              </button>
+            )}
+            <button onClick={() => setProposalOpen(true)}
+              className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform" title="Propose new date">
+              <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+            <button onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(address)}`, "_blank")}
+              className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform" title="Navigate">
+              <Navigation className="w-3.5 h-3.5 text-foreground" />
+            </button>
+            {customerUserId && (
+              <button onClick={() => onChatCustomer(customerUserId, customerName)}
+                className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform" title="Chat">
+                <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            )}
+            {canComplete && (
+              <button onClick={() => onComplete(appointmentId)}
+                className="h-7 px-2 bg-success text-success-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform">
+                <QrCode className="w-3 h-3" /> Done
+              </button>
+            )}
+          </div>
+        )}
+
+        {expanded && (
+          <div className="mt-2 pt-2 border-t border-border">
+            <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span className="break-words">{address}</span>
+            </div>
+          </div>
+        )}
+      </motion.div>
+
+      {proposalOpen && (
+        <DateProposalSheet
+          appointmentId={appointmentId}
+          currentDate={rawDate}
+          onClose={() => { setProposalOpen(false); queryClient.invalidateQueries({ queryKey: ["provider-jobs"] }); }}
+        />
       )}
-    </motion.button>
+    </>
   );
 };
 
