@@ -9,7 +9,7 @@ interface BookingHistoryProps {
   onPaymentFlow: () => void;
   onReview: (booking: Booking) => void;
   onDispute: () => void;
-  onRebook: (serviceId: string) => void;
+  onRebook: (serviceId: string, customizations?: any) => void;
 }
 
 type BookingStatus = "pending" | "upcoming" | "in_progress" | "completed" | "disputed";

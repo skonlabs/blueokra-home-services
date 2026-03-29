@@ -7,12 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 interface HomeScreenProps {
-  onServiceSelect: (serviceId: string) => void;
+  onServiceSelect: (serviceId: string, rebookData?: any) => void;
   onOpenIntake: (context?: string) => void;
   onViewBookings: () => void;
   onViewProperty: () => void;
   onBookAgain: () => void;
-  onRebook: (serviceId: string) => void;
+  onRebook: (serviceId: string, customizations?: any) => void;
 }
 
 // Dynamic seasonal picks based on current month
