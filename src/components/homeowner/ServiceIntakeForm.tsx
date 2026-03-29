@@ -359,7 +359,7 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
               <Stepper label="Number of bushes" value={bushCount} min={1} max={50} onChange={setBushCount} />
             )}
             <p className="text-[11px] text-muted-foreground">
-              A first-time setup fee (+50% of base) is applied automatically.
+              A first-time setup fee (+40% of base) is applied automatically.
             </p>
           </>
         );
@@ -374,25 +374,25 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
               { value: "never",      label: "Never cleaned" },
             ]} />
             <p className="text-[11px] text-muted-foreground -mt-2">
-              First-time setup fee (+50%) waived if cleaned within 3 months.
+              First-time setup fee (+40%) waived if cleaned within 3 months.
             </p>
             <Stepper label="Bedrooms" value={bedrooms} min={1} max={10} onChange={setBedrooms} />
             <Stepper label="Bathrooms" value={bathrooms} min={1} max={8} onChange={setBathrooms} />
             <p className="text-[11px] text-muted-foreground">
-              Kitchen always included — $60
+              Kitchen always included — $85
             </p>
-            <CheckList label="Additional rooms ($15 each)" values={bonusRoomTypes} onChange={setBonusRoomTypes} options={[
-              { value: "den",     label: "Den / family room", price: "$15" },
-              { value: "office",  label: "Office / study",    price: "$15" },
-              { value: "sunroom", label: "Sun room",          price: "$15" },
-              { value: "other",   label: "Other room",        price: "$15" },
+            <CheckList label="Additional rooms ($35 each)" values={bonusRoomTypes} onChange={setBonusRoomTypes} options={[
+              { value: "den",     label: "Den / family room", price: "$35" },
+              { value: "office",  label: "Office / study",    price: "$35" },
+              { value: "sunroom", label: "Sun room",          price: "$35" },
+              { value: "other",   label: "Other room",        price: "$35" },
             ]} />
             <CheckList label="Extras (optional)" values={addOns} onChange={setAddOns} options={[
-              { value: "oven",         label: "Inside oven cleaning",   price: "$20" },
-              { value: "fridge",       label: "Inside fridge cleaning", price: "$25" },
-              { value: "garage",       label: "Garage cleaning",        price: "$75" },
+              { value: "oven",         label: "Inside oven cleaning",   price: "$40" },
+              { value: "fridge",       label: "Inside fridge cleaning", price: "$40" },
+              { value: "garage",       label: "Garage cleaning",        price: "$100" },
               { value: "basement",     label: "Basement cleaning",      price: "$50" },
-              { value: "carpet_stain", label: "Carpet stain removal",   price: "$50" },
+              { value: "carpet_stain", label: "Carpet stain removal",   price: "$75" },
             ]} />
           </>
         );
@@ -412,8 +412,8 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
               { value: "repair",   label: "Needs repair (+$100)" },
             ]} />
             <CheckList label="Add-ons (optional)" values={addOns} onChange={setAddOns} options={[
-              { value: "downspout",     label: "Downspout cleaning",       price: "$25" },
-              { value: "gutter_guard",  label: "Gutter guard installation", price: "$100" },
+              { value: "downspout",     label: "Downspout cleaning",       price: "$30" },
+              { value: "gutter_guard",  label: "Gutter guard installation", price: "from $1,000" },
               { value: "minor_repairs", label: "Minor repairs",            price: "$75" },
             ]} />
           </>
