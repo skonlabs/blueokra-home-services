@@ -23,6 +23,7 @@ import ProviderJobs from "@/components/provider/ProviderJobs";
 import ProviderCompletion from "@/components/provider/ProviderCompletion";
 import ProviderEarnings from "@/components/provider/ProviderEarnings";
 import ProviderSchedule from "@/components/provider/ProviderSchedule";
+import HomeownerSchedule from "@/components/homeowner/HomeownerSchedule";
 import ProviderServiceHistory from "@/components/provider/ProviderServiceHistory";
 import ProfileScreen from "@/components/shared/ProfileScreen";
 import RegistrationFlow from "@/components/RegistrationFlow";
@@ -34,7 +35,7 @@ import type { IntakeFormData } from "@/lib/quoteCalculator";
 import type { Job } from "@/components/provider/ProviderJobs";
 
 type Screen =
-  | "home" | "intake" | "quote" | "booked" | "bookings" | "payment" | "dispute" | "property" | "profile" | "chat"
+  | "home" | "intake" | "quote" | "booked" | "bookings" | "schedule" | "payment" | "dispute" | "property" | "profile" | "chat"
   | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-service-history" | "provider-profile" | "provider-chat";
 
 const Index = () => {
@@ -150,6 +151,8 @@ const Index = () => {
         return { title: "Confirmation" };
       case "bookings":
         return { title: "My Bookings" };
+      case "schedule":
+        return { title: "Schedule" };
       case "payment":
         return { title: "Payment", onBack: () => navigate("bookings") };
       case "dispute":
@@ -319,6 +322,12 @@ const Index = () => {
           {screen === "chat" && (
             <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 h-full flex flex-col" style={{ minHeight: "calc(100vh - 120px)" }}>
               <ChatScreen initialUserId={chatTarget?.userId} initialUserName={chatTarget?.name} />
+            </motion.div>
+          )}
+
+          {screen === "schedule" && (
+            <motion.div key="schedule" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <HomeownerSchedule onChat={(userId, name) => { setChatTarget({ userId, name }); navigate("chat"); }} />
             </motion.div>
           )}
 

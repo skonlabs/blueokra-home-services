@@ -50,7 +50,7 @@ const statusLabels: Record<BookingStatus, string> = {
 };
 
 const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaymentFlow, onReview, onDispute, onRebook }, ref) => {
-  const [activeTab, setActiveTab] = useState<"all" | "pending" | "upcoming" | "completed">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "confirmed" | "in_progress" | "completed">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: rawBookings, isLoading, error: bookingsError } = useBookings();
 
@@ -76,8 +76,8 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
   }));
 
   const filtered = activeTab === "all" ? bookings :
-    activeTab === "pending" ? bookings.filter(b => b.status === "pending") :
-    activeTab === "upcoming" ? bookings.filter(b => b.status === "upcoming" || b.status === "in_progress") :
+    activeTab === "confirmed" ? bookings.filter(b => b.status === "upcoming" || b.status === "pending") :
+    activeTab === "in_progress" ? bookings.filter(b => b.status === "in_progress") :
     bookings.filter(b => b.status === "completed");
 
   const selectedRaw = selectedId ? (rawBookings || []).find(b => b.id === selectedId) : null;
@@ -86,10 +86,15 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
   return (
     <div className="px-4 py-4 pb-24 space-y-4 relative">
       <div className="flex gap-1 bg-muted rounded-xl p-1">
-        {(["all", "pending", "upcoming", "completed"] as const).map((tab) => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${activeTab === tab ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+        {([
+          { key: "all" as const, label: "All" },
+          { key: "confirmed" as const, label: "Confirmed" },
+          { key: "in_progress" as const, label: "In-Progress" },
+          { key: "completed" as const, label: "Completed" },
+        ]).map((tab) => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${activeTab === tab.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
+            {tab.label}
           </button>
         ))}
       </div>
@@ -126,7 +131,7 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{booking.date}</span>
-                <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{booking.price}</span>
+                <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{booking.price.replace('$', '')}</span>
               </div>
               {booking.rating && (
                 <div className="flex items-center gap-1">

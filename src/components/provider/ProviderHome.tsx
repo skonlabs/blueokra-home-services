@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { DollarSign, CalendarDays, Clock, TrendingUp, AlertCircle, Loader2, User as UserIcon, Camera, Smartphone, ChevronRight, MapPin } from "lucide-react";
-import { useProviderJobs, useProviderEarnings } from "@/hooks/useBookings";
+import { useProviderJobs, useProviderLeads, useProviderEarnings } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import { format, addWeeks, isAfter, isBefore } from "date-fns";
@@ -18,12 +18,15 @@ interface ProviderHomeProps {
 const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
   const { user, profile } = useAuth();
   const { data: rawJobs, isLoading: jobsLoading } = useProviderJobs();
+  const { data: rawLeads, isLoading: leadsLoading } = useProviderLeads();
   const { data: earnings, isLoading: earningsLoading } = useProviderEarnings();
 
-  const isLoading = jobsLoading || earningsLoading;
+  const isLoading = jobsLoading || earningsLoading || leadsLoading;
 
   const jobs = rawJobs || [];
-  const newRequests = jobs.filter((j) => ["scheduled", "new", "pending"].includes(j.appointment_status as string));
+  // New requests = leads only (pending accept/decline)
+  const newRequestLeads = rawLeads || [];
+  const newRequests = newRequestLeads;
   const upcomingJobs = jobs.filter((j) => ["confirmed", "in_progress"].includes(j.appointment_status as string));
   const completedJobs = jobs.filter((j) => j.appointment_status === "completed");
 
@@ -170,24 +173,26 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
             <button onClick={() => onNavigate("provider-jobs")} className="text-xs text-primary font-medium">View All</button>
           </div>
           <div className="space-y-2">
-            {newRequests.slice(0, 3).map((job, i) => {
-              const service = job.booking_service as any;
+            {newRequests.slice(0, 3).map((lead: any, i: number) => {
+              const svc = lead.booking_service as any;
+              const cp = lead.customer_profile;
+              const customerName = cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer";
               return (
                 <motion.button
-                  key={job.id}
+                  key={lead.id}
                   initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                   onClick={() => onNavigate("provider-jobs", { tab: "new" })}
                   className="w-full bg-card rounded-xl border border-border p-3 flex items-center justify-between text-left active:scale-[0.98] transition-transform"
                 >
                   <div className="flex items-center gap-3">
-                    <ServiceIcon serviceType={service?.service_type || "lawn"} size="sm" />
+                    <ServiceIcon serviceType={svc?.service_type || "lawn"} size="sm" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">{service?.package_name || "Service"}</p>
-                      <p className="text-xs text-muted-foreground">New request</p>
+                      <p className="text-sm font-medium text-foreground">{svc?.package_name || "Service"}</p>
+                      <p className="text-xs text-muted-foreground">{customerName}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] px-2 py-1 rounded-full font-medium bg-warm-50 text-warm-500">Pending</span>
+                    <span className="text-[11px] px-2 py-1 rounded-full font-medium bg-warm-50 text-warm-500">Action needed</span>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </motion.button>
@@ -215,7 +220,20 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
               const revenue = service?.revenue ? Number(service.revenue) : 0;
               const feeP = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
               const providerEarnings = Math.round(revenue * (1 - feeP));
-              const statusColor = job.appointment_status === "confirmed" ? "text-success" : "text-warm-500";
+              const ps = job.provider_status as string;
+              const cs = job.customer_status as string;
+              let statusColor = "text-warm-500";
+              let statusText = (job.appointment_status || "pending").replace("_", " ");
+              if (job.appointment_status === "confirmed" || (ps === "confirmed" && cs === "confirmed")) {
+                statusColor = "text-success";
+                statusText = "Confirmed";
+              } else if (ps === "confirmed" && cs === "pending") {
+                statusColor = "text-primary";
+                statusText = "Awaiting their confirmation";
+              } else if (cs === "confirmed" && ps === "pending") {
+                statusColor = "text-warm-500";
+                statusText = "Pending your confirmation";
+              }
               const address = cp?.address || service?.notes || "Address pending";
               const customerUserId = cp?.user_id || job.customer_user_id;
 
@@ -225,7 +243,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
                   index={i}
                   serviceType={service?.service_type || "lawn"}
                   serviceName={service?.package_name || service?.service_type || "Service"}
-                  status={job.appointment_status || "pending"}
+                  status={statusText}
                   statusColor={statusColor}
                   earnings={providerEarnings}
                   dateLabel={dateLabel}
@@ -303,7 +321,7 @@ const UpcomingAppointmentCard = ({ index, serviceType, serviceName, status, stat
         <ServiceIcon serviceType={serviceType} size="sm" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{serviceName}</p>
-          <span className={`text-[10px] font-medium capitalize ${statusColor}`}>{status.replace("_", " ")}</span>
+          <span className={`text-[10px] font-medium ${statusColor}`}>{status}</span>
         </div>
         <div className="text-right shrink-0">
           <p className="text-sm font-bold text-foreground">${earnings}</p>
