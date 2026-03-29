@@ -152,6 +152,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
               >
                 <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
                 <span className="flex-1 font-medium">{item.label}</span>
+                {item.badge && <span className="shrink-0">{item.badge}</span>}
                 {isOpen
                   ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   : <ChevronRight className="w-4 h-4 text-muted-foreground" />
