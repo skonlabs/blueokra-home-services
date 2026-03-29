@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon, DollarSign } from "lucide-react";
+import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon, DollarSign, Check } from "lucide-react";
 import { useHomeownerAppointments } from "@/hooks/useHomeownerAppointments";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
