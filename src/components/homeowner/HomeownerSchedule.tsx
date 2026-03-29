@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon, DollarSign, Check } from "lucide-react";
+import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon, DollarSign, Check, QrCode } from "lucide-react";
 import { useHomeownerAppointments } from "@/hooks/useHomeownerAppointments";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,7 @@ import { format, isAfter } from "date-fns";
 import {
   getAppointmentStatusInfo,
   userNeedsToConfirm,
+  canCompleteAppointment,
 } from "@/lib/appointmentStatus";
 
 type ScheduleTab = "all" | "pending" | "upcoming" | "completed";
