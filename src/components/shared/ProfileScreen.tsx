@@ -18,6 +18,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const [firstName, setFirstName] = useState(profile?.first_name ?? "");
   const [lastName, setLastName] = useState(profile?.last_name ?? "");
   const [displayName, setDisplayName] = useState(profile?.display_name ?? "");
+  const [venmoPhone, setVenmoPhone] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState("");
