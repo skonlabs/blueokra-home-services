@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Briefcase, DollarSign, CalendarDays, Clock, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
+import { Briefcase, DollarSign, CalendarDays, Clock, TrendingUp, AlertCircle, Loader2, MapPin, User as UserIcon } from "lucide-react";
 import { useProviderJobs, useProviderEarnings } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
 import ServiceIcon from "@/components/shared/ServiceIcon";
@@ -117,17 +117,33 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
           <div className="space-y-2">
             {upcomingJobs.slice(0, 3).map((job, i) => {
               const service = job.booking_service as any;
-              const dateStr = (() => { try { const d = new Date(job.appointment_date); return isNaN(d.getTime()) ? "TBD" : format(d, "MMM d, h:mm a"); } catch { return "TBD"; } })();
+              const cp = (job as any).customer_profile;
+              const dateStr = (() => { try { const d = new Date(job.appointment_date); return isNaN(d.getTime()) ? "TBD" : format(d, "h:mm a"); } catch { return "TBD"; } })();
+              const dateLabel = (() => { try { const d = new Date(job.appointment_date); return isNaN(d.getTime()) ? "" : format(d, "MMM d"); } catch { return ""; } })();
+              const customerName = cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer";
+              const revenue = service?.revenue ? Number(service.revenue) : 0;
+              const feeP = revenue < 150 ? 0.20 : revenue <= 400 ? 0.25 : 0.30;
+              const providerEarnings = Math.round(revenue * (1 - feeP));
+              const statusColor = job.appointment_status === "confirmed" ? "text-success" : "text-warm-500";
               return (
                 <motion.div key={job.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                  className="bg-card rounded-xl border border-border p-3 flex items-center gap-3"
+                  className="bg-card rounded-xl border border-border p-3"
                 >
-                  <ServiceIcon serviceType={service?.service_type || "lawn"} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{service?.package_name || service?.service_type || "Service"}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" />{dateStr}</p>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <ServiceIcon serviceType={service?.service_type || "lawn"} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{service?.package_name || service?.service_type || "Service"}</p>
+                      <span className={`text-[10px] font-medium capitalize ${statusColor}`}>{(job.appointment_status || "pending").replace("_", " ")}</span>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-foreground">${providerEarnings}</p>
+                      <p className="text-[10px] text-muted-foreground">earnings</p>
+                    </div>
                   </div>
-                  <span className="text-sm font-semibold text-foreground">{service?.revenue ? `$${service.revenue}` : "TBD"}</span>
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateLabel} {dateStr}</span>
+                    <span className="flex items-center gap-1"><UserIcon className="w-3 h-3 shrink-0" />{customerName}</span>
+                  </div>
                 </motion.div>
               );
             })}
