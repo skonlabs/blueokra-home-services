@@ -11,6 +11,7 @@ const BottomNav = forwardRef<HTMLDivElement, BottomNavProps>(({ active, onNaviga
   const homeownerItems = [
     { id: "home", icon: Home, label: "Home" },
     { id: "bookings", icon: ClipboardList, label: "Bookings" },
+    { id: "schedule", icon: CalendarDays, label: "Schedule" },
     { id: "property", icon: Building, label: "Property" },
     { id: "profile", icon: User, label: "Profile" },
   ];
