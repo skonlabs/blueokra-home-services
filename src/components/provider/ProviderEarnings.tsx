@@ -211,6 +211,25 @@ const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
         </div>
       </div>
 
+      {/* Service History link */}
+      {onViewHistory && (
+        <button
+          onClick={onViewHistory}
+          className="w-full bg-card border border-border rounded-2xl p-4 flex items-center justify-between active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-primary" />
+            </div>
+            <div className="text-left">
+              <p className="font-semibold text-sm text-foreground">Service History</p>
+              <p className="text-xs text-muted-foreground">View all completed services &amp; payments by year</p>
+            </div>
+          </div>
+          <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+        </button>
+      )}
+
       {/* Payout confirmation modal */}
       {showPayoutModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-8">
