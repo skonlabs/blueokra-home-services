@@ -130,7 +130,7 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{booking.date}</span>
-                <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{booking.price.replace('$', '')}</span>
+                <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{String(booking.price).replace('$', '')}</span>
               </div>
               {booking.rating && (
                 <div className="flex items-center gap-1">
