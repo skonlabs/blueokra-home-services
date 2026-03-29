@@ -56,10 +56,13 @@ const DateProposalSheet = ({ appointmentId, currentDate, onClose }: DateProposal
         _notes: notes || null,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Propose date error:", error);
+        throw error;
+      }
       
       const result = data as any;
-      if (result && !result.success) {
+      if (result && result.success === false) {
         throw new Error(result.error || "Failed to propose date");
       }
 
