@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Bell, User, MessageSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,7 +50,7 @@ const Index = () => {
   const [selectedJobForCompletion, setSelectedJobForCompletion] = useState<Job | null>(null);
   const [navParams, setNavParams] = useState<Record<string, string>>({});
   const [chatTarget, setChatTarget] = useState<{ userId: string; name: string } | null>(null);
-  const [initialModeSet, setInitialModeSet] = useState(false);
+  const initialRouteApplied = useRef(false);
 
   // Notifications hook must be before any early returns
   const { data: notifData } = useNotifications();
@@ -58,18 +58,19 @@ const Index = () => {
   const unreadCount = (notifData || []).filter(n => !n.is_read).length;
   const unreadChatCount = (convData || []).reduce((sum, c) => sum + (c.unread_count || 0), 0);
 
-  // Set mode based on user role — only on first load
+  // Set mode based on user role — only once after roles are loaded
   useEffect(() => {
-    if (roles.length === 0 || initialModeSet) return;
-    if (roles.includes("provider") && !roles.includes("homeowner")) {
+    if (roles.length === 0 || initialRouteApplied.current) return;
+    const isProviderOnly = roles.includes("provider") && !roles.includes("homeowner");
+    if (isProviderOnly) {
       setMode("provider");
       setScreen("provider-home");
     } else {
       setMode("homeowner");
       setScreen("home");
     }
-    setInitialModeSet(true);
-  }, [roles, initialModeSet]);
+    initialRouteApplied.current = true;
+  }, [roles]);
 
   // Show loading spinner
   if (loading) {
@@ -82,6 +83,8 @@ const Index = () => {
 
   // Show auth if not logged in
   if (!user) {
+    // Reset route flag on logout so next login gets correct route
+    initialRouteApplied.current = false;
     return <Auth />;
   }
 
@@ -90,14 +93,15 @@ const Index = () => {
     return (
       <RegistrationFlow
         onComplete={async () => {
+          // Reset so useEffect can set the correct initial screen after role loads
+          initialRouteApplied.current = false;
           await refreshProfile();
-          // After refresh, the useEffect above will set the correct mode
         }}
       />
     );
   }
 
-  const isProvider = roles.includes("provider");
+  const isProvider = roles.includes("provider") && !roles.includes("homeowner");
 
   const navigate = (to: Screen) => {
     setScreen(to);
@@ -308,7 +312,7 @@ const Index = () => {
 
           {screen === "profile" && (
             <motion.div key="profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ProfileScreen isProvider={isProvider} />
+              <ProfileScreen isProvider={false} />
             </motion.div>
           )}
 

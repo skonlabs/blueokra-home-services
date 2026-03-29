@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun, Wind, Droplets } from "lucide-react";
+import { Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun, Wind, Droplets, Camera, AlertCircle } from "lucide-react";
 import ServiceGrid from "./ServiceGrid";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useBookings } from "@/hooks/useBookings";
@@ -20,28 +20,24 @@ function getSeasonalRecs() {
   const month = new Date().getMonth(); // 0–11
 
   if (month >= 2 && month <= 4) {
-    // Spring (Mar–May)
     return [
       { title: "Spring Lawn Care", description: "First mow of the season — get your yard looking great", serviceId: "lawn", icon: Leaf, color: "text-secondary" },
       { title: "Gutter Cleaning", description: "Clear winter debris before spring rains", serviceId: "gutter", icon: Droplets, color: "text-primary" },
       { title: "Pressure Washing", description: "Refresh driveways, siding & decks", serviceId: "pressure", icon: Sun, color: "text-accent" },
     ];
   } else if (month >= 5 && month <= 7) {
-    // Summer (Jun–Aug)
     return [
       { title: "Lawn Maintenance", description: "Keep your lawn healthy through the summer heat", serviceId: "lawn", icon: Leaf, color: "text-secondary" },
       { title: "Duct Cleaning", description: "Improve AC efficiency and air quality", serviceId: "duct", icon: Wind, color: "text-primary" },
       { title: "Fence Installation", description: "Perfect weather for outdoor projects", serviceId: "fence", icon: Sun, color: "text-accent" },
     ];
   } else if (month >= 8 && month <= 10) {
-    // Fall (Sep–Nov)
     return [
       { title: "Gutter Cleaning", description: "Clear fallen leaves before winter clogs", serviceId: "gutter", icon: Leaf, color: "text-secondary" },
       { title: "Roof Cleaning", description: "Remove moss & debris before rainy season", serviceId: "roof", icon: Sun, color: "text-accent" },
       { title: "Duct Cleaning", description: "Prepare your heating system for winter", serviceId: "duct", icon: Snowflake, color: "text-primary" },
     ];
   } else {
-    // Winter (Dec–Feb)
     return [
       { title: "Backwater Testing", description: "Prevent flooding and comply with local codes", serviceId: "backwater", icon: Snowflake, color: "text-primary" },
       { title: "Duct Cleaning", description: "Keep heating system clean and efficient", serviceId: "duct", icon: Wind, color: "text-accent" },
@@ -54,6 +50,7 @@ const HomeScreen = ({
   onServiceSelect,
   onOpenIntake,
   onViewBookings,
+  onViewProperty,
   onBookAgain,
   onRebook,
 }: HomeScreenProps) => {
@@ -62,6 +59,12 @@ const HomeScreen = ({
   const seasonalRecs = getSeasonalRecs();
 
   const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
+
+  // Action needed items for homeowners
+  const actionItems: { label: string; description: string; icon: React.ReactNode; action: () => void }[] = [];
+  if (!profile?.profile_photo_url) {
+    actionItems.push({ label: "Add profile photo", description: "Personalize your account", icon: <Camera className="w-4 h-4 text-primary" />, action: () => onViewProperty() });
+  }
 
   // Show last 2 bookings from DB, fall back to empty
   const recentBookings = (rawBookings || []).slice(0, 2).map(b => {
@@ -94,6 +97,34 @@ const HomeScreen = ({
         <h1 className="font-display text-lg font-bold text-foreground">Hi{userName ? ` ${userName.split(' ')[0]}` : ""} 👋</h1>
         <span className="text-sm text-muted-foreground">What can we help with?</span>
       </div>
+
+      {/* Action Needed */}
+      {actionItems.length > 0 && (
+        <div className="mb-5">
+          <h3 className="font-display text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+            <AlertCircle className="w-4 h-4 text-accent" />
+            Action Needed
+          </h3>
+          <div className="space-y-2">
+            {actionItems.map((item, i) => (
+              <button
+                key={item.label}
+                onClick={item.action}
+                className="w-full bg-accent/10 border border-accent/20 rounded-xl p-3 flex items-center gap-3 text-left active:scale-[0.98] transition-transform"
+              >
+                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  {item.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search / Quick input */}
       <button
