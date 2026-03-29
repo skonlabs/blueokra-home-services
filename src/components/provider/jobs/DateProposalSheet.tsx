@@ -86,8 +86,8 @@ const DateProposalSheet = ({ appointmentId, currentDate, onClose }: DateProposal
   });
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/50 flex items-end justify-center">
-      <div className="w-full max-w-md bg-card rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-[80] bg-black/50 flex items-end justify-center pb-[60px]">
+      <div className="w-full max-w-md bg-card rounded-t-3xl p-5 pb-6 max-h-[calc(100vh-120px)] overflow-y-auto animate-in slide-in-from-bottom duration-300">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-lg font-bold text-foreground">Propose New Date</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">

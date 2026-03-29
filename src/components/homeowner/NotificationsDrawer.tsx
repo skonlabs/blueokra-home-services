@@ -60,7 +60,7 @@ const NotificationsDrawer = forwardRef<HTMLDivElement, NotificationsDrawerProps>
     <div ref={ref}>
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 z-50 flex items-end justify-center pb-[60px]">
           <motion.div
             className="absolute inset-0 bg-foreground/50"
             initial={{ opacity: 0 }}
@@ -70,7 +70,7 @@ const NotificationsDrawer = forwardRef<HTMLDivElement, NotificationsDrawerProps>
           />
 
           <motion.div
-            className="relative z-10 w-full max-w-md bg-card rounded-t-3xl p-6 pb-10 shadow-xl mx-auto max-h-[80vh] overflow-y-auto"
+            className="relative z-10 w-full max-w-md bg-card rounded-t-3xl p-6 pb-6 shadow-xl mx-auto max-h-[calc(100vh-120px)] overflow-y-auto"
             initial={{ y: "100%" }}
             animate={{ y: open ? 0 : "100%" }}
             exit={{ y: "100%" }}
