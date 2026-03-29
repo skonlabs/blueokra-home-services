@@ -89,9 +89,9 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
       key: "venmo" as Section,
       label: "Venmo Payouts",
       icon: Smartphone,
-      badge: providerVenmoPhone
+      badge: venmoPhone
         ? <CheckCircle2 className="w-3.5 h-3.5 text-secondary" />
-        : null,
+        : <Smartphone className="w-3.5 h-3.5 text-muted-foreground" />,
     }] : []),
     { key: "payment", label: "Payment Methods", icon: CreditCard },
     { key: "notifications", label: "Notifications", icon: Bell },
