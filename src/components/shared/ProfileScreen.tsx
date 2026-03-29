@@ -10,7 +10,7 @@ interface ProfileScreenProps {
   isProvider?: boolean;
 }
 
-type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | null;
+type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | "properties" | null;
 
 const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
