@@ -255,7 +255,13 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
                   customerName={customerName}
                   customerUserId={customerUserId}
                   address={address}
+                  appointmentId={job.id}
+                  rawDate={job.appointment_date}
+                  providerStatus={ps}
+                  customerStatus={cs}
+                  appointmentStatus={job.appointment_status as string}
                   onChatCustomer={(userId, name) => onNavigate("chat", { userId, userName: name })}
+                  onComplete={(apptId) => onNavigate("provider-completion")}
                 />
               );
             })}
