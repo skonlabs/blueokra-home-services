@@ -251,6 +251,7 @@ const Index = () => {
                 onViewProperty={() => navigate("property")}
                 onBookAgain={() => navigate("bookings")}
                 onRebook={(id, customizations) => handleServiceSelect(id, customizations as IntakeFormData | undefined)}
+                onViewSchedule={() => navigate("schedule")}
               />
             </motion.div>
           )}

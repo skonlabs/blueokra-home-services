@@ -55,7 +55,24 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
       .sort((a, b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime());
   }, [jobs]);
 
+  // Appointments needing provider confirmation (new date proposed by homeowner)
+  const pendingConfirmations = useMemo(() => {
+    return jobs.filter((j) => {
+      const ps = j.provider_status as string;
+      const as_ = j.appointment_status as string;
+      return ps === "pending" && !["completed", "declined", "cancelled"].includes(as_);
+    });
+  }, [jobs]);
+
   const actionItems: { label: string; description: string; icon: React.ReactNode; action: string }[] = [];
+  if (pendingConfirmations.length > 0) {
+    actionItems.push({
+      label: `${pendingConfirmations.length} appointment${pendingConfirmations.length > 1 ? "s" : ""} need${pendingConfirmations.length === 1 ? "s" : ""} your confirmation`,
+      description: "A new date/time has been proposed — review and confirm",
+      icon: <CalendarClock className="w-4 h-4 text-primary" />,
+      action: "provider-schedule",
+    });
+  }
   if (!profile?.profile_photo_url) {
     actionItems.push({ label: "Add profile photo", description: "Help customers recognize you", icon: <Camera className="w-4 h-4 text-primary" />, action: "provider-profile" });
   }
