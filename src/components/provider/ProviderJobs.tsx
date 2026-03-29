@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, Loader2, MessageSquare, Inbox, ThumbsDown, Calendar } from "lucide-react";
+import { Check, X, Clock, MapPin, DollarSign, Navigation, QrCode, Loader2, MessageSquare, Inbox, ThumbsDown, Calendar, TrendingUp, Repeat, AlertCircle } from "lucide-react";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useProviderJobs, useProviderLeads } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 
 export interface Job {
   id: string;
@@ -20,6 +20,18 @@ export interface Job {
   price: string;
   status: string;
   serviceId?: string;
+  // Enhanced lead fields
+  city?: string;
+  state?: string;
+  frequency?: string;
+  firstServiceDate?: string;
+  receivedAt?: string;
+  totalRevenue?: number;
+  firstServicePrice?: number;
+  recurringPrice?: number;
+  appointmentCount?: number;
+  expectedEndDate?: string;
+  customizations?: any;
 }
 
 type TabKey = "all" | "new" | "in_progress" | "completed" | "declined";
@@ -31,6 +43,22 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "completed", label: "Completed" },
   { key: "declined", label: "Declined" },
 ];
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  "one-time": "One-Time",
+  weekly: "Weekly",
+  biweekly: "Bi-Weekly",
+  monthly: "Monthly",
+  quarterly: "Quarterly",
+};
+
+const FREQUENCY_PER_YEAR: Record<string, number> = {
+  weekly: 52,
+  biweekly: 26,
+  monthly: 12,
+  quarterly: 4,
+  "one-time": 1,
+};
 
 interface ProviderJobsProps {
   initialTab?: TabKey;
@@ -69,6 +97,35 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
   const leadJobs: Job[] = (rawLeads || []).map((l: any) => {
     const svc = l.booking_service;
     const cp = l.customer_profile;
+    const revenue = svc?.revenue ? Number(svc.revenue) : 0;
+    const frequency = svc?.frequency || "one-time";
+    const apptCount = l.appointment_count || 1;
+    const perYear = FREQUENCY_PER_YEAR[frequency] || 1;
+    
+    // Calculate pricing: first service has surcharge (~15%), recurring is base price
+    const firstServicePrice = revenue;
+    const recurringPrice = frequency !== "one-time" ? Math.round(revenue * 0.85) : 0;
+    const totalRevenue = frequency === "one-time" 
+      ? revenue 
+      : firstServicePrice + (recurringPrice * (apptCount > 1 ? apptCount - 1 : Math.max(perYear - 1, 0)));
+
+    // Expected end date
+    let expectedEnd = "";
+    if (frequency !== "one-time" && l.appointment_dates?.length) {
+      const lastDate = l.appointment_dates[l.appointment_dates.length - 1];
+      try {
+        const d = new Date(lastDate);
+        if (!isNaN(d.getTime())) expectedEnd = format(d, "MMM yyyy");
+      } catch { /* */ }
+    }
+    if (!expectedEnd && frequency !== "one-time") {
+      try {
+        const startDate = l.appointment_date ? new Date(l.appointment_date) : new Date();
+        const monthsAhead = Math.round(12 / (perYear || 1)) * Math.max(perYear, 1);
+        expectedEnd = format(addMonths(startDate, 12), "MMM yyyy");
+      } catch { /* */ }
+    }
+
     return {
       id: `lead-${l.id}`,
       leadId: l.id,
@@ -78,18 +135,28 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
       customer: cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer",
       address: svc?.notes || cp?.address || "Address pending",
       date: (() => { try { if (l.appointment_date) { const d = new Date(l.appointment_date); return isNaN(d.getTime()) ? "N/A" : format(d, "MMM d, h:mm a"); } return "TBD"; } catch { return "N/A"; } })(),
-      price: svc?.revenue ? `$${svc.revenue}` : "TBD",
+      price: revenue ? `$${revenue}` : "TBD",
       status: "new_lead",
+      city: cp?.city || "",
+      state: cp?.state || "WA",
+      frequency,
+      firstServiceDate: l.appointment_date || null,
+      receivedAt: l.created_at || null,
+      totalRevenue,
+      firstServicePrice,
+      recurringPrice,
+      appointmentCount: apptCount,
+      expectedEndDate: expectedEnd,
+      customizations: svc?.customizations,
     };
   });
 
-  // Combine: leads show as "new", appointments show for other statuses
   const allJobs = [...leadJobs, ...appointmentJobs];
 
   const filterJobs = (tab: TabKey): Job[] => {
     switch (tab) {
-      case "new": return allJobs.filter((j) => ["scheduled", "new", "pending", "new_lead"].includes(j.status));
-      case "in_progress": return allJobs.filter((j) => ["confirmed", "in_progress"].includes(j.status));
+      case "new": return allJobs.filter((j) => ["new_lead"].includes(j.status));
+      case "in_progress": return allJobs.filter((j) => ["scheduled", "new", "pending", "confirmed", "in_progress"].includes(j.status));
       case "completed": return allJobs.filter((j) => j.status === "completed");
       case "declined": return allJobs.filter((j) => ["declined", "cancelled"].includes(j.status));
       default: return allJobs;
@@ -97,7 +164,6 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
   };
 
   const filteredJobs = filterJobs(activeTab);
-
   const getTabCount = (tab: TabKey) => filterJobs(tab).length;
 
   if (isLoading) {
@@ -110,7 +176,6 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
 
   return (
     <div className="px-4 py-4 pb-24 space-y-4">
-      {/* Tabs */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
         {TABS.map((tab) => {
           const count = getTabCount(tab.key);
@@ -134,7 +199,6 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
         })}
       </div>
 
-      {/* Job list */}
       {filteredJobs.length === 0 ? (
         <div className="py-12 text-center flex flex-col items-center gap-3">
           <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
@@ -154,7 +218,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
               key={job.id}
               job={job}
               index={i}
-              onComplete={["confirmed", "in_progress"].includes(job.status) ? () => onCompleteJob(job) : undefined}
+              onComplete={["confirmed", "in_progress", "scheduled"].includes(job.status) ? () => onCompleteJob(job) : undefined}
             />
           ))}
         </div>
@@ -174,15 +238,12 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isNewLead = job.status === "new_lead";
-  const isPending = ["scheduled", "new", "pending", "new_lead"].includes(job.status);
+  const isPending = ["scheduled", "new", "pending"].includes(job.status);
   const isActive = ["confirmed", "in_progress"].includes(job.status);
   const isCompleted = job.status === "completed";
   const isDeclined = ["declined", "cancelled"].includes(job.status);
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
-
-  const rawPrice = parseFloat(job.price.replace(/[^0-9.]/g, ""));
-  const netEarnings = !isNaN(rawPrice) ? `(~$${Math.round(rawPrice * 0.88)} after fees)` : null;
 
   const handleAcceptLead = async () => {
     if (!user || !job.leadId || !job.serviceId) return;
@@ -223,14 +284,150 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
     }
   };
 
-  const statusBadge = isPending
-    ? { bg: "bg-warm-50 text-warm-500", label: "New" }
+  const statusBadge = isNewLead
+    ? { bg: "bg-warm-50 text-warm-500", label: "New Request" }
+    : isPending
+    ? { bg: "bg-warm-50 text-warm-500", label: "Pending" }
     : isCompleted
     ? { bg: "bg-okra-50 text-okra-600", label: "Done" }
     : isDeclined
     ? { bg: "bg-destructive/10 text-destructive", label: "Declined" }
-    : { bg: "bg-blue-50 text-blue-500", label: "Active" };
+    : { bg: "bg-blue-50 text-blue-500", label: "In Progress" };
 
+  // New lead card with detailed breakdown
+  if (isNewLead) {
+    const freqLabel = FREQUENCY_LABELS[job.frequency || "one-time"] || job.frequency || "One-Time";
+    const isRecurring = job.frequency && job.frequency !== "one-time";
+    const receivedFormatted = job.receivedAt
+      ? (() => { try { return format(new Date(job.receivedAt), "MMM d, yyyy 'at' h:mm a"); } catch { return ""; } })()
+      : "";
+    const startDateFormatted = job.firstServiceDate
+      ? (() => { try { return format(new Date(job.firstServiceDate), "EEE, MMM d, yyyy"); } catch { return "TBD"; } })()
+      : "TBD";
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
+        className="bg-card rounded-2xl border-2 border-primary/20 p-4 space-y-3">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <ServiceIcon serviceType={job.serviceType} size="sm" />
+            <div>
+              <p className="font-semibold text-sm text-foreground">{job.service}</p>
+              <p className="text-xs text-muted-foreground">{job.customer}</p>
+            </div>
+          </div>
+          <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${statusBadge.bg}`}>
+            {statusBadge.label}
+          </span>
+        </div>
+
+        {/* Location */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <MapPin className="w-3.5 h-3.5 shrink-0" />
+          <span>{[job.city, job.state].filter(Boolean).join(", ") || job.address}</span>
+        </div>
+
+        {/* Pricing breakdown */}
+        <div className="bg-muted/60 rounded-xl p-3 space-y-2">
+          <div className="flex items-center gap-2 mb-1">
+            <DollarSign className="w-4 h-4 text-primary" />
+            <span className="text-xs font-semibold text-foreground">Pricing Breakdown</span>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">First service</span>
+            <span className="text-sm font-bold text-primary">
+              ${job.firstServicePrice?.toFixed(0) || job.price}
+            </span>
+          </div>
+
+          {isRecurring && job.recurringPrice ? (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">2nd service onwards</span>
+                <span className="text-sm font-semibold text-foreground">${job.recurringPrice.toFixed(0)}</span>
+              </div>
+              <div className="border-t border-border pt-2 flex justify-between items-center">
+                <span className="text-xs font-medium text-foreground">Total contract value</span>
+                <span className="text-base font-bold text-primary">${job.totalRevenue?.toLocaleString() || "TBD"}</span>
+              </div>
+              {job.expectedEndDate && (
+                <p className="text-[11px] text-muted-foreground">
+                  Expected through {job.expectedEndDate}
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="border-t border-border pt-2 flex justify-between items-center">
+              <span className="text-xs font-medium text-foreground">Total job value</span>
+              <span className="text-base font-bold text-primary">${job.totalRevenue?.toLocaleString() || job.price}</span>
+            </div>
+          )}
+
+          {/* Net earnings estimate */}
+          {job.totalRevenue ? (
+            <p className="text-[11px] text-muted-foreground italic">
+              ~${Math.round(job.totalRevenue * 0.88).toLocaleString()} after platform fees (12%)
+            </p>
+          ) : null}
+        </div>
+
+        {/* Details grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-muted/40 rounded-lg p-2.5">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Repeat className="w-3 h-3 text-muted-foreground" />
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Frequency</span>
+            </div>
+            <p className="text-xs font-semibold text-foreground">{freqLabel}</p>
+          </div>
+          <div className="bg-muted/40 rounded-lg p-2.5">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Calendar className="w-3 h-3 text-muted-foreground" />
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Start Date</span>
+            </div>
+            <p className="text-xs font-semibold text-foreground">{startDateFormatted}</p>
+          </div>
+        </div>
+
+        {/* Flexible date note */}
+        <div className="flex items-start gap-2 bg-accent/30 rounded-lg p-2.5">
+          <AlertCircle className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Start date can be adjusted based on your availability after accepting.
+          </p>
+        </div>
+
+        {/* Received timestamp */}
+        {receivedFormatted && (
+          <p className="text-[10px] text-muted-foreground text-right">
+            Received {receivedFormatted}
+          </p>
+        )}
+
+        {/* Accept / Decline */}
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={handleDeclineLead}
+            disabled={declining || accepting}
+            className="flex-1 bg-muted text-destructive text-sm font-medium py-2.5 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+          >
+            {declining ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />} Decline
+          </button>
+          <button
+            onClick={handleAcceptLead}
+            disabled={accepting || declining}
+            className="flex-1 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+          >
+            {accepting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Accept
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Standard job card for non-lead statuses
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
       className="bg-card rounded-2xl border border-border p-4 space-y-3">
@@ -247,37 +444,13 @@ const JobCard = ({ job, index, onComplete }: JobCardProps) => {
         </span>
       </div>
 
-      {isPending && netEarnings && (
-        <p className="text-[11px] text-muted-foreground">{netEarnings}</p>
-      )}
-
       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
         <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{job.date}</span>
         <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.address}</span>
         <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{job.price}</span>
       </div>
 
-      {/* Accept / Decline for new leads */}
-      {isNewLead && (
-        <div className="flex gap-2">
-          <button
-            onClick={handleDeclineLead}
-            disabled={declining || accepting}
-            className="flex-1 bg-muted text-destructive text-sm font-medium py-2.5 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
-          >
-            {declining ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />} Decline
-          </button>
-          <button
-            onClick={handleAcceptLead}
-            disabled={accepting || declining}
-            className="flex-1 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
-          >
-            {accepting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Accept
-          </button>
-        </div>
-      )}
-
-      {isActive && onComplete && (
+      {(isActive || isPending) && onComplete && (
         <div className="flex gap-2">
           <button
             onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(job.address)}`, '_blank')}
