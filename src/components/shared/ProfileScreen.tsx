@@ -8,11 +8,12 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ProfileScreenProps {
   isProvider?: boolean;
+  onNavigateProperty?: () => void;
 }
 
 type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | "properties" | null;
 
-const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
+const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState<Section>(null);
@@ -347,6 +348,19 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                           <p className="text-[11px]">Last updated: January 2025</p>
                         </div>
                       )}
+
+                      {/* MY PROPERTIES (Homeowner only) */}
+                      {item.key === "properties" && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">Manage your properties, appliances and warranties.</p>
+                          <button
+                            onClick={() => onNavigateProperty?.()}
+                            className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2"
+                          >
+                            <Home className="w-4 h-4" /> View My Properties
+                          </button>
+                        </div>
+                      )
 
                     </div>
                   </motion.div>
