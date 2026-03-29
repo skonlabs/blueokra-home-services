@@ -42,6 +42,7 @@ const AppointmentRow = ({
   const queryClient = useQueryClient();
   const [proposalOpen, setProposalOpen] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const isCompleted = appointment.status === "completed";
   const isActive = !isCompleted && !["declined", "cancelled"].includes(appointment.status);
