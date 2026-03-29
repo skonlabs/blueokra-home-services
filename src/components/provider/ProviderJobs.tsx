@@ -88,11 +88,11 @@ const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
 
   const filterJobs = (tab: TabKey): Job[] => {
     switch (tab) {
-      case "new": return jobs.filter((j) => ["scheduled", "new", "pending"].includes(j.status));
-      case "in_progress": return jobs.filter((j) => ["confirmed", "in_progress"].includes(j.status));
-      case "completed": return jobs.filter((j) => j.status === "completed");
-      case "declined": return jobs.filter((j) => ["declined", "cancelled"].includes(j.status));
-      default: return jobs;
+      case "new": return allJobs.filter((j) => ["scheduled", "new", "pending", "new_lead"].includes(j.status));
+      case "in_progress": return allJobs.filter((j) => ["confirmed", "in_progress"].includes(j.status));
+      case "completed": return allJobs.filter((j) => j.status === "completed");
+      case "declined": return allJobs.filter((j) => ["declined", "cancelled"].includes(j.status));
+      default: return allJobs;
     }
   };
 
