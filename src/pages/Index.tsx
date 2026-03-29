@@ -334,7 +334,13 @@ const Index = () => {
 
           {screen === "schedule" && (
             <motion.div key="schedule" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <HomeownerSchedule onChat={(userId, name) => { setChatTarget({ userId, name }); navigate("chat"); }} />
+              <HomeownerSchedule
+                onChat={(userId, name) => { setChatTarget({ userId, name }); navigate("chat"); }}
+                onComplete={(appointmentId) => {
+                  // Navigate to completion flow — reuse provider completion for now
+                  navigate("provider-completion" as Screen);
+                }}
+              />
             </motion.div>
           )}
 

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon, DollarSign, Check } from "lucide-react";
+import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon, DollarSign, Check, QrCode } from "lucide-react";
 import { useHomeownerAppointments } from "@/hooks/useHomeownerAppointments";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -12,15 +12,17 @@ import { format, isAfter } from "date-fns";
 import {
   getAppointmentStatusInfo,
   userNeedsToConfirm,
+  canCompleteAppointment,
 } from "@/lib/appointmentStatus";
 
 type ScheduleTab = "all" | "pending" | "upcoming" | "completed";
 
 interface HomeownerScheduleProps {
   onChat?: (userId: string, name: string) => void;
+  onComplete?: (appointmentId: string) => void;
 }
 
-const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
+const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
   const [activeTab, setActiveTab] = useState<ScheduleTab>("all");
   const { data: appointments, isLoading } = useHomeownerAppointments();
   const { user } = useAuth();
@@ -143,6 +145,13 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
             const amount = Number(appt.customerAmount) || 0;
             const isCompleted = appt.appointment_status === "completed";
             const isActive = !isCompleted && !["declined", "cancelled"].includes(appt.appointment_status);
+            const showDone = canCompleteAppointment(
+              appt.appointment_date,
+              appt.appointment_status,
+              appt.provider_status,
+              appt.customer_status
+            );
+            const showDoneDisabled = !showDone && isActive;
 
             let dateStr = "TBD";
             let timeStr = "";
@@ -223,6 +232,18 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
                         <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                       </button>
                     )}
+                    {showDone && onComplete ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onComplete(appt.id); }}
+                        className="h-7 px-2 bg-success text-success-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform"
+                      >
+                        <QrCode className="w-3 h-3" /> Done
+                      </button>
+                    ) : showDoneDisabled ? (
+                      <span className="h-7 px-2 bg-muted text-muted-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60" title="Available on service date after confirmation">
+                        <Clock className="w-3 h-3" /> Done
+                      </span>
+                    ) : null}
                   </div>
                 )}
 
