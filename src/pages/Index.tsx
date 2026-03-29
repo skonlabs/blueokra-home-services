@@ -16,6 +16,7 @@ import BookingHistory from "@/components/homeowner/BookingHistory";
 import PaymentFlow from "@/components/homeowner/PaymentFlow";
 import DisputeFlow from "@/components/homeowner/DisputeFlow";
 import PropertyProfile from "@/components/homeowner/PropertyProfile";
+import HomeownerPayments from "@/components/homeowner/HomeownerPayments";
 import NotificationsDrawer from "@/components/homeowner/NotificationsDrawer";
 import ReviewModal from "@/components/homeowner/ReviewModal";
 import ProviderHome from "@/components/provider/ProviderHome";
@@ -35,7 +36,7 @@ import type { IntakeFormData } from "@/lib/quoteCalculator";
 import type { Job } from "@/components/provider/ProviderJobs";
 
 type Screen =
-  | "home" | "intake" | "quote" | "booked" | "bookings" | "schedule" | "payment" | "dispute" | "property" | "profile" | "chat"
+  | "home" | "intake" | "quote" | "booked" | "bookings" | "schedule" | "payment" | "dispute" | "property" | "profile" | "chat" | "payments"
   | "provider-home" | "provider-jobs" | "provider-completion" | "provider-schedule" | "provider-earnings" | "provider-service-history" | "provider-profile" | "provider-chat";
 
 const Index = () => {
@@ -158,7 +159,9 @@ const Index = () => {
       case "dispute":
         return { title: "Report Issue", onBack: () => navigate("bookings") };
       case "property":
-        return { title: "My Properties" };
+        return { title: "My Properties", onBack: () => navigate("profile") };
+      case "payments":
+        return { title: "Payments" };
       case "profile":
         return { title: "Profile" };
       case "chat":
@@ -315,7 +318,7 @@ const Index = () => {
 
           {screen === "profile" && (
             <motion.div key="profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ProfileScreen isProvider={false} />
+              <ProfileScreen isProvider={false} onNavigateProperty={() => navigate("property")} />
             </motion.div>
           )}
 
