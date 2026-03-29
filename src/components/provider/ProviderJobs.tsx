@@ -232,6 +232,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
               job={job}
               index={i}
               onCompleteAppointment={handleCompleteAppointment}
+              onChat={onChat}
             />
           ))}
         </div>
