@@ -175,6 +175,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
           : firstName.trim() ? `${firstName.trim()} ${lastName.trim()}`.trim() : null,
         address: businessAddress.trim() || null,
         services_offered: selectedServices,
+        service_areas: selectedServiceAreas,
         venmo_phone: venmoPhone.trim() || null,
       } as any, { onConflict: "user_id" });
       if (profileError) throw profileError;
@@ -371,7 +372,7 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
             >
               {/* Progress bar */}
               <div className="flex gap-2">
-                {[1, 2, 3, 4].map(s => (
+                {[1, 2, 3, 4, 5].map(s => (
                   <div key={s} className={`flex-1 h-1.5 rounded-full transition-colors ${s <= providerStep ? "bg-primary" : "bg-muted"}`} />
                 ))}
               </div>
@@ -507,9 +508,80 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                   </motion.div>
                 )}
 
-                {/* Provider step 3: License & Bond */}
+                {/* Provider step 3: Service Areas */}
                 {providerStep === 3 && (
                   <motion.div key="p3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                    <div>
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                        <MapPin className="w-6 h-6 text-primary" />
+                      </div>
+                      <h2 className="font-display text-xl font-bold text-foreground">Service Areas</h2>
+                      <p className="text-sm text-muted-foreground mt-1">Select the cities in Washington state where you provide services</p>
+                    </div>
+
+                    <div>
+                      <input
+                        className={inputCls}
+                        placeholder="Search cities…"
+                        value={areaSearch}
+                        onChange={e => setAreaSearch(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto space-y-1.5">
+                      {WA_CITIES.filter(c => c.toLowerCase().includes(areaSearch.toLowerCase())).map(city => {
+                        const selected = selectedServiceAreas.includes(city);
+                        return (
+                          <button
+                            key={city}
+                            type="button"
+                            onClick={() => setSelectedServiceAreas(prev => selected ? prev.filter(c => c !== city) : [...prev, city])}
+                            className={`w-full flex items-center gap-3 p-2.5 rounded-xl border transition-all text-left text-sm ${
+                              selected ? "bg-primary/10 border-primary" : "bg-card border-border hover:border-primary/40"
+                            }`}
+                          >
+                            <div
+                              className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                                selected ? "bg-primary border-primary" : "border-muted-foreground/40"
+                              }`}
+                            >
+                              {selected && <Check className="w-3 h-3 text-primary-foreground" />}
+                            </div>
+                            <span className={selected ? "text-primary font-medium" : "text-foreground"}>{city}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {selectedServiceAreas.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedServiceAreas.map(area => (
+                          <span key={area} className="bg-primary/10 text-primary text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+                            {area}
+                            <button onClick={() => setSelectedServiceAreas(prev => prev.filter(c => c !== area))} className="hover:text-destructive">
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button onClick={() => setProviderStep(2)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
+                      <button
+                        onClick={() => setProviderStep(4)}
+                        disabled={selectedServiceAreas.length === 0}
+                        className="flex-1 bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm disabled:opacity-50"
+                      >
+                        Continue →
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Provider step 4: License & Bond */}
+                {providerStep === 4 && (
+                  <motion.div key="p4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                     <div>
                       <h2 className="font-display text-xl font-bold text-foreground">Credentials</h2>
                       <p className="text-sm text-muted-foreground mt-1">Verified credentials build customer trust</p>
@@ -572,9 +644,9 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                     {error && <p className="text-xs text-destructive">{error}</p>}
 
                     <div className="flex gap-2">
-                      <button onClick={() => setProviderStep(2)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
+                      <button onClick={() => setProviderStep(3)} className="px-5 bg-muted text-muted-foreground font-medium py-3 rounded-2xl text-sm">← Back</button>
                       <button
-                        onClick={() => setProviderStep(4)}
+                        onClick={() => setProviderStep(5)}
                         className="flex-1 bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm"
                       >
                         Continue →
