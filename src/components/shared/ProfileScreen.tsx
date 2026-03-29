@@ -1,10 +1,31 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2, Camera, Home } from "lucide-react";
+import { User, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Wrench, Smartphone, CheckCircle2, Camera, Home, MapPin, Briefcase } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+const AVAILABLE_SERVICES = [
+  "Lawn Care", "House Cleaning", "Gutter Cleaning", "Roof Cleaning",
+  "Pressure Washing", "Duct Cleaning", "Backwater Testing", "Fence Installation",
+];
+
+const WA_CITIES = [
+  "Aberdeen", "Anacortes", "Auburn", "Bainbridge Island", "Battle Ground", "Bellevue", "Bellingham",
+  "Bonney Lake", "Bothell", "Bremerton", "Burien", "Burlington", "Camas", "Centralia", "Chelan",
+  "Cheney", "Covington", "Des Moines", "DuPont", "East Wenatchee", "Edmonds", "Ellensburg",
+  "Enumclaw", "Ephrata", "Everett", "Federal Way", "Ferndale", "Gig Harbor", "Issaquah",
+  "Kenmore", "Kennewick", "Kent", "Kirkland", "Lacey", "Lake Forest Park", "Lake Stevens",
+  "Lakewood", "Liberty Lake", "Longview", "Lynnwood", "Maple Valley", "Marysville", "Mercer Island",
+  "Mill Creek", "Monroe", "Moses Lake", "Mount Vernon", "Mountlake Terrace", "Mukilteo",
+  "Newcastle", "Oak Harbor", "Olympia", "Orting", "Pasco", "Port Angeles", "Port Orchard",
+  "Port Townsend", "Poulsbo", "Pullman", "Puyallup", "Redmond", "Renton", "Richland",
+  "Sammamish", "SeaTac", "Seattle", "Sedro-Woolley", "Sequim", "Shelton", "Shoreline",
+  "Snohomish", "Snoqualmie", "Spokane", "Spokane Valley", "Stanwood", "Sumner", "Sunnyside",
+  "Tacoma", "Tukwila", "Tumwater", "University Place", "Vancouver", "Walla Walla", "Washougal",
+  "Wenatchee", "West Richland", "Woodinville", "Yakima",
+];
 
 interface ProfileScreenProps {
   isProvider?: boolean;
