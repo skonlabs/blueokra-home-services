@@ -12,9 +12,10 @@ export type Job = ProviderJob;
 interface ProviderJobsProps {
   initialTab?: TabKey;
   onCompleteJob: (job: ProviderJob) => void;
+  onChat?: (userId: string, name: string) => void;
 }
 
-const ProviderJobs = ({ initialTab, onCompleteJob }: ProviderJobsProps) => {
+const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) => {
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab || "all");
   const { data: rawJobs, isLoading: jobsLoading } = useProviderJobs();
   const { data: rawLeads, isLoading: leadsLoading } = useProviderLeads();
