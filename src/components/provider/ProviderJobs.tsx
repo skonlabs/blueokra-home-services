@@ -55,6 +55,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
         status: a.appointment_status,
         customerStatus: a.customer_status,
         providerStatus: a.provider_status,
+        customerUserId: a.customer_user_id || svc?.customer_user_id || "",
       }));
 
       const completedCount = mappedAppts.filter(a => a.status === "completed").length;
