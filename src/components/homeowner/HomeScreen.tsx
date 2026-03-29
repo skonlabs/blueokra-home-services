@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun, Wind, Droplets, Camera, AlertCircle } from "lucide-react";
+import { Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun, Wind, Droplets, Camera, AlertCircle, CalendarClock } from "lucide-react";
 import ServiceGrid from "./ServiceGrid";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useBookings } from "@/hooks/useBookings";
+import { useHomeownerAppointments } from "@/hooks/useHomeownerAppointments";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
