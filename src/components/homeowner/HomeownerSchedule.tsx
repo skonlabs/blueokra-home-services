@@ -19,9 +19,10 @@ type ScheduleTab = "all" | "pending" | "upcoming" | "completed";
 
 interface HomeownerScheduleProps {
   onChat?: (userId: string, name: string) => void;
+  onComplete?: (appointmentId: string) => void;
 }
 
-const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
+const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
   const [activeTab, setActiveTab] = useState<ScheduleTab>("all");
   const { data: appointments, isLoading } = useHomeownerAppointments();
   const { user } = useAuth();
