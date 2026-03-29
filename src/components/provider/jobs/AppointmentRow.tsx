@@ -6,16 +6,36 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Appointment } from "./types";
 import DateProposalSheet from "./DateProposalSheet";
+import {
+  getAppointmentStatusInfo,
+  userNeedsToConfirm,
+  canCompleteAppointment,
+  type ViewRole,
+} from "@/lib/appointmentStatus";
 
 interface AppointmentRowProps {
   appointment: Appointment;
   address: string;
   customerUserId?: string;
-  onComplete: (appointment: Appointment) => void;
+  viewRole?: ViewRole;
+  onComplete?: (appointment: Appointment) => void;
   onChat?: (appointment: Appointment) => void;
+  /** Hide navigate button (e.g. for homeowner view) */
+  hideNavigate?: boolean;
+  /** Hide done/complete button (e.g. for homeowner view) */
+  hideDone?: boolean;
 }
 
-const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onChat }: AppointmentRowProps) => {
+const AppointmentRow = ({
+  appointment,
+  address,
+  customerUserId,
+  viewRole = "provider",
+  onComplete,
+  onChat,
+  hideNavigate = false,
+  hideDone = false,
+}: AppointmentRowProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -23,16 +43,34 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
   const [accepting, setAccepting] = useState(false);
 
   const isCompleted = appointment.status === "completed";
-  const isConfirmed = appointment.status === "confirmed";
-  const isActive = ["confirmed", "in_progress", "scheduled"].includes(appointment.status);
-  const isPending = ["new", "pending"].includes(appointment.status);
+  const isActive = !isCompleted && !["declined", "cancelled"].includes(appointment.status);
 
-  // Check if this user has already confirmed
-  const myStatus = appointment.providerStatus; // for provider view
-  const otherStatus = appointment.customerStatus;
-  const iNeedToConfirm = myStatus === "pending";
-  const otherNeedsToConfirm = otherStatus === "pending" && myStatus === "confirmed";
-  const bothConfirmed = myStatus === "confirmed" && otherStatus === "confirmed";
+  // Use shared status logic
+  const statusInfo = getAppointmentStatusInfo(
+    appointment.status,
+    appointment.providerStatus,
+    appointment.customerStatus,
+    viewRole
+  );
+  const iNeedToConfirm = userNeedsToConfirm(
+    appointment.providerStatus,
+    appointment.customerStatus,
+    viewRole
+  );
+  const showDone =
+    !hideDone &&
+    canCompleteAppointment(
+      appointment.rawDate,
+      appointment.status,
+      appointment.providerStatus,
+      appointment.customerStatus
+    );
+  const showDoneDisabled =
+    !hideDone &&
+    !showDone &&
+    isActive &&
+    !iNeedToConfirm &&
+    (appointment.providerStatus === "confirmed" && appointment.customerStatus === "confirmed");
 
   const handleAcceptDate = async () => {
     if (!user) return;
@@ -51,6 +89,7 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
       }
       queryClient.invalidateQueries({ queryKey: ["provider-jobs"] });
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["homeowner-appointments"] });
     } catch (err: any) {
       toast({ title: "Failed", description: err.message, variant: "destructive" });
     } finally {
@@ -58,39 +97,14 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
     }
   };
 
-  const statusDot = isCompleted
-    ? "bg-okra-500"
-    : isConfirmed || bothConfirmed
-    ? "bg-success"
-    : isActive
-    ? "bg-primary"
-    : isPending
-    ? "bg-warm-400"
-    : "bg-muted-foreground";
-
-  // Provider view status labels:
-  // If provider confirmed, customer pending → "Awaiting their confirmation"
-  // If customer confirmed, provider pending → "Needs your confirmation" 
-  // Both confirmed → "Confirmed"
-  const statusLabel = bothConfirmed || isConfirmed
-    ? "Confirmed"
-    : myStatus === "confirmed" && otherStatus === "pending"
-    ? "Awaiting their confirmation"
-    : myStatus === "pending" && otherStatus === "confirmed"
-    ? "Pending your confirmation"
-    : iNeedToConfirm
-    ? "Needs your confirmation"
-    : appointment.status.replace("_", " ");
-
   return (
     <>
       <div className="flex items-start justify-between gap-2 py-3 border-t border-border first:border-t-0">
         <div className="flex items-start gap-2 min-w-0">
-          <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${statusDot}`} />
+          <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${statusInfo.dotColor}`} />
           <div className="min-w-0">
             <p className="text-xs font-medium text-foreground truncate">{appointment.date}</p>
-            <p className="text-[10px] text-muted-foreground capitalize">{statusLabel}</p>
-            {/* Always show service name and customer when available */}
+            <p className="text-[10px] text-muted-foreground capitalize">{statusInfo.label}</p>
             {appointment.serviceName && (
               <p className="text-[10px] text-muted-foreground mt-0.5">{appointment.serviceName}</p>
             )}
@@ -116,18 +130,8 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
             </div>
           )}
 
-          {(isPending || isActive) && !isCompleted && (
+          {isActive && (
             <>
-              {/* Propose new date */}
-              <button
-                onClick={() => setProposalOpen(true)}
-                className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
-                aria-label="Propose new date"
-                title="Propose new date"
-              >
-                <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-
               {/* Accept date (if pending) */}
               {iNeedToConfirm && (
                 <button
@@ -140,19 +144,31 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
                 </button>
               )}
 
-              {/* Navigate */}
+              {/* Propose new date */}
               <button
-                onClick={() =>
-                  window.open(
-                    `https://maps.google.com/?q=${encodeURIComponent(address)}`,
-                    "_blank"
-                  )
-                }
+                onClick={() => setProposalOpen(true)}
                 className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
-                aria-label="Navigate"
+                aria-label="Propose new date"
+                title="Propose new date"
               >
-                <Navigation className="w-3.5 h-3.5 text-foreground" />
+                <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
+
+              {/* Navigate (provider only) */}
+              {!hideNavigate && (
+                <button
+                  onClick={() =>
+                    window.open(
+                      `https://maps.google.com/?q=${encodeURIComponent(address)}`,
+                      "_blank"
+                    )
+                  }
+                  className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
+                  aria-label="Navigate"
+                >
+                  <Navigation className="w-3.5 h-3.5 text-foreground" />
+                </button>
+              )}
 
               {/* Chat */}
               <button
@@ -163,26 +179,20 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
                 <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
 
-              {/* Complete (only for confirmed AND on/after scheduled date) */}
-              {(isConfirmed || bothConfirmed || isActive) && !isPending && (() => {
-                const scheduledDate = new Date(appointment.rawDate);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                scheduledDate.setHours(0, 0, 0, 0);
-                const canComplete = scheduledDate <= today;
-                return canComplete ? (
-                  <button
-                    onClick={() => onComplete(appointment)}
-                    className="h-7 px-2 bg-success text-success-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform"
-                  >
-                    <QrCode className="w-3 h-3" /> Done
-                  </button>
-                ) : (
-                  <span className="h-7 px-2 bg-muted text-muted-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60" title="Available on service date">
-                    <Clock className="w-3 h-3" /> Done
-                  </span>
-                );
-              })()}
+              {/* Complete */}
+              {showDone && onComplete && (
+                <button
+                  onClick={() => onComplete(appointment)}
+                  className="h-7 px-2 bg-success text-success-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform"
+                >
+                  <QrCode className="w-3 h-3" /> Done
+                </button>
+              )}
+              {showDoneDisabled && (
+                <span className="h-7 px-2 bg-muted text-muted-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60" title="Available on service date">
+                  <Clock className="w-3 h-3" /> Done
+                </span>
+              )}
             </>
           )}
         </div>
@@ -192,7 +202,11 @@ const AppointmentRow = ({ appointment, address, customerUserId, onComplete, onCh
         <DateProposalSheet
           appointmentId={appointment.id}
           currentDate={appointment.rawDate}
-          onClose={() => setProposalOpen(false)}
+          onClose={() => {
+            setProposalOpen(false);
+            queryClient.invalidateQueries({ queryKey: ["provider-jobs"] });
+            queryClient.invalidateQueries({ queryKey: ["homeowner-appointments"] });
+          }}
           key={`proposal-${appointment.id}`}
         />
       )}
