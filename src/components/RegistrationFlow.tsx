@@ -671,9 +671,9 @@ const RegistrationFlow = forwardRef<HTMLDivElement, RegistrationFlowProps>(({ on
                   </motion.div>
                 )}
 
-                {/* Provider step 4: Venmo Phone for Payouts */}
-                {providerStep === 4 && (
-                  <motion.div key="p4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                {/* Provider step 5: Venmo Phone for Payouts */}
+                {providerStep === 5 && (
+                  <motion.div key="p5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                     <div>
                       <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center mb-3">
                         <Smartphone className="w-6 h-6 text-secondary" />
