@@ -149,6 +149,8 @@ const Index = () => {
         return { title: "Schedule" };
       case "provider-earnings":
         return { title: "Earnings" };
+      case "provider-service-history":
+        return { title: "Service History", onBack: () => navigate("provider-earnings") };
       case "provider-profile":
         return { title: "Profile" };
       default:
@@ -298,7 +300,13 @@ const Index = () => {
 
           {screen === "provider-earnings" && (
             <motion.div key="provider-earnings" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ProviderEarnings />
+              <ProviderEarnings onViewHistory={() => navigate("provider-service-history")} />
+            </motion.div>
+          )}
+
+          {screen === "provider-service-history" && (
+            <motion.div key="provider-service-history" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <ProviderServiceHistory />
             </motion.div>
           )}
 
