@@ -176,7 +176,7 @@ const ProviderServiceHistory = () => {
             {Object.entries(yearStats.byService).map(([type, stats]) => (
               <div key={type} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ServiceIcon serviceType={type} size="xs" />
+                  <ServiceIcon serviceType={type} size="sm" />
                   <span className="text-xs text-foreground capitalize">
                     {type.replace(/_/g, " ")}
                   </span>
