@@ -53,7 +53,9 @@ const Index = () => {
 
   // Notifications hook must be before any early returns
   const { data: notifData } = useNotifications();
+  const { data: convData } = useConversations();
   const unreadCount = (notifData || []).filter(n => !n.is_read).length;
+  const unreadChatCount = (convData || []).reduce((sum, c) => sum + (c.unread_count || 0), 0);
 
   // Set mode based on user role
   useEffect(() => {
