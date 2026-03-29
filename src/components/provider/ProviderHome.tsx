@@ -46,8 +46,6 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
           {profile?.display_name || profile?.first_name || "Provider"}
         </p>
       </div>
-        </p>
-      </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-3">
