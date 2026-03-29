@@ -268,7 +268,7 @@ const UpcomingAppointmentCard = ({ index, job, onNavigate }: UpcomingAppointment
   const cs = job.customer_status as string;
   const appointmentStatus = job.appointment_status as string;
   const address = cp?.address || service?.notes || "Address pending";
-  const customerUserId = cp?.user_id || job.customer_user_id;
+  const customerUserId = cp?.user_id || job.customer_user_id || service?.customer_user_id;
   const serviceType = service?.service_type || "lawn";
   const serviceName = service?.package_name || service?.service_type || "Service";
 
@@ -278,6 +278,7 @@ const UpcomingAppointmentCard = ({ index, job, onNavigate }: UpcomingAppointment
   const isCompleted = appointmentStatus === "completed";
   const isActive = !isCompleted;
   const showDone = canCompleteAppointment(job.appointment_date, appointmentStatus, ps, cs);
+  const showDoneDisabled = !showDone;
 
   const handleAcceptDate = async () => {
     if (!user) return;
@@ -337,16 +338,20 @@ const UpcomingAppointmentCard = ({ index, job, onNavigate }: UpcomingAppointment
               <Navigation className="w-3.5 h-3.5 text-foreground" />
             </button>
             {customerUserId && (
-              <button onClick={() => onNavigate("chat", { userId: customerUserId, userName: customerName })}
+              <button onClick={() => onNavigate("provider-chat", { userId: customerUserId, userName: customerName })}
                 className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform" title="Chat">
                 <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             )}
-            {showDone && (
+            {showDone ? (
               <button onClick={() => onNavigate("provider-completion")}
                 className="h-7 px-2 bg-success text-success-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform">
                 <QrCode className="w-3 h-3" /> Done
               </button>
+            ) : (
+              <span className="h-7 px-2 bg-muted text-muted-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60" title="Available after confirmation and on service date">
+                <QrCode className="w-3 h-3" /> Done
+              </span>
             )}
           </div>
         )}

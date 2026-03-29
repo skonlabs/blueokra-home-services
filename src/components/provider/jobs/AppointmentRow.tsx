@@ -65,12 +65,7 @@ const AppointmentRow = ({
       appointment.providerStatus,
       appointment.customerStatus
     );
-  const showDoneDisabled =
-    !hideDone &&
-    !showDone &&
-    isActive &&
-    !iNeedToConfirm &&
-    (appointment.providerStatus === "confirmed" && appointment.customerStatus === "confirmed");
+  const showDoneDisabled = !hideDone && !showDone && isActive;
 
   const handleAcceptDate = async () => {
     if (!user) return;

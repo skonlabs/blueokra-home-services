@@ -55,7 +55,13 @@ export const useProviderJobs = () => {
       if (error) throw error;
 
       // Fetch customer profiles for display
-      const customerIds = [...new Set((data || []).map(d => d.customer_user_id).filter(Boolean))] as string[];
+      const customerIds = [
+        ...new Set(
+          (data || [])
+            .flatMap((d: any) => [d.customer_user_id, (d.booking_service as any)?.customer_user_id])
+            .filter(Boolean)
+        ),
+      ] as string[];
       let customerProfiles: Record<string, any> = {};
       if (customerIds.length > 0) {
         const { data: profiles } = await supabase
@@ -67,10 +73,14 @@ export const useProviderJobs = () => {
         });
       }
 
-      return (data || []).map(d => ({
-        ...d,
-        customer_profile: customerProfiles[d.customer_user_id!] || null,
-      }));
+      return (data || []).map((d: any) => {
+        const service = d.booking_service as any;
+        const customerId = d.customer_user_id || service?.customer_user_id;
+        return {
+          ...d,
+          customer_profile: (customerId && customerProfiles[customerId]) || null,
+        };
+      });
     },
   });
 };

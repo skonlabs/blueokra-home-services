@@ -86,7 +86,7 @@ const ProviderSchedule = ({ onChat, onComplete }: ProviderScheduleProps) => {
           service: service?.package_name || service?.service_type || "Service",
           serviceType: service?.service_type || "general",
           customer: cp?.display_name || [cp?.first_name, cp?.last_name].filter(Boolean).join(" ") || "Customer",
-          customerUserId: cp?.user_id || job.customer_user_id || "",
+          customerUserId: cp?.user_id || job.customer_user_id || service?.customer_user_id || "",
           address: cp?.address || service?.notes || "Address pending",
           revenue: providerEarnings,
           appointmentStatus: job.appointment_status || "pending",
@@ -198,6 +198,7 @@ const ProviderSchedule = ({ onChat, onComplete }: ProviderScheduleProps) => {
             const isCompleted = job.appointmentStatus === "completed";
             const isActive = !isCompleted && !["declined", "cancelled"].includes(job.appointmentStatus);
             const showDone = canCompleteAppointment(job.rawDate, job.appointmentStatus, job.providerStatus, job.customerStatus);
+            const showDoneDisabled = !showDone;
 
             return (
               <motion.div
@@ -251,11 +252,15 @@ const ProviderSchedule = ({ onChat, onComplete }: ProviderScheduleProps) => {
                         <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                       </button>
                     )}
-                    {showDone && onComplete && (
+                    {showDone && onComplete ? (
                       <button onClick={() => onComplete(job.id)}
                         className="h-7 px-2 bg-success text-success-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform">
                         <QrCode className="w-3 h-3" /> Done
                       </button>
+                    ) : (
+                      <span className="h-7 px-2 bg-muted text-muted-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60" title="Available after confirmation and on service date">
+                        <QrCode className="w-3 h-3" /> Done
+                      </span>
                     )}
                   </div>
                 )}

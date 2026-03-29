@@ -135,6 +135,9 @@ const Index = () => {
   };
 
   const handleNavigation = (target: string, params?: Record<string, string>) => {
+    if (params?.userId && params?.userName) {
+      setChatTarget({ userId: params.userId, name: params.userName });
+    }
     setNavParams(params || {});
     navigate(target as Screen);
   };
@@ -370,7 +373,7 @@ const Index = () => {
           {screen === "provider-schedule" && (
             <motion.div key="provider-schedule" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <ProviderSchedule
-                onChat={(userId, name) => { setChatTarget({ userId, name }); navigate("chat"); }}
+                onChat={(userId, name) => { setChatTarget({ userId, name }); navigate("provider-chat"); }}
                 onComplete={(apptId) => {
                   setSelectedJobForCompletion({ id: apptId } as any);
                   navigate("provider-completion");
