@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Shield, Star, ChevronRight, ChevronLeft, Building2, CreditCard, Smartphone } from "lucide-react";
-
+import { Check, Shield, Star, ChevronRight, ChevronLeft, Building2, CreditCard } from "lucide-react";
 interface PaymentFlowProps {
   onComplete: () => void;
   booking?: {
@@ -29,7 +28,7 @@ const DEFAULT_BOOKING = {
 };
 
 type Step = "qr_confirm" | "method" | "entry" | "done";
-type PaymentMethod = "venmo" | "direct_debit" | "credit_card" | null;
+type PaymentMethod = "direct_debit" | "credit_card" | null;
 
 const inputCls = "w-full bg-muted rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent focus:border-primary/30";
 
@@ -120,20 +119,6 @@ const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
         </div>
 
         <div className="space-y-3">
-          {/* Venmo */}
-          <button
-            onClick={() => { setMethod("venmo"); setStep("entry"); }}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-border bg-card hover:border-primary/50 active:scale-[0.98] transition-all text-left"
-          >
-            <div className="w-10 h-10 rounded-full bg-[#008CFF]/10 flex items-center justify-center shrink-0">
-              <Smartphone className="w-5 h-5 text-[#008CFF]" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-foreground">Venmo</p>
-              <p className="text-xs text-muted-foreground">Send via your Venmo app — free</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </button>
 
           {/* Direct Debit */}
           <button
@@ -183,7 +168,7 @@ const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
             <ChevronLeft className="w-4 h-4" />
           </button>
           <h2 className="font-display text-xl font-bold text-foreground">
-            {method === "venmo" ? "Pay via Venmo" : method === "direct_debit" ? "Direct Debit" : "Card Payment"}
+            {method === "direct_debit" ? "Direct Debit" : "Card Payment"}
           </h2>
         </div>
 
@@ -218,18 +203,6 @@ const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
             <span>${finalAmount.toFixed(2)}</span>
           </div>
         </div>
-
-        {/* Venmo */}
-        {method === "venmo" && (
-          <div className="bg-[#008CFF]/5 rounded-2xl border border-[#008CFF]/20 p-4 space-y-3">
-            <p className="text-sm font-semibold text-foreground">Send ${finalAmount.toFixed(2)} to:</p>
-            <div className="bg-white rounded-xl px-4 py-3 text-center border border-[#008CFF]/20">
-              <p className="text-lg font-bold text-[#008CFF]">@BlueOkra</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Open Venmo and send payment</p>
-            </div>
-            <p className="text-[11px] text-muted-foreground">Include booking reference in memo: <span className="font-mono font-medium">{bookingId}</span></p>
-          </div>
-        )}
 
         {/* Direct Debit */}
         {method === "direct_debit" && (
@@ -318,7 +291,7 @@ const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
           className="w-full bg-success text-success-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Check className="w-4 h-4" />
-          {method === "venmo" ? "I've sent the Venmo payment" : `Confirm &amp; Pay $${finalAmount.toFixed(2)}`}
+          {method === "direct_debit" ? `Confirm & Pay $${finalAmount.toFixed(2)}` : `Confirm & Pay $${finalAmount.toFixed(2)}`}
         </button>
         {rating === 0 && (
           <p className="text-xs text-center text-muted-foreground">Please rate your experience before confirming</p>
