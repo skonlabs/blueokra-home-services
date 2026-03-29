@@ -164,9 +164,22 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs text-muted-foreground mb-1.5">Phone</label>
+                            <label className="block text-xs text-muted-foreground mb-1.5">Phone (sign-up)</label>
                             <input className={`${inputCls} opacity-60 cursor-not-allowed`} value={user?.phone || ""} readOnly />
                           </div>
+                          {isProvider && (
+                            <div>
+                              <label className="block text-xs text-muted-foreground mb-1.5">Venmo phone (receives payment)</label>
+                              <input
+                                className={inputCls}
+                                value={venmoPhone}
+                                onChange={e => setVenmoPhone(e.target.value)}
+                                placeholder="Phone number linked to your Venmo"
+                                inputMode="tel"
+                              />
+                              <p className="text-[11px] text-muted-foreground mt-1">BlueOkra will send your earnings to this Venmo number</p>
+                            </div>
+                          )}
                           {profileError && <p className="text-xs text-destructive">{profileError}</p>}
                           <button
                             onClick={handleSaveProfile}
