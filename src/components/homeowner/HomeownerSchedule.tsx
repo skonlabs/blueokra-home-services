@@ -145,6 +145,13 @@ const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
             const amount = Number(appt.customerAmount) || 0;
             const isCompleted = appt.appointment_status === "completed";
             const isActive = !isCompleted && !["declined", "cancelled"].includes(appt.appointment_status);
+            const showDone = canCompleteAppointment(
+              appt.appointment_date,
+              appt.appointment_status,
+              appt.provider_status,
+              appt.customer_status
+            );
+            const showDoneDisabled = !showDone && isActive;
 
             let dateStr = "TBD";
             let timeStr = "";
