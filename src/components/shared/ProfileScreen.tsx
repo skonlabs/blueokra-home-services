@@ -35,14 +35,41 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const [notifPromos, setNotifPromos] = useState(false);
 
 
-  // Load venmo_phone from DB
+  // Load venmo_phone and profile photo from DB
   useEffect(() => {
-    if (user && isProvider) {
-      supabase.from("profiles").select("venmo_phone").eq("user_id", user.id).single().then(({ data }) => {
+    if (user) {
+      supabase.from("profiles").select("venmo_phone, profile_photo_url").eq("user_id", user.id).single().then(({ data }) => {
         if (data?.venmo_phone) setVenmoPhone(data.venmo_phone);
+        if (data?.profile_photo_url) setProfilePhotoUrl(data.profile_photo_url);
       });
     }
-  }, [user, isProvider]);
+  }, [user]);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please select an image file", variant: "destructive" });
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("profile-pictures").upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from("profile-pictures").getPublicUrl(path);
+      const photoUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      await supabase.from("profiles").upsert({ user_id: user.id, profile_photo_url: photoUrl } as any, { onConflict: "user_id" });
+      setProfilePhotoUrl(photoUrl);
+      await refreshProfile();
+      toast({ title: "Profile photo updated!" });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   // Provider Venmo phone
   const providerVenmoPhone = venmoPhone || profile?.phone || user?.phone || "";
