@@ -167,10 +167,6 @@ const Index = () => {
 
   const headerConfig = getHeaderConfig();
 
-  // Dynamic unread notification count
-  const { data: notifData } = useNotifications();
-  const unreadCount = (notifData || []).filter(n => !n.is_read).length;
-
   // Always-visible header right actions: bell + profile
   const headerRightActions = (
     <div className="flex gap-2">
