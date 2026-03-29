@@ -32,7 +32,7 @@ interface ProfileScreenProps {
   onNavigateProperty?: () => void;
 }
 
-type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | "properties" | null;
+type Section = "account" | "venmo" | "notifications" | "help" | "privacy" | "terms" | "properties" | "services" | "areas" | null;
 
 const ProfileScreen = ({ isProvider, onNavigateProperty }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
