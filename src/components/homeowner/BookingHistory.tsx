@@ -26,15 +26,11 @@ interface Booking {
   rating?: number;
 }
 
-const mapStatus = (status: string): BookingStatus => {
-  switch (status) {
-    case "pending": return "pending";
-    case "purchased": case "scheduled": return "upcoming";
-    case "in_progress": return "in_progress";
-    case "completed": return "completed";
-    case "disputed": return "disputed";
-    default: return "pending";
-  }
+const mapStatus = (status: string, hasProvider: boolean, allApptsCompleted: boolean): BookingStatus => {
+  if (status === "completed" || allApptsCompleted) return "completed";
+  if (status === "disputed") return "disputed";
+  if (hasProvider) return "in_progress";
+  return "pending";
 };
 
 const statusColors: Record<BookingStatus, string> = {
@@ -50,7 +46,7 @@ const statusLabels: Record<BookingStatus, string> = {
 };
 
 const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaymentFlow, onReview, onDispute, onRebook }, ref) => {
-  const [activeTab, setActiveTab] = useState<"all" | "confirmed" | "in_progress" | "completed">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "in_progress" | "completed">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: rawBookings, isLoading, error: bookingsError } = useBookings();
 
@@ -62,21 +58,25 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
     } catch { return "N/A"; }
   };
 
-  const bookings: Booking[] = (rawBookings || []).map((b) => ({
-    id: b.id,
-    serviceType: b.service_type,
-    service: b.package_name || b.service_type,
-    provider: "Assigned Provider",
-    provider_user_id: b.booking_appointment?.[0]?.provider_user_id ?? undefined,
-    date: b.booking_appointment?.[0]?.appointment_date
-      ? safeFmt(b.booking_appointment[0].appointment_date, "MMM d, h:mm a")
-      : safeFmt(b.created_at, "MMM d"),
-    price: b.revenue ? `$${b.revenue}` : "TBD",
-    status: mapStatus(b.booking_status),
-  }));
+  const bookings: Booking[] = (rawBookings || []).map((b) => {
+    const hasProvider = !!(b.booking_appointment || []).find((a: any) => a.provider_user_id);
+    const appts = b.booking_appointment || [];
+    const allApptsCompleted = appts.length > 0 && appts.every((a: any) => a.appointment_status === "completed");
+    return {
+      id: b.id,
+      serviceType: b.service_type,
+      service: b.package_name || b.service_type,
+      provider: "Assigned Provider",
+      provider_user_id: b.booking_appointment?.[0]?.provider_user_id ?? undefined,
+      date: b.booking_appointment?.[0]?.appointment_date
+        ? safeFmt(b.booking_appointment[0].appointment_date, "MMM d, h:mm a")
+        : safeFmt(b.created_at, "MMM d"),
+      price: b.revenue ? `${b.revenue}` : "TBD",
+      status: mapStatus(b.booking_status, hasProvider, allApptsCompleted),
+    };
+  });
 
   const filtered = activeTab === "all" ? bookings :
-    activeTab === "confirmed" ? bookings.filter(b => b.status === "upcoming" || b.status === "pending") :
     activeTab === "in_progress" ? bookings.filter(b => b.status === "in_progress") :
     bookings.filter(b => b.status === "completed");
 
@@ -88,7 +88,6 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
       <div className="flex gap-1 bg-muted rounded-xl p-1">
         {([
           { key: "all" as const, label: "All" },
-          { key: "confirmed" as const, label: "Confirmed" },
           { key: "in_progress" as const, label: "In-Progress" },
           { key: "completed" as const, label: "Completed" },
         ]).map((tab) => (
@@ -131,7 +130,7 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{booking.date}</span>
-                <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{booking.price.replace('$', '')}</span>
+                <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{String(booking.price).replace('$', '')}</span>
               </div>
               {booking.rating && (
                 <div className="flex items-center gap-1">

@@ -42,7 +42,8 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
         return all.filter(a => ["new", "pending", "scheduled"].includes(a.appointment_status) || a.customer_status === "pending");
       case "upcoming":
         return all.filter(a => {
-          if (a.appointment_status === "completed") return false;
+          if (a.appointment_status !== "confirmed") return false;
+          if (a.customer_status !== "confirmed" || a.provider_status !== "confirmed") return false;
           try { return isAfter(new Date(a.appointment_date), now); } catch { return false; }
         });
       case "completed":
@@ -106,7 +107,7 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
             const now = new Date();
             switch (tab.key) {
               case "pending": return all.filter(a => ["new", "pending", "scheduled"].includes(a.appointment_status) || a.customer_status === "pending").length;
-              case "upcoming": return all.filter(a => { if (a.appointment_status === "completed") return false; try { return isAfter(new Date(a.appointment_date), now); } catch { return false; } }).length;
+              case "upcoming": return all.filter(a => { if (a.appointment_status !== "confirmed") return false; if (a.customer_status !== "confirmed" || a.provider_status !== "confirmed") return false; try { return isAfter(new Date(a.appointment_date), now); } catch { return false; } }).length;
               case "completed": return all.filter(a => a.appointment_status === "completed").length;
               default: return all.length;
             }
@@ -201,59 +202,58 @@ const HomeownerSchedule = ({ onChat }: HomeownerScheduleProps) => {
                   </div>
                 </button>
 
-                {/* Expanded: address + actions */}
-                {isExpanded && (
-                  <div className="mt-3 pt-3 border-t border-border space-y-3">
+                {/* Actions always visible */}
+                {isActive && (
+                  <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border">
+                    {/* Accept date */}
+                    {needsConfirm && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAcceptDate(appt.id); }}
+                        disabled={accepting === appt.id}
+                        className="h-7 px-2 bg-success/10 text-success text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform"
+                      >
+                        <ThumbsUp className="w-3 h-3" /> Confirm
+                      </button>
+                    )}
+
+                    {/* Propose new date */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setProposalApptId(appt.id); setProposalDate(appt.appointment_date); }}
+                      className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
+                      title="Propose new date"
+                    >
+                      <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+
+                    {/* Navigate */}
                     {provider?.address && (
-                      <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                        <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <span className="break-words">{provider.address}</span>
-                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); window.open(`https://maps.google.com/?q=${encodeURIComponent(provider.address)}`, "_blank"); }}
+                        className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
+                      >
+                        <Navigation className="w-3.5 h-3.5 text-foreground" />
+                      </button>
                     )}
 
-                    {isActive && (
-                      <div className="flex items-center gap-1">
-                        {/* Propose new date */}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setProposalApptId(appt.id); setProposalDate(appt.appointment_date); }}
-                          className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
-                          title="Propose new date"
-                        >
-                          <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
-                        </button>
-
-                        {/* Accept date */}
-                        {needsConfirm && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleAcceptDate(appt.id); }}
-                            disabled={accepting === appt.id}
-                            className="h-7 px-2 bg-success/10 text-success text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform"
-                          >
-                            <ThumbsUp className="w-3 h-3" /> Confirm
-                          </button>
-                        )}
-
-                        {/* Navigate */}
-                        {provider?.address && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); window.open(`https://maps.google.com/?q=${encodeURIComponent(provider.address)}`, "_blank"); }}
-                            className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
-                          >
-                            <Navigation className="w-3.5 h-3.5 text-foreground" />
-                          </button>
-                        )}
-
-                        {/* Chat */}
-                        {appt.provider_user_id && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onChat?.(appt.provider_user_id!, appt.providerName); }}
-                            className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-                          </button>
-                        )}
-                      </div>
+                    {/* Chat */}
+                    {appt.provider_user_id && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onChat?.(appt.provider_user_id!, appt.providerName); }}
+                        className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
                     )}
+                  </div>
+                )}
+
+                {/* Expanded: address details */}
+                {isExpanded && provider?.address && (
+                  <div className="mt-2 pt-2 border-t border-border">
+                    <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <span className="break-words">{provider.address}</span>
+                    </div>
                   </div>
                 )}
               </motion.div>
