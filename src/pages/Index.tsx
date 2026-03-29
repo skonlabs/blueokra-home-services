@@ -49,6 +49,7 @@ const Index = () => {
   const [reviewBooking, setReviewBooking] = useState<any>(null);
   const [selectedJobForCompletion, setSelectedJobForCompletion] = useState<Job | null>(null);
   const [navParams, setNavParams] = useState<Record<string, string>>({});
+  const [chatTarget, setChatTarget] = useState<{ userId: string; name: string } | null>(null);
 
   // Notifications hook must be before any early returns
   const { data: notifData } = useNotifications();
