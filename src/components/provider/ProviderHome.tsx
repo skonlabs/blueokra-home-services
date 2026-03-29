@@ -11,7 +11,7 @@ const getGreeting = () => {
 };
 
 interface ProviderHomeProps {
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: string, params?: Record<string, string>) => void;
 }
 
 const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
@@ -51,7 +51,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
       <div className="grid grid-cols-2 gap-3">
         <motion.button
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          onClick={() => onNavigate("provider-jobs")}
+          onClick={() => onNavigate("provider-jobs", { tab: "new" })}
           className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.97] transition-transform"
         >
           <div className="flex items-center gap-2 mb-2">
@@ -65,7 +65,7 @@ const ProviderHome = ({ onNavigate }: ProviderHomeProps) => {
 
         <motion.button
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          onClick={() => onNavigate("provider-jobs")}
+          onClick={() => onNavigate("provider-jobs", { tab: "in_progress" })}
           className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.97] transition-transform"
         >
           <div className="flex items-center gap-2 mb-2">
