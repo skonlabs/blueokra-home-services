@@ -205,6 +205,7 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
   // Address
   const [serviceAddress, setServiceAddress] = useState(iv.serviceAddress ?? "");
   const [addressError,   setAddressError]   = useState(false);
+  const [addressConfirmed, setAddressConfirmed] = useState(!!iv.serviceAddress);
   const [usingNewAddress, setUsingNewAddress] = useState(false);
 
   // Saved homes for address auto-fill
@@ -316,6 +317,11 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
 
   const handleSubmit = () => {
     if (!serviceAddress.trim()) {
+      setAddressError(true);
+      return;
+    }
+    // If using a new (non-saved) address, it must be picked from the dropdown
+    if (usingNewAddress && !addressConfirmed) {
       setAddressError(true);
       return;
     }
