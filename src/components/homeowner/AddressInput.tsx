@@ -85,7 +85,7 @@ function sortSuggestions(results: NominatimResult[]): NominatimResult[] {
 // Component
 // ---------------------------------------------------------------------------
 
-const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onChange, placeholder, hasError }, _ref) => {
+const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onChange, placeholder, hasError, requireSelection = false, onConfirmedChange }, _ref) => {
   const [inputVal, setInputVal]         = useState(value);
   const [suggestions, setSuggestions]   = useState<NominatimResult[]>([]);
   const [loading, setLoading]           = useState(false);
@@ -94,6 +94,8 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onC
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistDone, setWaitlistDone]   = useState(false);
   const [waitlistError, setWaitlistError] = useState("");
+  // Track whether user picked from dropdown (confirmed) vs typed freetext
+  const [confirmed, setConfirmed]       = useState(!!value);
 
   const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef  = useRef<HTMLDivElement>(null);
