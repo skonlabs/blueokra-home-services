@@ -243,6 +243,11 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onC
         )}
       </div>
 
+      {/* Selection required warning */}
+      {showSelectionWarning && (
+        <p className="text-xs text-destructive">Please select an address from the dropdown suggestions.</p>
+      )}
+
       {/* Not in WA */}
       {notInWA && (
         <div className="bg-blue-50 rounded-xl p-3 border border-blue-100 space-y-3">
