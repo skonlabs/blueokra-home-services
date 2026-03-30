@@ -29,6 +29,7 @@ export interface ProviderJob {
   recurringPrice?: number;
   expectedEndDate?: string;
   customizations?: any;
+  photos?: string[];
   appointments: Appointment[];
   // Computed
   totalAppointments: number;

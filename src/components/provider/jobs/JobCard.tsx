@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { computeEconomics } from "@/lib/quoteCalculator";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, MapPin, DollarSign, Loader2, Calendar, Repeat, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, X, MapPin, DollarSign, Loader2, Calendar, Repeat, AlertCircle, ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
