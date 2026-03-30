@@ -666,6 +666,56 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
       {/* Service-specific fields */}
       {renderServiceFields()}
 
+      {/* Photo upload */}
+      {showPhotoUpload && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-foreground">
+            Photos {isPhotoMandatory ? <span className="text-destructive">* (required)</span> : "(optional — helps with accuracy)"}
+          </p>
+
+          {/* Tips */}
+          {PHOTO_TIPS[serviceId] && (
+            <div className="bg-muted rounded-xl px-3 py-2 space-y-0.5">
+              <p className="text-[11px] font-medium text-muted-foreground">📸 What to photograph:</p>
+              {PHOTO_TIPS[serviceId].map((tip) => (
+                <p key={tip} className="text-[11px] text-muted-foreground">• {tip}</p>
+              ))}
+            </div>
+          )}
+
+          {/* Photo grid */}
+          <div className="flex flex-wrap gap-2">
+            {photos.map((photo, i) => (
+              <div key={i} className="relative">
+                <img src={photo} alt={`Upload ${i + 1}`} className="w-16 h-16 rounded-xl object-cover border border-border" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(i)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            {photos.length < 5 && (
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="w-16 h-16 rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ImagePlus className="w-5 h-5" />
+                <span className="text-[9px]">{photos.length}/5</span>
+              </button>
+            )}
+          </div>
+          <input ref={photoInputRef} type="file" accept="image/*" multiple hidden onChange={handlePhotoUpload} />
+
+          {photoError && (
+            <p className="text-xs text-destructive">Please upload at least one photo to continue.</p>
+          )}
+        </div>
+      )}
+
       {/* Urgency */}
       <ChipRow label="How urgent?" value={urgency} onChange={setUrgency} options={URGENCY_OPTIONS} />
 
