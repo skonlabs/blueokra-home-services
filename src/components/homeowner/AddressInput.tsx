@@ -34,6 +34,10 @@ interface AddressInputProps {
   onChange: (address: string, isWashingtonState?: boolean, parts?: AddressParts) => void;
   placeholder?: string;
   hasError?: boolean;
+  /** When true, the user MUST pick from the dropdown — freetext is rejected */
+  requireSelection?: boolean;
+  /** Called when confirmed status changes (true = picked from dropdown, false = edited after) */
+  onConfirmedChange?: (confirmed: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
