@@ -29,6 +29,47 @@ export const useBookings = () => {
   });
 };
 
+export const useProviderLeads = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["provider-leads", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("booking_lead")
+        .select(`
+          id, service_id, lead_status, created_at,
+          booking_service (
+            id, service_type, package_name, customer_user_id, revenue, frequency, notes, customizations, created_at
+          )
+        `)
+        .eq("provider_user_id", user!.id)
+        .eq("lead_status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      // Enrich with customer profile
+      const enriched = await Promise.all(
+        (data || []).map(async (lead: any) => {
+          const svc = lead.booking_service;
+          if (!svc?.customer_user_id) return { ...lead, customer_profile: null };
+          const { data: cp } = await supabase
+            .from("profiles")
+            .select("display_name, first_name, last_name, address, city, state, profile_photo_url")
+            .eq("user_id", svc.customer_user_id)
+            .single();
+          return { ...lead, customer_profile: cp };
+        })
+      );
+
+      return enriched;
+    },
+  });
+};
+
 export const useProviderJobs = () => {
   const { user } = useAuth();
 
