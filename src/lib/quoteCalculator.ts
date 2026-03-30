@@ -59,6 +59,9 @@ export interface IntakeFormData {
   terrain?: "flat" | "steep" | "rocky";
   doorCount?: number;
   weatherproofCoating?: boolean;
+
+  // Photos
+  photos?: string[];
 }
 
 // ---------------------------------------------------------------------------

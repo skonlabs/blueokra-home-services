@@ -1,5 +1,5 @@
-import { useState, useEffect, forwardRef } from "react";
-import { ChevronRight, Minus, Plus, MapPin } from "lucide-react";
+import { useState, useEffect, useRef, forwardRef } from "react";
+import { ChevronRight, Minus, Plus, MapPin, Camera, X, ImagePlus } from "lucide-react";
 import type { IntakeFormData } from "@/lib/quoteCalculator";
 import AddressInput from "./AddressInput";
 import { useUserHomes } from "@/hooks/useBookings";
