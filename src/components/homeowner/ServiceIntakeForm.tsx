@@ -1,5 +1,5 @@
-import { useState, useEffect, forwardRef } from "react";
-import { ChevronRight, Minus, Plus, MapPin } from "lucide-react";
+import { useState, useEffect, useRef, forwardRef } from "react";
+import { ChevronRight, Minus, Plus, MapPin, Camera, X, ImagePlus } from "lucide-react";
 import type { IntakeFormData } from "@/lib/quoteCalculator";
 import AddressInput from "./AddressInput";
 import { useUserHomes } from "@/hooks/useBookings";
@@ -273,12 +273,58 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
   const [doorCount,           setDoorCount]           = useState(iv.doorCount           ?? 0);
   const [weatherproofCoating, setWeatherproofCoating] = useState(iv.weatherproofCoating ?? false);
 
+  // Photos
+  const [photos, setPhotos] = useState<string[]>(iv.photos ?? []);
+  const [photoError, setPhotoError] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const MANDATORY_PHOTO_SERVICES = new Set(["lawn", "fence", "pressure"]);
+  const OPTIONAL_PHOTO_SERVICES = new Set(["gutter", "house_cleaning", "backwater"]);
+  const isPhotoMandatory = MANDATORY_PHOTO_SERVICES.has(serviceId);
+  const isPhotoOptional = OPTIONAL_PHOTO_SERVICES.has(serviceId);
+  const showPhotoUpload = isPhotoMandatory || isPhotoOptional;
+
+  const PHOTO_TIPS: Record<string, string[]> = {
+    lawn: ["Full yard overview", "Close-up of problem areas (weeds, bare patches)", "Bushes or trees that need trimming"],
+    fence: ["Current fence or area where fence will go", "Property boundary from multiple angles", "Terrain / slope of the ground"],
+    pressure: ["Each surface that needs washing", "Close-up of stains, mold, or buildup", "Full view of driveway / patio / siding"],
+    gutter: ["Gutters from ground level", "Any visible clogs or damage"],
+    house_cleaning: ["Rooms needing extra attention", "Any heavily soiled areas"],
+    backwater: ["Access point to backwater device", "Any visible damage or flooding signs"],
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const remaining = 5 - photos.length;
+    Array.from(files).slice(0, remaining).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          setPhotos((prev) => [...prev, ev.target!.result as string].slice(0, 5));
+          setPhotoError(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = () => {
     if (!serviceAddress.trim()) {
       setAddressError(true);
       return;
     }
+    if (isPhotoMandatory && photos.length === 0) {
+      setPhotoError(true);
+      return;
+    }
     setAddressError(false);
+    setPhotoError(false);
 
     const base: IntakeFormData = {
       serviceId,
@@ -287,6 +333,7 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
       frequency,
       addOns,
       serviceAddress,
+      photos,
     };
 
     switch (serviceId) {
@@ -618,6 +665,56 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
 
       {/* Service-specific fields */}
       {renderServiceFields()}
+
+      {/* Photo upload */}
+      {showPhotoUpload && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-foreground">
+            Photos {isPhotoMandatory ? <span className="text-destructive">* (required)</span> : "(optional — helps with accuracy)"}
+          </p>
+
+          {/* Tips */}
+          {PHOTO_TIPS[serviceId] && (
+            <div className="bg-muted rounded-xl px-3 py-2 space-y-0.5">
+              <p className="text-[11px] font-medium text-muted-foreground">📸 What to photograph:</p>
+              {PHOTO_TIPS[serviceId].map((tip) => (
+                <p key={tip} className="text-[11px] text-muted-foreground">• {tip}</p>
+              ))}
+            </div>
+          )}
+
+          {/* Photo grid */}
+          <div className="flex flex-wrap gap-2">
+            {photos.map((photo, i) => (
+              <div key={i} className="relative">
+                <img src={photo} alt={`Upload ${i + 1}`} className="w-16 h-16 rounded-xl object-cover border border-border" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(i)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            {photos.length < 5 && (
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="w-16 h-16 rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ImagePlus className="w-5 h-5" />
+                <span className="text-[9px]">{photos.length}/5</span>
+              </button>
+            )}
+          </div>
+          <input ref={photoInputRef} type="file" accept="image/*" multiple hidden onChange={handlePhotoUpload} />
+
+          {photoError && (
+            <p className="text-xs text-destructive">Please upload at least one photo to continue.</p>
+          )}
+        </div>
+      )}
 
       {/* Urgency */}
       <ChipRow label="How urgent?" value={urgency} onChange={setUrgency} options={URGENCY_OPTIONS} />
