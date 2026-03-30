@@ -149,6 +149,9 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onC
     const val = e.target.value;
     setInputVal(val);
     setNotInWA(false);
+    // Mark as unconfirmed when user edits the field
+    setConfirmed(false);
+    onConfirmedChange?.(false);
     onChange(val, undefined); // propagate raw text immediately
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -160,6 +163,8 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onC
     setInputVal(addr);
     setSuggestions([]);
     setOpen(false);
+    setConfirmed(true);
+    onConfirmedChange?.(true);
 
     const wa = isWashington(result.address);
     setNotInWA(!wa);
