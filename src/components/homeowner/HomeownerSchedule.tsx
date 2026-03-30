@@ -189,24 +189,24 @@ const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
                   )}
                 </div>
 
-                {/* Date + provider */}
-                {/* Provider avatar + date */}
-                <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground">
-                  {provider && (
-                    <div className="shrink-0">
-                      {provider.profile_photo_url ? (
-                        <img src={provider.profile_photo_url} alt={appt.providerName} className="w-8 h-8 rounded-full object-cover border border-border" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border border-border">
-                          <UserIcon className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex flex-col min-w-0">
-                    {provider && <span className="text-xs text-primary font-medium truncate">{appt.providerName}</span>}
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{dateStr} · {timeStr}</span>
+                {/* Provider info */}
+                {provider && (
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    {provider.profile_photo_url ? (
+                      <img src={provider.profile_photo_url} alt={appt.providerName} className="w-7 h-7 rounded-full object-cover border border-border shrink-0" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center border border-border shrink-0">
+                        <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="text-xs font-medium text-foreground truncate">{appt.providerName}</span>
                   </div>
+                )}
+
+                {/* Date */}
+                <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <Clock className="w-3 h-3 shrink-0" />
+                  <span>{dateStr} · {timeStr}</span>
                 </div>
 
                 {/* Actions */}
