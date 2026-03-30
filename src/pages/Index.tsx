@@ -272,6 +272,7 @@ const Index = () => {
               <QuoteView
                 quote={currentQuote}
                 serviceAddress={lastIntakeData?.serviceAddress}
+                photos={lastIntakeData?.photos}
                 onBook={handleBook}
                 onBack={() => navigate("intake")}
               />
