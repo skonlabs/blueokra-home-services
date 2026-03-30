@@ -90,11 +90,12 @@ const MONTHS = [
 interface QuoteViewProps {
   quote: QuoteData;
   serviceAddress?: string;
+  photos?: string[];
   onBook: (schedule: ScheduleData) => void;
   onBack: () => void;
 }
 
-const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) => {
+const QuoteView = ({ quote, serviceAddress, photos, onBook, onBack }: QuoteViewProps) => {
   const currentYear = new Date().getFullYear();
 
   // One-time scheduling — multiple dates
