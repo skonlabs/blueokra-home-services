@@ -21,8 +21,10 @@ Rules:
 - backwater: backwater, backflow, sewer valve, flood device
 - fence: fence, fencing, gate installation
 
+If the user's message does NOT match any of the above services, set serviceId to null and reply explaining that we currently only offer those services.
+
 Respond ONLY with valid JSON — no markdown, no extra text:
-{"serviceId":"<id>","reply":"<one warm sentence acknowledging the service needed>"}`;
+{"serviceId":"<id or null>","reply":"<one warm sentence>"}`;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -33,7 +35,7 @@ Deno.serve(async (req: Request) => {
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ serviceId: "lawn", reply: "I can help with that! Let me get the details." }),
+        JSON.stringify({ serviceId: null, reply: "I couldn't process your request right now. Please try again." }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -61,7 +63,7 @@ Deno.serve(async (req: Request) => {
       parsed = JSON.parse(raw);
     } catch {
       const match = raw.match(/\{[\s\S]*\}/);
-      parsed = match ? JSON.parse(match[0]) : { serviceId: "lawn", reply: "I can help with that!" };
+      parsed = match ? JSON.parse(match[0]) : { serviceId: null, reply: "I wasn't sure which service you need. Could you describe it differently?" };
     }
 
     return new Response(JSON.stringify(parsed), {
@@ -70,7 +72,7 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     console.error("chat-ai error:", err);
     return new Response(
-      JSON.stringify({ serviceId: "lawn", reply: "I can help with that! Let me get the details." }),
+      JSON.stringify({ serviceId: null, reply: "Something went wrong. Please try again or select a service from the menu." }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
