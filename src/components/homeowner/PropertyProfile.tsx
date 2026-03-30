@@ -29,6 +29,7 @@ const PropertyProfile = () => {
   const [newZip, setNewZip] = useState("");
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState("");
+  const [addressConfirmed, setAddressConfirmed] = useState(false);
 
   // Delete state
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -42,6 +43,7 @@ const PropertyProfile = () => {
 
   const handleSaveProperty = async () => {
     if (!newAddress.trim()) { setAddError("Please enter an address."); return; }
+    if (!addressConfirmed) { setAddError("Please select an address from the dropdown."); return; }
     if (!user) return;
     setAddError("");
     setAddSaving(true);

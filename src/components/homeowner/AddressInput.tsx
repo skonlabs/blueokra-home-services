@@ -34,6 +34,10 @@ interface AddressInputProps {
   onChange: (address: string, isWashingtonState?: boolean, parts?: AddressParts) => void;
   placeholder?: string;
   hasError?: boolean;
+  /** When true, the user MUST pick from the dropdown — freetext is rejected */
+  requireSelection?: boolean;
+  /** Called when confirmed status changes (true = picked from dropdown, false = edited after) */
+  onConfirmedChange?: (confirmed: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -81,7 +85,7 @@ function sortSuggestions(results: NominatimResult[]): NominatimResult[] {
 // Component
 // ---------------------------------------------------------------------------
 
-const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onChange, placeholder, hasError }, _ref) => {
+const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onChange, placeholder, hasError, requireSelection = false, onConfirmedChange }, _ref) => {
   const [inputVal, setInputVal]         = useState(value);
   const [suggestions, setSuggestions]   = useState<NominatimResult[]>([]);
   const [loading, setLoading]           = useState(false);
@@ -90,6 +94,8 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onC
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistDone, setWaitlistDone]   = useState(false);
   const [waitlistError, setWaitlistError] = useState("");
+  // Track whether user picked from dropdown (confirmed) vs typed freetext
+  const [confirmed, setConfirmed]       = useState(!!value);
 
   const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -143,6 +149,9 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onC
     const val = e.target.value;
     setInputVal(val);
     setNotInWA(false);
+    // Mark as unconfirmed when user edits the field
+    setConfirmed(false);
+    onConfirmedChange?.(false);
     onChange(val, undefined); // propagate raw text immediately
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -154,6 +163,8 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onC
     setInputVal(addr);
     setSuggestions([]);
     setOpen(false);
+    setConfirmed(true);
+    onConfirmedChange?.(true);
 
     const wa = isWashington(result.address);
     setNotInWA(!wa);
@@ -174,10 +185,12 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onC
     setWaitlistDone(true);
   };
 
+  const showSelectionWarning = requireSelection && !confirmed && inputVal.trim().length > 0;
+
   const inputCls =
     `w-full bg-muted rounded-xl pl-9 pr-9 py-2.5 text-sm outline-none ` +
     `focus:ring-2 focus:ring-primary/30 border transition-colors ` +
-    (hasError ? "border-destructive ring-1 ring-destructive/30" : "border-transparent");
+    ((hasError || showSelectionWarning) ? "border-destructive ring-1 ring-destructive/30" : "border-transparent");
 
   return (
     <div className="space-y-2">
@@ -229,6 +242,11 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onC
           </div>
         )}
       </div>
+
+      {/* Selection required warning */}
+      {showSelectionWarning && (
+        <p className="text-xs text-destructive">Please select an address from the dropdown suggestions.</p>
+      )}
 
       {/* Not in WA */}
       {notInWA && (
