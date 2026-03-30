@@ -322,7 +322,7 @@ const Index = () => {
 
           {screen === "profile" && (
             <motion.div key="profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ProfileScreen isProvider={false} onNavigateProperty={() => navigate("property")} />
+              <ProfileScreen isProvider={false} />
             </motion.div>
           )}
 
