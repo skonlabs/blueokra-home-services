@@ -319,7 +319,12 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
       setAddressError(true);
       return;
     }
+    if (isPhotoMandatory && photos.length === 0) {
+      setPhotoError(true);
+      return;
+    }
     setAddressError(false);
+    setPhotoError(false);
 
     const base: IntakeFormData = {
       serviceId,
