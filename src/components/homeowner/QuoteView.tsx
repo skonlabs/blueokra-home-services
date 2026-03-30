@@ -90,11 +90,12 @@ const MONTHS = [
 interface QuoteViewProps {
   quote: QuoteData;
   serviceAddress?: string;
+  photos?: string[];
   onBook: (schedule: ScheduleData) => void;
   onBack: () => void;
 }
 
-const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) => {
+const QuoteView = ({ quote, serviceAddress, photos, onBook, onBack }: QuoteViewProps) => {
   const currentYear = new Date().getFullYear();
 
   // One-time scheduling — multiple dates
@@ -235,6 +236,23 @@ const QuoteView = ({ quote, serviceAddress, onBook, onBack }: QuoteViewProps) =>
           </div>
         )}
       </div>
+
+      {/* Uploaded photos */}
+      {photos && photos.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
+          <h3 className="font-semibold text-sm text-foreground">Uploaded Photos</h3>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {photos.map((photo, i) => (
+              <img
+                key={i}
+                src={photo}
+                alt={`Property photo ${i + 1}`}
+                className="w-20 h-20 rounded-xl object-cover border border-border shrink-0"
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Breakdown */}
       <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
