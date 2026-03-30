@@ -333,6 +333,7 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
       frequency,
       addOns,
       serviceAddress,
+      photos,
     };
 
     switch (serviceId) {
