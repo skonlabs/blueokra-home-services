@@ -185,10 +185,12 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(({ value, onC
     setWaitlistDone(true);
   };
 
+  const showSelectionWarning = requireSelection && !confirmed && inputVal.trim().length > 0;
+
   const inputCls =
     `w-full bg-muted rounded-xl pl-9 pr-9 py-2.5 text-sm outline-none ` +
     `focus:ring-2 focus:ring-primary/30 border transition-colors ` +
-    (hasError ? "border-destructive ring-1 ring-destructive/30" : "border-transparent");
+    ((hasError || showSelectionWarning) ? "border-destructive ring-1 ring-destructive/30" : "border-transparent");
 
   return (
     <div className="space-y-2">
