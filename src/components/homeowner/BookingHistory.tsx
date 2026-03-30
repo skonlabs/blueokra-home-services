@@ -222,6 +222,21 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
                   )}
                 </div>
 
+                {/* Uploaded photos */}
+                {(() => {
+                  const photos = (selectedRaw.customizations as any)?.photos as string[] | undefined;
+                  return photos && photos.length > 0 ? (
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Photos</p>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {photos.map((photo: string, i: number) => (
+                          <img key={i} src={photo} alt={`Photo ${i + 1}`} className="w-16 h-16 rounded-xl object-cover border border-border shrink-0" />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+
                 {/* Appointments */}
                 {selectedRaw.booking_appointment?.length > 0 && (
                   <div className="space-y-1.5">

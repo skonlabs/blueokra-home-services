@@ -42,6 +42,7 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
             revenue: quote.low,
             notes: serviceAddress ?? null,
             customizations: intakeData as unknown as import("@/integrations/supabase/types").Json ?? null,
+            images: (intakeData?.photos?.length ? intakeData.photos : null) as unknown as import("@/integrations/supabase/types").Json,
           })
           .select("id")
           .single();
