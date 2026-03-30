@@ -273,6 +273,47 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
   const [doorCount,           setDoorCount]           = useState(iv.doorCount           ?? 0);
   const [weatherproofCoating, setWeatherproofCoating] = useState(iv.weatherproofCoating ?? false);
 
+  // Photos
+  const [photos, setPhotos] = useState<string[]>(iv.photos ?? []);
+  const [photoError, setPhotoError] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const MANDATORY_PHOTO_SERVICES = new Set(["lawn", "fence", "pressure"]);
+  const OPTIONAL_PHOTO_SERVICES = new Set(["gutter", "house_cleaning", "backwater"]);
+  const isPhotoMandatory = MANDATORY_PHOTO_SERVICES.has(serviceId);
+  const isPhotoOptional = OPTIONAL_PHOTO_SERVICES.has(serviceId);
+  const showPhotoUpload = isPhotoMandatory || isPhotoOptional;
+
+  const PHOTO_TIPS: Record<string, string[]> = {
+    lawn: ["Full yard overview", "Close-up of problem areas (weeds, bare patches)", "Bushes or trees that need trimming"],
+    fence: ["Current fence or area where fence will go", "Property boundary from multiple angles", "Terrain / slope of the ground"],
+    pressure: ["Each surface that needs washing", "Close-up of stains, mold, or buildup", "Full view of driveway / patio / siding"],
+    gutter: ["Gutters from ground level", "Any visible clogs or damage"],
+    house_cleaning: ["Rooms needing extra attention", "Any heavily soiled areas"],
+    backwater: ["Access point to backwater device", "Any visible damage or flooding signs"],
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const remaining = 5 - photos.length;
+    Array.from(files).slice(0, remaining).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          setPhotos((prev) => [...prev, ev.target!.result as string].slice(0, 5));
+          setPhotoError(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = () => {
     if (!serviceAddress.trim()) {
       setAddressError(true);
