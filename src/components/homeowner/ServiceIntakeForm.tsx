@@ -661,11 +661,19 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
             }}
             placeholder="Enter the address where service is needed"
             hasError={addressError}
+            requireSelection
+            onConfirmedChange={(c) => {
+              setAddressConfirmed(c);
+              if (c) setAddressError(false);
+            }}
           />
         )}
 
-        {addressError && (
+        {addressError && !serviceAddress.trim() && (
           <p className="text-xs text-destructive">Please enter a service address to continue.</p>
+        )}
+        {addressError && serviceAddress.trim() && !addressConfirmed && (
+          <p className="text-xs text-destructive">Please select an address from the dropdown.</p>
         )}
       </div>
 
