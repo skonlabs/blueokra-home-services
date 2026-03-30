@@ -170,6 +170,21 @@ const JobCard = ({ job, index, onCompleteAppointment, onChat }: JobCardProps) =>
         </div>
       </div>
 
+      {/* Customer photos */}
+      {job.photos && job.photos.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Customer Photos</span>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {job.photos.map((photo, i) => (
+              <img key={i} src={photo} alt={`Property ${i + 1}`} className="w-16 h-16 rounded-xl object-cover border border-border shrink-0" />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Progress indicator for in-progress jobs */}
       {isInProgress && job.totalAppointments > 0 && (
         <div className="space-y-1.5">
