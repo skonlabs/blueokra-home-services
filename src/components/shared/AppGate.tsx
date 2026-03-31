@@ -21,7 +21,9 @@ export const AppGate = ({ children }: { children: React.ReactNode }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === "admin" && password === "blue@123") {
+    const gateUser = import.meta.env.VITE_APP_GATE_USER || "admin";
+    const gatePass = import.meta.env.VITE_APP_GATE_PASS || "blue@123";
+    if (username === gateUser && password === gatePass) {
       sessionStorage.setItem(SESSION_KEY, "1");
       setAuthenticated(true);
     } else {

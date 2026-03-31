@@ -101,6 +101,10 @@ const RegistrationFlow = ({ onComplete }: RegistrationFlowProps) => {
           ? businessName.trim() || null
           : firstName.trim() ? `${firstName.trim()} ${lastName.trim()}`.trim() : null,
         address: businessAddress.trim() || null,
+        services_offered: selectedServices.length > 0 ? selectedServices : null,
+        approval_status: "pending",
+        business_license: isLicensed && licenseNumber.trim() ? licenseNumber.trim() : null,
+        bond_number: isBonded && bondNumber.trim() ? bondNumber.trim() : null,
       }, { onConflict: "user_id" });
       if (profileError) throw profileError;
 

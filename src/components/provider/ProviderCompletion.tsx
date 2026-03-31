@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, Check, ChevronRight, X } from "lucide-react";
+import { Camera, Check, ChevronRight, X, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface JobSummary {
   id: string;
@@ -51,6 +52,7 @@ const ProviderCompletion = ({ job: jobProp, onDone }: ProviderCompletionProps) =
   const [checkedItems, setCheckedItems] = useState<boolean[]>(CHECKLIST_ITEMS.map(() => false));
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -155,7 +157,7 @@ const ProviderCompletion = ({ job: jobProp, onDone }: ProviderCompletionProps) =
 
         <div className="w-64 h-64 bg-foreground rounded-3xl mx-auto flex items-center justify-center">
           <img
-            src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=blueokra-confirm-job123&bgcolor=FFFFFF"
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`blueokra-confirm-${job.id}`)}&bgcolor=FFFFFF`}
             className="w-56 h-56 rounded-2xl mx-auto"
             alt="Payment QR code"
           />
@@ -168,10 +170,19 @@ const ProviderCompletion = ({ job: jobProp, onDone }: ProviderCompletionProps) =
         </div>
 
         <button
-          onClick={() => setStep("done")}
-          className="w-full bg-muted text-foreground font-medium py-3 rounded-2xl text-sm"
+          onClick={async () => {
+            setCompleting(true);
+            await supabase
+              .from("booking_appointment")
+              .update({ appointment_status: "completed", provider_status: "confirmed" })
+              .eq("id", job.id);
+            setCompleting(false);
+            setStep("done");
+          }}
+          disabled={completing}
+          className="w-full bg-muted text-foreground font-medium py-3 rounded-2xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
         >
-          Customer confirmed manually
+          {completing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Customer confirmed manually"}
         </button>
       </motion.div>
     );

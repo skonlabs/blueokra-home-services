@@ -159,8 +159,18 @@ function calcLawn(d: IntakeFormData): QuoteData {
     subtotal += weedAmt;
   }
 
-  // Step 4: Add-ons (fixed prices per new pricing table)
-  const addOnPrices: Record<string, number> = { aeration: 180, overseeding: 140, fertilization: 120 };
+  // Step 4: Add-ons (size-based pricing matching ServiceIntakeForm display)
+  const addOnPricesByYard: Record<string, { aeration: number; overseeding: number; fertilization: number }> = {
+    lt1000:   { aeration: 100, overseeding: 75,  fertilization: 50  },
+    lt1500:   { aeration: 125, overseeding: 100, fertilization: 75  },
+    lt2000:   { aeration: 150, overseeding: 125, fertilization: 100 },
+    lt3000:   { aeration: 200, overseeding: 150, fertilization: 125 },
+    lt4000:   { aeration: 250, overseeding: 200, fertilization: 150 },
+    lt5000:   { aeration: 300, overseeding: 250, fertilization: 175 },
+    lt10000:  { aeration: 400, overseeding: 300, fertilization: 200 },
+    gte10000: { aeration: 500, overseeding: 600, fertilization: 400 },
+  };
+  const addOnPrices = addOnPricesByYard[yardKey];
   let addOnTotal = 0;
   for (const addOn of d.addOns ?? []) {
     if (addOn === "bush_trimming") {

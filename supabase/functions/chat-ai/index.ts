@@ -8,7 +8,7 @@ const corsHeaders = {
 // Minimal prompt — only service detection, no pricing tables
 const SYSTEM_PROMPT = `You are a home services intake assistant for BlueOkra. Identify which service the homeowner needs and respond warmly in one sentence.
 
-Available service IDs: lawn, house_cleaning, gutter, roof, pressure, electrical, duct, backwater, fence
+Available service IDs: lawn, house_cleaning, gutter, roof, pressure, duct, backwater, fence
 
 Rules:
 - lawn: mowing, grass, yard, garden, trimming
@@ -16,7 +16,6 @@ Rules:
 - gutter: gutters, downspouts
 - roof: roof, shingles, moss on roof
 - pressure: pressure washing, power wash, driveway, patio, siding
-- electrical: electrical, outlets, wiring, breaker, panel
 - duct: ducts, vents, air quality, HVAC, AC, furnace, dryer vent
 - backwater: backwater, backflow, sewer valve, flood device
 - fence: fence, fencing, gate installation

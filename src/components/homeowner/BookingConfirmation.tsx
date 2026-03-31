@@ -76,8 +76,19 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
           if (apptError) throw apptError;
         }
 
+        // Notify homeowner that their booking was received
+        await supabase.from("booking_notification").insert({
+          recipient_user_id: user.id,
+          notification_type: "booking_confirmed",
+          title: "Booking received!",
+          message: `Your ${quote.serviceName} booking has been submitted. A provider will confirm shortly.`,
+          is_read: false,
+          metadata: { booking_id: bookingData.id, service_type: quote.serviceId } as unknown as import("@/integrations/supabase/types").Json,
+        });
+
         // Refresh the booking history cache so the new booking appears immediately
         queryClient.invalidateQueries({ queryKey: ["bookings", user.id] });
+        queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
 
       } catch (err) {
         const pgErr = err as { message?: string; code?: string; details?: string; hint?: string };

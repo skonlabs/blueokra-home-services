@@ -947,6 +947,8 @@ export type Database = {
           approval_status: string | null
           approved_at: string | null
           approved_by: string | null
+          bond_number: string | null
+          business_license: string | null
           city: string | null
           company_name: string | null
           created_at: string
@@ -971,6 +973,8 @@ export type Database = {
           approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          bond_number?: string | null
+          business_license?: string | null
           city?: string | null
           company_name?: string | null
           created_at?: string
@@ -995,6 +999,8 @@ export type Database = {
           approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          bond_number?: string | null
+          business_license?: string | null
           city?: string | null
           company_name?: string | null
           created_at?: string
