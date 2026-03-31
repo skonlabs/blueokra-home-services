@@ -30,6 +30,19 @@ export interface ProviderJob {
   expectedEndDate?: string;
   customizations?: any;
   photos?: string[];
+  propertyDetails?: {
+    bedrooms?: number | null;
+    bathrooms?: number | null;
+    sqft?: number | null;
+    lot_size_sqft?: number | null;
+    house_type?: string | null;
+    flooring?: string | null;
+    has_basement?: boolean | null;
+    has_fireplace?: boolean | null;
+    heating_type?: string | null;
+    roof_type?: string | null;
+  } | null;
+  homeId?: string | null;
   appointments: Appointment[];
   // Computed
   totalAppointments: number;

@@ -12,6 +12,7 @@ export interface IntakeFormData {
 
   // Address
   serviceAddress?: string;
+  homeId?: string;
 
   // Lawn
   yardSize?: "lt1000" | "lt1500" | "lt2000" | "lt3000" | "lt4000" | "lt5000" | "lt10000" | "gte10000";

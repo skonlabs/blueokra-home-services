@@ -434,6 +434,7 @@ export type Database = {
           customer_user_id: string
           customizations: Json | null
           frequency: string | null
+          home_id: string | null
           id: string
           images: Json | null
           is_completed: boolean | null
@@ -455,6 +456,7 @@ export type Database = {
           customer_user_id: string
           customizations?: Json | null
           frequency?: string | null
+          home_id?: string | null
           id?: string
           images?: Json | null
           is_completed?: boolean | null
@@ -476,6 +478,7 @@ export type Database = {
           customer_user_id?: string
           customizations?: Json | null
           frequency?: string | null
+          home_id?: string | null
           id?: string
           images?: Json | null
           is_completed?: boolean | null
@@ -1375,11 +1378,22 @@ export type Database = {
         Row: {
           address: string
           address_place_id: string | null
+          bathrooms: number | null
+          bedrooms: number | null
           city: string | null
           created_at: string
+          flooring: string | null
+          has_basement: boolean | null
+          has_fireplace: boolean | null
+          heating_type: string | null
+          house_type: string | null
           id: string
           is_primary: boolean | null
+          lot_size_sqft: number | null
           nickname: string | null
+          parcel_number: string | null
+          roof_type: string | null
+          sqft: number | null
           state: string | null
           updated_at: string
           user_id: string
@@ -1388,11 +1402,22 @@ export type Database = {
         Insert: {
           address: string
           address_place_id?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
           city?: string | null
           created_at?: string
+          flooring?: string | null
+          has_basement?: boolean | null
+          has_fireplace?: boolean | null
+          heating_type?: string | null
+          house_type?: string | null
           id?: string
           is_primary?: boolean | null
+          lot_size_sqft?: number | null
           nickname?: string | null
+          parcel_number?: string | null
+          roof_type?: string | null
+          sqft?: number | null
           state?: string | null
           updated_at?: string
           user_id: string
@@ -1401,11 +1426,22 @@ export type Database = {
         Update: {
           address?: string
           address_place_id?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
           city?: string | null
           created_at?: string
+          flooring?: string | null
+          has_basement?: boolean | null
+          has_fireplace?: boolean | null
+          heating_type?: string | null
+          house_type?: string | null
           id?: string
           is_primary?: boolean | null
+          lot_size_sqft?: number | null
           nickname?: string | null
+          parcel_number?: string | null
+          roof_type?: string | null
+          sqft?: number | null
           state?: string | null
           updated_at?: string
           user_id?: string

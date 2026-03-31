@@ -204,6 +204,7 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
 
   // Address
   const [serviceAddress, setServiceAddress] = useState(iv.serviceAddress ?? "");
+  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(iv.homeId ?? null);
   const [addressError,   setAddressError]   = useState(false);
   const [usingNewAddress, setUsingNewAddress] = useState(false);
 
@@ -215,6 +216,7 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
   useEffect(() => {
     if (primaryHome && !serviceAddress) {
       setServiceAddress(primaryHome.address);
+      setSelectedHomeId(primaryHome.id);
     }
   }, [primaryHome?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -333,6 +335,7 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
       frequency,
       addOns,
       serviceAddress,
+      homeId: selectedHomeId ?? undefined,
       photos,
     };
 
@@ -615,6 +618,7 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
                 onClick={() => {
                   setUsingNewAddress(false);
                   setServiceAddress(home.address);
+                  setSelectedHomeId(home.id);
                   setAddressError(false);
                 }}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
@@ -628,7 +632,7 @@ const ServiceIntakeForm = forwardRef<HTMLDivElement, ServiceIntakeFormProps>(({ 
             ))}
             <button
               type="button"
-              onClick={() => { setUsingNewAddress(true); setServiceAddress(""); setAddressError(false); }}
+              onClick={() => { setUsingNewAddress(true); setServiceAddress(""); setSelectedHomeId(null); setAddressError(false); }}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
                 usingNewAddress
                   ? "bg-primary text-primary-foreground border-primary"
