@@ -84,6 +84,10 @@ const PropertyProfile = () => {
   const [showDetailsFormForId, setShowDetailsFormForId] = useState<string | null>(null);
   const [showDetailsFormAddress, setShowDetailsFormAddress] = useState("");
 
+  // Property details form (shown after adding address or via Edit)
+  const [showDetailsFormForId, setShowDetailsFormForId] = useState<string | null>(null);
+  const [showDetailsFormAddress, setShowDetailsFormAddress] = useState("");
+
   // Delete state
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
