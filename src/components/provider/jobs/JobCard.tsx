@@ -1,7 +1,27 @@
 import { useState } from "react";
 import { computeEconomics } from "@/lib/quoteCalculator";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, MapPin, DollarSign, Loader2, Calendar, Repeat, AlertCircle, ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
+import { Check, X, MapPin, DollarSign, Loader2, Calendar, Repeat, AlertCircle, ChevronDown, ChevronUp, ImageIcon, Camera, Map, Home } from "lucide-react";
+
+const GMAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+
+function propertyStreetViewUrl(address: string) {
+  if (!GMAPS_KEY) return null;
+  return `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${encodeURIComponent(address)}&key=${GMAPS_KEY}`;
+}
+
+function propertySatelliteUrl(address: string) {
+  if (!GMAPS_KEY) return null;
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(address)}&zoom=18&size=600x400&maptype=satellite&markers=color:red%7C${encodeURIComponent(address)}&key=${GMAPS_KEY}`;
+}
+
+const HOUSE_TYPE_LABELS: Record<string, string> = {
+  single_family: "Single Family",
+  townhouse: "Townhouse",
+  condo: "Condo",
+  duplex: "Duplex",
+  mobile: "Mobile",
+};
 import ServiceIcon from "@/components/shared/ServiceIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +46,8 @@ const JobCard = ({ job, index, onCompleteAppointment, onChat }: JobCardProps) =>
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [streetFailed, setStreetFailed] = useState(false);
+  const [satFailed, setSatFailed] = useState(false);
 
   const isNewLead = job.status === "new_lead";
   const isInProgress = job.status === "in_progress";
@@ -218,6 +240,99 @@ const JobCard = ({ job, index, onCompleteAppointment, onChat }: JobCardProps) =>
       {/* New lead specific content */}
       {isNewLead && (
         <>
+          {/* Property Info */}
+          {GMAPS_KEY && job.address && (
+            <div className="rounded-xl border border-border overflow-hidden">
+              <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border bg-muted/40">
+                <Home className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Property</span>
+              </div>
+              <div className="grid grid-cols-2 gap-0">
+                {!streetFailed ? (
+                  <div className="relative">
+                    <img
+                      src={propertyStreetViewUrl(job.address)!}
+                      alt="Street view"
+                      className="w-full h-24 object-cover"
+                      onError={() => setStreetFailed(true)}
+                    />
+                    <div className="absolute bottom-1 left-1 flex items-center gap-0.5 bg-black/50 rounded px-1 py-0.5">
+                      <Camera className="w-2 h-2 text-white" />
+                      <span className="text-[8px] text-white font-medium">Street</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-24 bg-muted flex items-center justify-center">
+                    <Camera className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                )}
+                {!satFailed ? (
+                  <div className="relative border-l border-border">
+                    <img
+                      src={propertySatelliteUrl(job.address)!}
+                      alt="Satellite view"
+                      className="w-full h-24 object-cover"
+                      onError={() => setSatFailed(true)}
+                    />
+                    <div className="absolute bottom-1 left-1 flex items-center gap-0.5 bg-black/50 rounded px-1 py-0.5">
+                      <Map className="w-2 h-2 text-white" />
+                      <span className="text-[8px] text-white font-medium">Satellite</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-24 bg-muted flex items-center justify-center border-l border-border">
+                    <Map className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              {job.propertyDetails && (
+                <div className="flex flex-wrap gap-1.5 px-3 py-2.5 border-t border-border">
+                  {job.propertyDetails.bedrooms != null && (
+                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-medium text-foreground">
+                      {job.propertyDetails.bedrooms} bd
+                    </span>
+                  )}
+                  {job.propertyDetails.bathrooms != null && (
+                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-medium text-foreground">
+                      {job.propertyDetails.bathrooms} ba
+                    </span>
+                  )}
+                  {job.propertyDetails.sqft != null && (
+                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-medium text-foreground">
+                      {job.propertyDetails.sqft.toLocaleString()} sqft
+                    </span>
+                  )}
+                  {job.propertyDetails.lot_size_sqft != null && (
+                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-medium text-foreground">
+                      {job.propertyDetails.lot_size_sqft.toLocaleString()} lot
+                    </span>
+                  )}
+                  {job.propertyDetails.house_type && (
+                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-medium text-foreground">
+                      {HOUSE_TYPE_LABELS[job.propertyDetails.house_type] ?? job.propertyDetails.house_type}
+                    </span>
+                  )}
+                  {job.propertyDetails.flooring && (
+                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-medium text-muted-foreground capitalize">
+                      {job.propertyDetails.flooring}
+                    </span>
+                  )}
+                  {job.propertyDetails.has_basement && (
+                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-medium text-muted-foreground">Basement</span>
+                  )}
+                  {job.propertyDetails.has_fireplace && (
+                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-medium text-muted-foreground">Fireplace</span>
+                  )}
+                  {job.propertyDetails.roof_type && (
+                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-medium text-muted-foreground capitalize">
+                      {job.propertyDetails.roof_type} roof
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex items-start gap-2 bg-accent/30 rounded-lg p-2.5">
             <AlertCircle className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
             <p className="text-[11px] text-muted-foreground leading-relaxed">

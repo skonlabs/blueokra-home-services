@@ -13,7 +13,7 @@ export const useBookings = () => {
         .from("booking_service")
         .select(`
           id, service_type, package_name, booking_status, created_at,
-          frequency, notes, revenue, customizations, completed_at,
+          frequency, notes, revenue, customizations, completed_at, home_id,
           booking_appointment (
             id, appointment_date, appointment_status,
             provider_user_id, customer_status, provider_status
@@ -41,7 +41,7 @@ export const useProviderLeads = () => {
         .select(`
           id, service_id, lead_status, created_at,
           booking_service (
-            id, service_type, package_name, customer_user_id, revenue, frequency, notes, customizations, created_at
+            id, service_type, package_name, customer_user_id, revenue, frequency, notes, customizations, home_id, created_at
           )
         `)
         .eq("provider_user_id", user!.id)
@@ -51,21 +51,30 @@ export const useProviderLeads = () => {
 
       if (error) throw error;
 
-      // Enrich with customer profile
-      const enriched = await Promise.all(
-        (data || []).map(async (lead: any) => {
-          const svc = lead.booking_service;
-          if (!svc?.customer_user_id) return { ...lead, customer_profile: null };
-          const { data: cp } = await supabase
-            .from("profiles")
-            .select("display_name, first_name, last_name, address, city, state, profile_photo_url")
-            .eq("user_id", svc.customer_user_id)
-            .single();
-          return { ...lead, customer_profile: cp };
-        })
-      );
+      // Batch-fetch all customer profiles in one query (fixes N+1)
+      const customerIds = [
+        ...new Set(
+          (data || [])
+            .map((lead: any) => lead.booking_service?.customer_user_id)
+            .filter(Boolean) as string[]
+        ),
+      ];
 
-      return enriched;
+      let profileMap: Record<string, any> = {};
+      if (customerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, first_name, last_name, address, city, state, profile_photo_url")
+          .in("user_id", customerIds);
+        profileMap = Object.fromEntries(
+          (profiles || []).map((p) => [p.user_id, p])
+        );
+      }
+
+      return (data || []).map((lead: any) => ({
+        ...lead,
+        customer_profile: profileMap[lead.booking_service?.customer_user_id] || null,
+      }));
     },
   });
 };
@@ -84,7 +93,7 @@ export const useProviderJobs = () => {
           provider_user_id, customer_status, provider_status, notes,
           service_id,
           booking_service!inner (
-            id, service_type, package_name, customer_user_id, revenue, notes, customizations, frequency
+            id, service_type, package_name, customer_user_id, revenue, notes, customizations, frequency, home_id
           )
         `)
         .eq("provider_user_id", user!.id)
@@ -126,7 +135,11 @@ export const useUserHomes = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_homes")
-        .select("id, user_id, address, nickname, city, state, zip_code, is_primary, created_at")
+        .select(
+          "id, user_id, address, nickname, city, state, zip_code, is_primary, created_at, " +
+          "bedrooms, bathrooms, sqft, lot_size_sqft, house_type, flooring, " +
+          "has_basement, has_fireplace, heating_type, parcel_number, roof_type"
+        )
         .eq("user_id", user!.id)
         .order("is_primary", { ascending: false });
 
@@ -192,6 +205,29 @@ export const useNotifications = () => {
 
       if (error) throw error;
       return data;
+    },
+  });
+};
+
+// Batch-fetch property details for a list of home IDs (used by provider side)
+export const usePropertyHomesByIds = (homeIds: string[]) => {
+  const uniqueIds = [...new Set(homeIds.filter(Boolean))];
+
+  return useQuery({
+    queryKey: ["property-homes-batch", uniqueIds.sort().join(",")],
+    enabled: uniqueIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_homes")
+        .select(
+          "id, address, nickname, city, state, zip_code, " +
+          "bedrooms, bathrooms, sqft, lot_size_sqft, house_type, flooring, " +
+          "has_basement, has_fireplace, heating_type, roof_type"
+        )
+        .in("id", uniqueIds);
+
+      if (error) throw error;
+      return Object.fromEntries((data || []).map((h) => [h.id, h]));
     },
   });
 };

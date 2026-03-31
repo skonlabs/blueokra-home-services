@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { computeEconomics } from "@/lib/quoteCalculator";
 import { Loader2, Inbox } from "lucide-react";
-import { useProviderJobs, useProviderLeads } from "@/hooks/useBookings";
+import { useProviderJobs, useProviderLeads, usePropertyHomesByIds } from "@/hooks/useBookings";
 import { format, addMonths } from "date-fns";
 import type { ProviderJob, Appointment, TabKey } from "./jobs/types";
 import { TABS, FREQUENCY_PER_YEAR } from "./jobs/types";
@@ -20,6 +20,13 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab || "all");
   const { data: rawJobs, isLoading: jobsLoading } = useProviderJobs();
   const { data: rawLeads, isLoading: leadsLoading } = useProviderLeads();
+
+  // Collect all home_ids from jobs and leads for batch property fetch
+  const allHomeIds = [
+    ...(rawJobs || []).map((j: any) => j.booking_service?.home_id).filter(Boolean),
+    ...(rawLeads || []).map((l: any) => l.booking_service?.home_id).filter(Boolean),
+  ] as string[];
+  const { data: propertyMap } = usePropertyHomesByIds(allHomeIds);
 
   const isLoading = jobsLoading || leadsLoading;
 
@@ -89,6 +96,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
         ? "declined"
         : "in_progress";
 
+      const homeId = svc?.home_id || null;
       return {
         id: `svc-${serviceId}`,
         serviceId,
@@ -107,6 +115,8 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
         expectedEndDate: expectedEnd,
         customizations: svc?.customizations,
         photos: (() => { const p = svc?.customizations as any; return Array.isArray(p?.photos) ? p.photos : []; })(),
+        homeId,
+        propertyDetails: homeId && propertyMap ? (propertyMap[homeId] ?? null) : null,
         appointments: mappedAppts,
         totalAppointments: mappedAppts.length,
         completedAppointments: completedCount,
@@ -139,6 +149,7 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
       } catch { /* */ }
     }
 
+    const homeId = svc?.home_id || null;
     return {
       id: `lead-${l.id}`,
       leadId: l.id,
@@ -158,6 +169,8 @@ const ProviderJobs = ({ initialTab, onCompleteJob, onChat }: ProviderJobsProps) 
       expectedEndDate: expectedEnd,
       customizations: svc?.customizations,
       photos: (() => { const p = svc?.customizations as any; return Array.isArray(p?.photos) ? p.photos : []; })(),
+      homeId,
+      propertyDetails: homeId && propertyMap ? (propertyMap[homeId] ?? null) : null,
       appointments: [],
       totalAppointments: apptCount,
       completedAppointments: 0,
