@@ -159,10 +159,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  /**
+   * ⚠️  SECURITY WARNING — DEV / DEMO AUTH ONLY
+   * -----------------------------------------------
+   * This uses a deterministic email+password derived from the phone number.
+   * Anyone who knows a user's phone can log in as them.
+   *
+   * BEFORE PRODUCTION, replace this with:
+   *   1. Supabase Phone Auth (OTP via Twilio) — supabase.auth.signInWithOtp({ phone })
+   *   2. Or a proper email/password auth flow
+   *
+   * The fake-email pattern exists solely so the app can be demo'd without
+   * configuring an SMS provider.
+   */
   const signInWithPhone = async (phone: string) => {
-    // Use phone as fake email to bypass phone provider requirement
-    const fakeEmail = `${phone.replace(/\D/g, "")}@blueokra.local`;
-    const password = `bo_${phone.replace(/\D/g, "")}_pass`;
+    const sanitized = phone.replace(/\D/g, "");
+    if (sanitized.length < 10 || sanitized.length > 15) {
+      return { error: new Error("Invalid phone number. Must be 10-15 digits.") };
+    }
+
+    const fakeEmail = `${sanitized}@blueokra.local`;
+    const password = `bo_${sanitized}_pass`;
     
     // Try to sign up first, then sign in
     const { error: signUpError } = await supabase.auth.signUp({

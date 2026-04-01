@@ -155,7 +155,7 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
               </div>
               {booking.rating && (
                 <div className="flex items-center gap-1">
-                  {[1,2,3,4,5].map((s) => <Star key={s} className={`w-3.5 h-3.5 ${s <= booking.rating! ? "fill-warm-500 text-warm-500" : "text-muted"}`} />)}
+                  {[1,2,3,4,5].map((s) => <Star key={s} className={`w-3.5 h-3.5 ${s <= booking.rating! ? "fill-accent text-accent" : "text-muted"}`} />)}
                 </div>
               )}
             </motion.div>

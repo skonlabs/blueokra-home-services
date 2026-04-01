@@ -62,8 +62,8 @@ export function getAppointmentStatusInfo(
   if (myStatus === "pending") {
     return {
       label: "Needs your confirmation",
-      color: "text-warm-500",
-      dotColor: "bg-warm-400",
+      color: "text-accent",
+      dotColor: "bg-accent",
     };
   }
 

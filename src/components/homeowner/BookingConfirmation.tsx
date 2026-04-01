@@ -245,7 +245,7 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
         </div>
       </div>
 
-      <div className="bg-okra-50 rounded-2xl p-4 border border-okra-100 text-left">
+      <div className="bg-secondary/5 rounded-2xl p-4 border border-secondary/20 text-left">
         <div className="flex items-start gap-2">
           <Shield className="w-4 h-4 text-secondary mt-0.5 shrink-0" />
           <div>

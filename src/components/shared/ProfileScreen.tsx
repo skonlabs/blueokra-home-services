@@ -42,14 +42,39 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
 
   const handleSaveProfile = async () => {
     if (!user) return;
+
+    // Input validation
+    const trimFirst = firstName.trim();
+    const trimLast = lastName.trim();
+    const trimDisplay = displayName.trim();
+
+    if (trimFirst && trimFirst.length > 50) {
+      setProfileError("First name must be 50 characters or less.");
+      return;
+    }
+    if (trimLast && trimLast.length > 50) {
+      setProfileError("Last name must be 50 characters or less.");
+      return;
+    }
+    if (trimDisplay && trimDisplay.length > 100) {
+      setProfileError("Display name must be 100 characters or less.");
+      return;
+    }
+    // Reject obvious injection patterns
+    const dangerPattern = /[<>{}]/;
+    if (dangerPattern.test(trimFirst) || dangerPattern.test(trimLast) || dangerPattern.test(trimDisplay)) {
+      setProfileError("Names cannot contain special characters like < > { }");
+      return;
+    }
+
     setSavingProfile(true);
     setProfileError("");
     try {
       const { error } = await supabase.from("profiles").upsert({
         user_id: user.id,
-        display_name: displayName.trim() || null,
-        first_name: firstName.trim() || null,
-        last_name: lastName.trim() || null,
+        display_name: trimDisplay || null,
+        first_name: trimFirst || null,
+        last_name: trimLast || null,
       }, { onConflict: "user_id" });
       if (error) throw error;
       await refreshProfile();
