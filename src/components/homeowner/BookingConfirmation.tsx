@@ -41,7 +41,6 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
             frequency: quote.frequency ?? "one-time",
             revenue: quote.low,
             notes: serviceAddress ?? null,
-            home_id: intakeData?.homeId ?? null,
             customizations: intakeData as unknown as import("@/integrations/supabase/types").Json ?? null,
             images: (intakeData?.photos?.length ? intakeData.photos : null) as unknown as import("@/integrations/supabase/types").Json,
           })
