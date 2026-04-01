@@ -230,8 +230,8 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
         )}
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-warm-50 flex items-center justify-center">
-            <DollarSign className="w-4 h-4 text-warm-500" />
+            <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-accent" />
           </div>
           <div>
             <p className="text-sm font-medium text-foreground">
