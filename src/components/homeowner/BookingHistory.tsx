@@ -35,10 +35,10 @@ const mapStatus = (status: string, hasProvider: boolean, allApptsCompleted: bool
 };
 
 const statusColors: Record<BookingStatus, string> = {
-  pending: "bg-amber-50 text-amber-600",
-  upcoming: "bg-blue-50 text-blue-500",
-  in_progress: "bg-warm-50 text-warm-500",
-  completed: "bg-okra-50 text-okra-600",
+  pending: "bg-accent/10 text-accent",
+  upcoming: "bg-primary/10 text-primary",
+  in_progress: "bg-secondary/10 text-secondary",
+  completed: "bg-success/10 text-success",
   disputed: "bg-destructive/10 text-destructive",
 };
 
