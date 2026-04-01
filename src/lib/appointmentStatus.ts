@@ -27,7 +27,7 @@ export function getAppointmentStatusInfo(
 ): AppointmentStatusInfo {
   // Completed
   if (appointmentStatus === "completed") {
-    return { label: "Completed", color: "text-okra-600", dotColor: "bg-okra-500" };
+    return { label: "Completed", color: "text-success", dotColor: "bg-success" };
   }
 
   // Both confirmed
