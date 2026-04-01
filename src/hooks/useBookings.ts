@@ -41,7 +41,7 @@ export const useProviderLeads = () => {
         .select(`
           id, service_id, lead_status, created_at,
           booking_service (
-            id, service_type, package_name, customer_user_id, revenue, frequency, notes, customizations, home_id, created_at
+            id, service_type, package_name, customer_user_id, revenue, frequency, notes, customizations, created_at
           )
         `)
         .eq("provider_user_id", user!.id)
