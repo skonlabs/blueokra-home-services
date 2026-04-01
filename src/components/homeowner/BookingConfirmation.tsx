@@ -177,8 +177,8 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
       <div className="bg-card rounded-2xl border border-border p-4 text-left space-y-3">
         {displayDates.length > 0 && (
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-full bg-okra-50 flex items-center justify-center shrink-0">
-              <Calendar className="w-4 h-4 text-okra-500" />
+            <div className="w-9 h-9 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+              <Calendar className="w-4 h-4 text-secondary" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">
