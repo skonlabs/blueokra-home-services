@@ -13,7 +13,7 @@ export const useBookings = () => {
         .from("booking_service")
         .select(`
           id, service_type, package_name, booking_status, created_at,
-          frequency, notes, revenue, customizations, completed_at, home_id,
+          frequency, notes, revenue, customizations, completed_at,
           booking_appointment (
             id, appointment_date, appointment_status,
             provider_user_id, customer_status, provider_status
