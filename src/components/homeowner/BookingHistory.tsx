@@ -35,10 +35,10 @@ const mapStatus = (status: string, hasProvider: boolean, allApptsCompleted: bool
 };
 
 const statusColors: Record<BookingStatus, string> = {
-  pending: "bg-amber-50 text-amber-600",
-  upcoming: "bg-blue-50 text-blue-500",
-  in_progress: "bg-warm-50 text-warm-500",
-  completed: "bg-okra-50 text-okra-600",
+  pending: "bg-accent/10 text-accent",
+  upcoming: "bg-primary/10 text-primary",
+  in_progress: "bg-secondary/10 text-secondary",
+  completed: "bg-success/10 text-success",
   disputed: "bg-destructive/10 text-destructive",
 };
 
@@ -155,7 +155,7 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
               </div>
               {booking.rating && (
                 <div className="flex items-center gap-1">
-                  {[1,2,3,4,5].map((s) => <Star key={s} className={`w-3.5 h-3.5 ${s <= booking.rating! ? "fill-warm-500 text-warm-500" : "text-muted"}`} />)}
+                  {[1,2,3,4,5].map((s) => <Star key={s} className={`w-3.5 h-3.5 ${s <= booking.rating! ? "fill-accent text-accent" : "text-muted"}`} />)}
                 </div>
               )}
             </motion.div>
@@ -272,7 +272,29 @@ const BookingHistory = forwardRef<HTMLDivElement, BookingHistoryProps>(({ onPaym
                   )}
                 </div>
                 {selectedBooking.status === "completed" && (
-                  <button onClick={() => alert("Receipt saved to device")} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <button onClick={() => {
+                    // Generate a simple text receipt and trigger download
+                    const receiptContent = [
+                      `=== BlueOkra Receipt ===`,
+                      `Booking: ${selectedBooking.id.slice(0, 8).toUpperCase()}`,
+                      `Service: ${selectedBooking.service}`,
+                      `Provider: ${selectedBooking.provider}`,
+                      `Date: ${selectedBooking.date}`,
+                      `Amount: $${selectedBooking.price}`,
+                      `Frequency: ${selectedRaw?.frequency || "One-time"}`,
+                      `Status: ${selectedBooking.status}`,
+                      ``,
+                      `Thank you for using BlueOkra!`,
+                      `support@blueokra.com`,
+                    ].join("\n");
+                    const blob = new Blob([receiptContent], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `blueokra-receipt-${selectedBooking.id.slice(0, 8)}.txt`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                     <Download className="w-3 h-3" /> Download Receipt
                   </button>
                 )}

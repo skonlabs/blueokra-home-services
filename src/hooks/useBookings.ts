@@ -1,9 +1,49 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
+// ---------------------------------------------------------------------------
+// Real-time helper: subscribe to a table and invalidate a React Query key
+// ---------------------------------------------------------------------------
+function useRealtimeInvalidation(
+  table: string,
+  filterColumn: string,
+  filterValue: string | undefined,
+  queryKey: string[],
+) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!filterValue) return;
+
+    const channel = supabase
+      .channel(`${table}-${filterValue}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table, filter: `${filterColumn}=eq.${filterValue}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [table, filterColumn, filterValue, queryClient]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+// ---------------------------------------------------------------------------
+// Homeowner bookings
+// ---------------------------------------------------------------------------
 export const useBookings = () => {
   const { user } = useAuth();
+
+  // Real-time: auto-refresh when booking data changes
+  useRealtimeInvalidation("booking_service", "customer_user_id", user?.id, ["bookings", user?.id ?? ""]);
+  useRealtimeInvalidation("booking_appointment", "customer_user_id", user?.id, ["bookings", user?.id ?? ""]);
 
   return useQuery({
     queryKey: ["bookings", user?.id],
@@ -24,13 +64,43 @@ export const useBookings = () => {
         .limit(50);
 
       if (error) throw error;
-      return data;
+
+      // Batch-fetch provider profiles for all appointments (fixes N+1 / missing provider info)
+      const providerIds = [
+        ...new Set(
+          (data || [])
+            .flatMap((b: any) => (b.booking_appointment || []).map((a: any) => a.provider_user_id))
+            .filter(Boolean) as string[]
+        ),
+      ];
+
+      let providerProfileMap: Record<string, any> = {};
+      if (providerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, first_name, last_name, profile_photo_url, phone, address, city, state")
+          .in("user_id", providerIds);
+        providerProfileMap = Object.fromEntries(
+          (profiles || []).map((p) => [p.user_id, p])
+        );
+      }
+
+      // Attach provider profiles to each booking
+      return (data || []).map((b: any) => ({
+        ...b,
+        provider_profiles: providerProfileMap,
+      }));
     },
   });
 };
 
+// ---------------------------------------------------------------------------
+// Provider leads
+// ---------------------------------------------------------------------------
 export const useProviderLeads = () => {
   const { user } = useAuth();
+
+  useRealtimeInvalidation("booking_lead", "provider_user_id", user?.id, ["provider-leads", user?.id ?? ""]);
 
   return useQuery({
     queryKey: ["provider-leads", user?.id],
@@ -79,8 +149,13 @@ export const useProviderLeads = () => {
   });
 };
 
+// ---------------------------------------------------------------------------
+// Provider jobs (appointments)
+// ---------------------------------------------------------------------------
 export const useProviderJobs = () => {
   const { user } = useAuth();
+
+  useRealtimeInvalidation("booking_appointment", "provider_user_id", user?.id, ["provider-jobs", user?.id ?? ""]);
 
   return useQuery({
     queryKey: ["provider-jobs", user?.id],
@@ -101,11 +176,38 @@ export const useProviderJobs = () => {
         .limit(100);
 
       if (error) throw error;
-      return data;
+
+      // Batch-fetch customer profiles (fixes N+1)
+      const customerIds = [
+        ...new Set(
+          (data || [])
+            .map((j: any) => j.customer_user_id || j.booking_service?.customer_user_id)
+            .filter(Boolean) as string[]
+        ),
+      ];
+
+      let customerProfileMap: Record<string, any> = {};
+      if (customerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, first_name, last_name, address, city, state, profile_photo_url, phone")
+          .in("user_id", customerIds);
+        customerProfileMap = Object.fromEntries(
+          (profiles || []).map((p) => [p.user_id, p])
+        );
+      }
+
+      return (data || []).map((j: any) => ({
+        ...j,
+        customer_profile: customerProfileMap[j.customer_user_id || j.booking_service?.customer_user_id] || null,
+      }));
     },
   });
 };
 
+// ---------------------------------------------------------------------------
+// Provider earnings
+// ---------------------------------------------------------------------------
 export const useProviderEarnings = () => {
   const { user } = useAuth();
 
@@ -126,6 +228,9 @@ export const useProviderEarnings = () => {
   });
 };
 
+// ---------------------------------------------------------------------------
+// User homes
+// ---------------------------------------------------------------------------
 export const useUserHomes = () => {
   const { user } = useAuth();
 
@@ -145,6 +250,9 @@ export const useUserHomes = () => {
   });
 };
 
+// ---------------------------------------------------------------------------
+// Property appliances
+// ---------------------------------------------------------------------------
 export const usePropertyAppliances = (homeId?: string) => {
   const { user } = useAuth();
 
@@ -165,6 +273,9 @@ export const usePropertyAppliances = (homeId?: string) => {
   });
 };
 
+// ---------------------------------------------------------------------------
+// Property warranties
+// ---------------------------------------------------------------------------
 export const usePropertyWarranties = (homeId?: string) => {
   const { user } = useAuth();
 
@@ -185,8 +296,13 @@ export const usePropertyWarranties = (homeId?: string) => {
   });
 };
 
+// ---------------------------------------------------------------------------
+// Notifications (with real-time)
+// ---------------------------------------------------------------------------
 export const useNotifications = () => {
   const { user } = useAuth();
+
+  useRealtimeInvalidation("booking_notification", "recipient_user_id", user?.id, ["notifications", user?.id ?? ""]);
 
   return useQuery({
     queryKey: ["notifications", user?.id],
@@ -205,7 +321,9 @@ export const useNotifications = () => {
   });
 };
 
-// Batch-fetch property details for a list of home IDs (used by provider side)
+// ---------------------------------------------------------------------------
+// Batch property homes (used by provider side)
+// ---------------------------------------------------------------------------
 export const usePropertyHomesByIds = (homeIds: string[]) => {
   const uniqueIds = [...new Set(homeIds.filter(Boolean))];
 

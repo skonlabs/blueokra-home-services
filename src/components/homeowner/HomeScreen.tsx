@@ -152,15 +152,14 @@ const HomeScreen = ({
         <span className="text-sm text-muted-foreground">What do you need help with?</span>
       </button>
 
-
-      {/* Services */}
+      {/* Services — shown first below search */}
       <div className="mb-6">
         <h2 className="font-display text-lg font-semibold text-foreground mb-3">Services</h2>
         <ServiceGrid onSelect={onServiceSelect} />
       </div>
 
       {/* Trust badge */}
-      <div className="flex items-center gap-2 bg-okra-50 rounded-2xl p-3 mb-6 border border-okra-100">
+      <div className="flex items-center gap-2 bg-secondary/5 rounded-2xl p-3 mb-6 border border-secondary/20">
         <Shield className="w-5 h-5 text-secondary shrink-0" />
         <div>
           <p className="text-xs font-medium text-foreground">Pay-after-service guarantee</p>

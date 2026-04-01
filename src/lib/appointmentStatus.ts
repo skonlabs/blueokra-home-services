@@ -27,7 +27,7 @@ export function getAppointmentStatusInfo(
 ): AppointmentStatusInfo {
   // Completed
   if (appointmentStatus === "completed") {
-    return { label: "Completed", color: "text-okra-600", dotColor: "bg-okra-500" };
+    return { label: "Completed", color: "text-success", dotColor: "bg-success" };
   }
 
   // Both confirmed
@@ -53,8 +53,8 @@ export function getAppointmentStatusInfo(
   if (myStatus === "pending" && otherStatus === "confirmed") {
     return {
       label: "Pending your confirmation",
-      color: "text-warm-500",
-      dotColor: "bg-warm-400",
+      color: "text-accent",
+      dotColor: "bg-accent",
     };
   }
 
@@ -62,8 +62,8 @@ export function getAppointmentStatusInfo(
   if (myStatus === "pending") {
     return {
       label: "Needs your confirmation",
-      color: "text-warm-500",
-      dotColor: "bg-warm-400",
+      color: "text-accent",
+      dotColor: "bg-accent",
     };
   }
 

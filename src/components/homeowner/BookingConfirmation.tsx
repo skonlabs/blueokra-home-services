@@ -41,7 +41,6 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
             frequency: quote.frequency ?? "one-time",
             revenue: quote.low,
             notes: serviceAddress ?? null,
-            home_id: intakeData?.homeId ?? null,
             customizations: intakeData as unknown as import("@/integrations/supabase/types").Json ?? null,
             images: (intakeData?.photos?.length ? intakeData.photos : null) as unknown as import("@/integrations/supabase/types").Json,
           })
@@ -178,8 +177,8 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
       <div className="bg-card rounded-2xl border border-border p-4 text-left space-y-3">
         {displayDates.length > 0 && (
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-full bg-okra-50 flex items-center justify-center shrink-0">
-              <Calendar className="w-4 h-4 text-okra-500" />
+            <div className="w-9 h-9 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+              <Calendar className="w-4 h-4 text-secondary" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">
@@ -221,8 +220,8 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
 
         {serviceAddress && (
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center">
-              <MapPin className="w-4 h-4 text-blue-500" />
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <MapPin className="w-4 h-4 text-primary" />
             </div>
             <div>
               <p className="text-sm font-medium text-foreground">{serviceAddress}</p>
@@ -231,8 +230,8 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
         )}
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-warm-50 flex items-center justify-center">
-            <DollarSign className="w-4 h-4 text-warm-500" />
+            <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-accent" />
           </div>
           <div>
             <p className="text-sm font-medium text-foreground">
@@ -246,7 +245,7 @@ const BookingConfirmation = ({ quote, serviceAddress, scheduleData, intakeData, 
         </div>
       </div>
 
-      <div className="bg-okra-50 rounded-2xl p-4 border border-okra-100 text-left">
+      <div className="bg-secondary/5 rounded-2xl p-4 border border-secondary/20 text-left">
         <div className="flex items-start gap-2">
           <Shield className="w-4 h-4 text-secondary mt-0.5 shrink-0" />
           <div>

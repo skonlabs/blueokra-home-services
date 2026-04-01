@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Inbox, Clock, MapPin, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon, DollarSign, Check, QrCode } from "lucide-react";
+import { Loader2, Inbox, Clock, CalendarClock, ThumbsUp, MessageSquare, User as UserIcon, Check, QrCode, XCircle } from "lucide-react";
 import { useHomeownerAppointments } from "@/hooks/useHomeownerAppointments";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,8 @@ const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
   const [proposalApptId, setProposalApptId] = useState<string | null>(null);
   const [proposalDate, setProposalDate] = useState<string>("");
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
   const tabs: { key: ScheduleTab; label: string }[] = [
     { key: "all", label: "All" },
@@ -78,6 +80,28 @@ const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
       toast({ title: "Failed", description: err.message, variant: "destructive" });
     } finally {
       setAccepting(null);
+    }
+  };
+
+  const handleCancelAppointment = async (appointmentId: string) => {
+    if (!user) return;
+    setCancelling(appointmentId);
+    try {
+      const { error } = await supabase.rpc("update_appointment_status", {
+        _user_id: user.id,
+        _appointment_id: appointmentId,
+        _status: "cancelled",
+        _cancellation_reason: "Cancelled by homeowner",
+      });
+      if (error) throw error;
+      toast({ title: "Appointment cancelled", description: "Your appointment has been cancelled." });
+      queryClient.invalidateQueries({ queryKey: ["homeowner-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    } catch (err: any) {
+      toast({ title: "Failed to cancel", description: err.message, variant: "destructive" });
+    } finally {
+      setCancelling(null);
+      setConfirmCancelId(null);
     }
   };
 
@@ -129,7 +153,6 @@ const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
       ) : (
         <div className="space-y-2">
           {filtered.map((appt, i) => {
-            // Use shared status logic
             const statusInfo = getAppointmentStatusInfo(
               appt.appointment_status,
               appt.provider_status,
@@ -144,7 +167,8 @@ const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
             const provider = appt.providerProfile;
             const amount = Number(appt.customerAmount) || 0;
             const isCompleted = appt.appointment_status === "completed";
-            const isActive = !isCompleted && !["declined", "cancelled"].includes(appt.appointment_status);
+            const isCancelled = ["declined", "cancelled"].includes(appt.appointment_status);
+            const isActive = !isCompleted && !isCancelled;
             const showDone = canCompleteAppointment(
               appt.appointment_date,
               appt.appointment_status,
@@ -249,13 +273,47 @@ const HomeownerSchedule = ({ onChat, onComplete }: HomeownerScheduleProps) => {
                         <Clock className="w-3 h-3" /> Done
                       </span>
                     ) : null}
+                    {/* Cancel button */}
+                    {confirmCancelId === appt.id ? (
+                      <div className="flex items-center gap-1 ml-auto">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleCancelAppointment(appt.id); }}
+                          disabled={cancelling === appt.id}
+                          className="h-7 px-2 bg-destructive text-destructive-foreground text-[10px] font-medium rounded-lg flex items-center gap-1 active:scale-[0.95] transition-transform"
+                        >
+                          {cancelling === appt.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                          Yes, cancel
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); }}
+                          className="h-7 px-2 bg-muted text-muted-foreground text-[10px] font-medium rounded-lg active:scale-[0.95] transition-transform"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(appt.id); }}
+                        className="w-7 h-7 bg-destructive/10 rounded-lg flex items-center justify-center active:scale-[0.95] transition-transform ml-auto"
+                        title="Cancel appointment"
+                      >
+                        <XCircle className="w-3.5 h-3.5 text-destructive" />
+                      </button>
+                    )}
                   </div>
                 )}
 
                 {isCompleted && (
-                  <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border text-okra-600">
+                  <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border text-success">
                     <Check className="w-3.5 h-3.5" />
                     <span className="text-[10px] font-medium">Completed</span>
+                  </div>
+                )}
+
+                {isCancelled && (
+                  <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border text-destructive">
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-medium">Cancelled</span>
                   </div>
                 )}
               </motion.div>
