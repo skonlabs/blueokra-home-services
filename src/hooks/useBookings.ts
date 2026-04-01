@@ -13,7 +13,7 @@ export const useBookings = () => {
         .from("booking_service")
         .select(`
           id, service_type, package_name, booking_status, created_at,
-          frequency, notes, revenue, customizations, completed_at, home_id,
+          frequency, notes, revenue, customizations, completed_at,
           booking_appointment (
             id, appointment_date, appointment_status,
             provider_user_id, customer_status, provider_status
@@ -41,7 +41,7 @@ export const useProviderLeads = () => {
         .select(`
           id, service_id, lead_status, created_at,
           booking_service (
-            id, service_type, package_name, customer_user_id, revenue, frequency, notes, customizations, home_id, created_at
+            id, service_type, package_name, customer_user_id, revenue, frequency, notes, customizations, created_at
           )
         `)
         .eq("provider_user_id", user!.id)
@@ -93,7 +93,7 @@ export const useProviderJobs = () => {
           provider_user_id, customer_status, provider_status, notes,
           service_id,
           booking_service!inner (
-            id, service_type, package_name, customer_user_id, revenue, notes, customizations, frequency, home_id
+            id, service_type, package_name, customer_user_id, revenue, notes, customizations, frequency
           )
         `)
         .eq("provider_user_id", user!.id)
@@ -135,16 +135,12 @@ export const useUserHomes = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_homes")
-        .select(
-          "id, user_id, address, nickname, city, state, zip_code, is_primary, created_at, " +
-          "bedrooms, bathrooms, sqft, lot_size_sqft, house_type, flooring, " +
-          "has_basement, has_fireplace, heating_type, parcel_number, roof_type"
-        )
+        .select("*")
         .eq("user_id", user!.id)
         .order("is_primary", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 };
@@ -219,15 +215,11 @@ export const usePropertyHomesByIds = (homeIds: string[]) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_homes")
-        .select(
-          "id, address, nickname, city, state, zip_code, " +
-          "bedrooms, bathrooms, sqft, lot_size_sqft, house_type, flooring, " +
-          "has_basement, has_fireplace, heating_type, roof_type"
-        )
+        .select("*")
         .in("id", uniqueIds);
 
       if (error) throw error;
-      return Object.fromEntries((data || []).map((h) => [h.id, h]));
+      return Object.fromEntries((data as any[] || []).map((h: any) => [h.id, h]));
     },
   });
 };

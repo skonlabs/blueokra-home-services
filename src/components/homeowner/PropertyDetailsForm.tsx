@@ -207,7 +207,7 @@ const PropertyDetailsForm = ({ homeId, address, initialData, onSaved, onCancel }
           has_basement:  hasBasement,
           has_fireplace: hasFireplace,
           parcel_number: parcelNumber || null,
-        })
+        } as any)
         .eq("id", homeId)
         .eq("user_id", user.id);
 

@@ -153,6 +153,12 @@ const HomeScreen = ({
       </button>
 
 
+      {/* Services */}
+      <div className="mb-6">
+        <h2 className="font-display text-lg font-semibold text-foreground mb-3">Services</h2>
+        <ServiceGrid onSelect={onServiceSelect} />
+      </div>
+
       {/* Trust badge */}
       <div className="flex items-center gap-2 bg-okra-50 rounded-2xl p-3 mb-6 border border-okra-100">
         <Shield className="w-5 h-5 text-secondary shrink-0" />
@@ -193,12 +199,6 @@ const HomeScreen = ({
           </div>
         </div>
       )}
-
-      {/* Services */}
-      <div className="mb-6">
-        <h2 className="font-display text-lg font-semibold text-foreground mb-3">Services</h2>
-        <ServiceGrid onSelect={onServiceSelect} />
-      </div>
 
       {/* Seasonal Picks */}
       <div className="mb-6">
