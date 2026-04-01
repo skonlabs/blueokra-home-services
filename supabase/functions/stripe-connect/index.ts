@@ -48,7 +48,7 @@ serve(async (req) => {
       // Search for existing Connect account by metadata
       const existingAccounts = await stripe.accounts.list({ limit: 100 });
       let account = existingAccounts.data.find(
-        (a) => a.metadata?.blueokra_user_id === userId
+        (a: any) => a.metadata?.blueokra_user_id === userId
       );
 
       if (!account) {
