@@ -233,7 +233,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                               <p className="text-xs text-muted-foreground">{a}</p>
                             </div>
                           ))}
-                          <div className="bg-okra-50 rounded-xl p-3 border border-okra-100">
+                          <div className="bg-secondary/5 rounded-xl p-3 border border-secondary/20">
                             <p className="text-xs font-medium text-foreground mb-1">Still need help?</p>
                             <p className="text-xs text-muted-foreground">Email us at <span className="text-primary font-medium">support@blueokra.com</span></p>
                           </div>
