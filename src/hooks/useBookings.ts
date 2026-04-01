@@ -135,16 +135,12 @@ export const useUserHomes = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_homes")
-        .select(
-          "id, user_id, address, nickname, city, state, zip_code, is_primary, created_at, " +
-          "bedrooms, bathrooms, sqft, lot_size_sqft, house_type, flooring, " +
-          "has_basement, has_fireplace, heating_type, parcel_number, roof_type"
-        )
+        .select("*")
         .eq("user_id", user!.id)
         .order("is_primary", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 };
