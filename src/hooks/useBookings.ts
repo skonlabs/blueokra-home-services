@@ -215,15 +215,11 @@ export const usePropertyHomesByIds = (homeIds: string[]) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_homes")
-        .select(
-          "id, address, nickname, city, state, zip_code, " +
-          "bedrooms, bathrooms, sqft, lot_size_sqft, house_type, flooring, " +
-          "has_basement, has_fireplace, heating_type, roof_type"
-        )
+        .select("*")
         .in("id", uniqueIds);
 
       if (error) throw error;
-      return Object.fromEntries((data || []).map((h) => [h.id, h]));
+      return Object.fromEntries((data as any[] || []).map((h: any) => [h.id, h]));
     },
   });
 };
