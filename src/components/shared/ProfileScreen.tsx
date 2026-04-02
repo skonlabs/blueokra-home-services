@@ -92,7 +92,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const inputCls = "w-full bg-muted rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent text-foreground";
 
   const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }>; hideFor?: "provider" | "homeowner" }[] = [
-    { key: "account", label: "Account Settings", icon: User },
+    { key: "account", label: "Profile", icon: User },
     { key: "payment", label: "Payment Methods", icon: CreditCard, hideFor: "homeowner" },
     { key: "properties", label: "My Properties", icon: Home, hideFor: "provider" },
     { key: "notifications", label: "Notifications", icon: Bell },

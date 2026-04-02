@@ -166,7 +166,7 @@ const Index = () => {
       case "payments":
         return { title: "Payments" };
       case "profile":
-        return { title: "Profile" };
+        return { title: "Settings" };
       case "chat":
         return { title: "Messages" };
       case "provider-home":
@@ -182,7 +182,7 @@ const Index = () => {
       case "provider-service-history":
         return { title: "Service History", onBack: () => navigate("provider-earnings") };
       case "provider-profile":
-        return { title: "Profile" };
+        return { title: "Settings" };
       case "provider-chat":
         return { title: "Messages" };
       default:
