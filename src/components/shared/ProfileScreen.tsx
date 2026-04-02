@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import PropertyProfile from "@/components/homeowner/PropertyProfile";
 
 interface ProfileScreenProps {
   isProvider?: boolean;
@@ -299,6 +300,14 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
           );
         })}
       </div>
+
+      {/* My Properties — homeowners only */}
+      {!isProvider && (
+        <div className="space-y-2">
+          <h3 className="font-display text-sm font-semibold text-foreground">My Properties</h3>
+          <PropertyProfile />
+        </div>
+      )}
 
       <button
         onClick={signOut}
