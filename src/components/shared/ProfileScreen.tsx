@@ -9,7 +9,7 @@ interface ProfileScreenProps {
   isProvider?: boolean;
 }
 
-type Section = "account" | "payment" | "notifications" | "help" | "privacy" | "terms" | null;
+type Section = "account" | "payment" | "properties" | "notifications" | "help" | "privacy" | "terms" | null;
 
 const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
