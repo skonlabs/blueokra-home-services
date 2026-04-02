@@ -280,7 +280,13 @@ const PropertyDetailsForm = ({ homeId, address, initialData, onSaved, onCancel }
 
           {/* Satellite */}
           {satUrl && !satFailed ? (
-            <div className="relative border-l border-border">
+            <div
+              className="relative border-l border-border cursor-pointer"
+              onClick={() => {
+                setLightboxUrl(satUrl.replace("size=600x400", "size=1200x800"));
+                setLightboxLabel("Satellite");
+              }}
+            >
               <img
                 src={satUrl}
                 alt="Satellite view"
