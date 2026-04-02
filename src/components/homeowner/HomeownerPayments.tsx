@@ -157,8 +157,8 @@ const HomeownerPayments = () => {
         <h3 className="font-semibold text-sm text-foreground mb-2">How Payments Work</h3>
         <div className="space-y-1.5 text-xs text-muted-foreground">
           <p>1. You book a service and receive a quote</p>
-          <p>2. After service is completed and verified, you'll be charged</p>
-          <p>3. Payment is processed via your saved payment method</p>
+          <p>2. After service is completed and verified, you'll pay via Venmo</p>
+          <p>3. Payment goes directly to your service provider</p>
         </div>
       </div>
     </div>
