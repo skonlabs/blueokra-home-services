@@ -122,7 +122,7 @@ let googleMapsPromise: Promise<void> | null = null;
 
 function loadGoogleMaps(): Promise<void> {
   if (!GMAPS_KEY) return Promise.reject("No API key");
-  if (window.google?.maps?.places) return Promise.resolve();
+  if ((window as any).google?.maps?.places) return Promise.resolve();
   if (googleMapsPromise) return googleMapsPromise;
 
   googleMapsPromise = new Promise((resolve, reject) => {
