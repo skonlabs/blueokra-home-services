@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Home, Plus, Wrench, Calendar, Thermometer, Shield,
-  Loader2, X, Check, Trash2, AlertCircle, Pencil, Camera, Map,
+  Loader2, X, Check, Trash2, AlertCircle, Pencil, Camera, Map, ChevronRight,
 } from "lucide-react";
 import {
   useUserHomes,
@@ -412,6 +412,26 @@ const PropertyProfile = () => {
                 <p className="text-sm font-medium text-foreground">{primaryHome.zip_code || "—"}</p>
               </div>
             </div>
+
+            {/* Prompt to add details if missing */}
+            {primaryHome.bedrooms == null && primaryHome.bathrooms == null && primaryHome.sqft == null && !primaryHome.house_type && (
+              <button
+                onClick={() => {
+                  setShowDetailsFormForId(primaryHome.id);
+                  setShowDetailsFormAddress(primaryHome.address);
+                }}
+                className="w-full mt-3 flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-xl p-3 text-left hover:bg-primary/10 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Plus className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Add property details</p>
+                  <p className="text-xs text-muted-foreground">Bedrooms, bathrooms, sqft, and more</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              </button>
+            )}
 
             {/* Property stats row */}
             {(primaryHome.bedrooms != null || primaryHome.bathrooms != null || primaryHome.sqft != null || primaryHome.house_type) && (
