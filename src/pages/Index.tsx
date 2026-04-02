@@ -182,7 +182,7 @@ const Index = () => {
       case "provider-service-history":
         return { title: "Service History", onBack: () => navigate("provider-earnings") };
       case "provider-profile":
-        return { title: "Profile" };
+        return { title: "Settings" };
       case "provider-chat":
         return { title: "Messages" };
       default:
