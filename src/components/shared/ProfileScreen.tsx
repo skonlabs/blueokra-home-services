@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2 } from "lucide-react";
+import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2, Home } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import PropertyProfile from "@/components/homeowner/PropertyProfile";
@@ -9,7 +9,7 @@ interface ProfileScreenProps {
   isProvider?: boolean;
 }
 
-type Section = "account" | "payment" | "notifications" | "help" | "privacy" | "terms" | null;
+type Section = "account" | "payment" | "properties" | "notifications" | "help" | "privacy" | "terms" | null;
 
 const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
@@ -91,9 +91,10 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
 
   const inputCls = "w-full bg-muted rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent text-foreground";
 
-  const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }>; hideFor?: "provider" | "homeowner" }[] = [
     { key: "account", label: "Account Settings", icon: User },
     { key: "payment", label: "Payment Methods", icon: CreditCard },
+    { key: "properties", label: "My Properties", icon: Home, hideFor: "provider" },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "help", label: "Help & Support", icon: HelpCircle },
     { key: "privacy", label: "Privacy Policy", icon: Lock },
@@ -118,7 +119,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
 
       {/* Menu items */}
       <div className="space-y-2">
-        {menuItems.map((item) => {
+        {menuItems.filter(item => !(item.hideFor === "provider" && isProvider)).map((item) => {
           const isOpen = activeSection === item.key;
           return (
             <div key={item.key} className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -292,6 +293,11 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                         </div>
                       )}
 
+                      {/* MY PROPERTIES */}
+                      {item.key === "properties" && (
+                        <PropertyProfile />
+                      )}
+
                     </div>
                   </motion.div>
                 )}
@@ -301,13 +307,6 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
         })}
       </div>
 
-      {/* My Properties — homeowners only */}
-      {!isProvider && (
-        <div className="space-y-2">
-          <h3 className="font-display text-sm font-semibold text-foreground">My Properties</h3>
-          <PropertyProfile />
-        </div>
-      )}
 
       <button
         onClick={signOut}
