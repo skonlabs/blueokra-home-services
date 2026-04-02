@@ -760,6 +760,32 @@ const PropertyProfile = () => {
           </div>
         </div>
       )}
+      {/* Lightbox overlay */}
+      {lightboxUrl && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 flex items-center justify-center"
+            onClick={() => setLightboxUrl(null)}
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          {lightboxLabel && (
+            <span className="absolute top-5 left-4 text-white/80 text-sm font-medium">{lightboxLabel}</span>
+          )}
+          <img
+            src={lightboxUrl}
+            alt={lightboxLabel}
+            className="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </motion.div>
+      )}
     </div>
   );
 };
