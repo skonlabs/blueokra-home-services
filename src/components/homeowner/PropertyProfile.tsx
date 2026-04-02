@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Home, Plus, Wrench, Calendar, Thermometer, Shield,
-  Loader2, X, Check, Trash2, AlertCircle, Pencil, Camera, Map,
+  Loader2, X, Check, Trash2, AlertCircle, Pencil, Camera, Map, ChevronRight,
 } from "lucide-react";
 import {
   useUserHomes,
