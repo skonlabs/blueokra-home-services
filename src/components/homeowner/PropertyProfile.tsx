@@ -100,6 +100,10 @@ const PropertyProfile = () => {
   const [streetFailed, setStreetFailed] = useState(false);
   const [satFailed, setSatFailed] = useState(false);
 
+  // Lightbox state for zoomed map images
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxLabel, setLightboxLabel] = useState("");
+
   const completedBookings = (bookings || [])
     .filter((b) => b.booking_status === "completed")
     .slice(0, 10);
@@ -296,7 +300,14 @@ const PropertyProfile = () => {
             <div className="grid grid-cols-2 border-b border-border">
               {/* Street View */}
               {svUrl && !streetFailed ? (
-                <div className="relative">
+                <div
+                  className="relative cursor-pointer"
+                  onClick={() => {
+                    const hiRes = svUrl.replace("size=600x400", "size=1200x800");
+                    setLightboxUrl(hiRes);
+                    setLightboxLabel("Street View");
+                  }}
+                >
                   <img
                     src={svUrl}
                     alt="Street view"
@@ -317,7 +328,14 @@ const PropertyProfile = () => {
 
               {/* Satellite */}
               {satUrl && !satFailed ? (
-                <div className="relative border-l border-border">
+                <div
+                  className="relative border-l border-border cursor-pointer"
+                  onClick={() => {
+                    const hiRes = satUrl.replace("size=600x400", "size=1200x800");
+                    setLightboxUrl(hiRes);
+                    setLightboxLabel("Satellite");
+                  }}
+                >
                   <img
                     src={satUrl}
                     alt="Satellite view"
@@ -741,6 +759,32 @@ const PropertyProfile = () => {
             <p className="text-xs text-muted-foreground">All warranties are stored and tracked automatically</p>
           </div>
         </div>
+      )}
+      {/* Lightbox overlay */}
+      {lightboxUrl && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 flex items-center justify-center"
+            onClick={() => setLightboxUrl(null)}
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          {lightboxLabel && (
+            <span className="absolute top-5 left-4 text-white/80 text-sm font-medium">{lightboxLabel}</span>
+          )}
+          <img
+            src={lightboxUrl}
+            alt={lightboxLabel}
+            className="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </motion.div>
       )}
     </div>
   );

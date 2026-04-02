@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Minus, Plus, X, Check, Loader2, MapPin, Map, Camera } from "lucide-react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -185,6 +186,10 @@ const PropertyDetailsForm = ({ homeId, address, initialData, onSaved, onCancel }
   const [streetFailed, setStreetFailed] = useState(false);
   const [satFailed,    setSatFailed]    = useState(false);
 
+  // Lightbox
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxLabel, setLightboxLabel] = useState("");
+
   const svUrl  = streetViewUrl(address);
   const satUrl = satelliteUrl(address);
 
@@ -248,7 +253,13 @@ const PropertyDetailsForm = ({ homeId, address, initialData, onSaved, onCancel }
         <div className="grid grid-cols-2 gap-0 border-b border-border">
           {/* Street View */}
           {svUrl && !streetFailed ? (
-            <div className="relative">
+            <div
+              className="relative cursor-pointer"
+              onClick={() => {
+                setLightboxUrl(svUrl.replace("size=600x400", "size=1200x800"));
+                setLightboxLabel("Street View");
+              }}
+            >
               <img
                 src={svUrl}
                 alt="Street view"
@@ -269,7 +280,13 @@ const PropertyDetailsForm = ({ homeId, address, initialData, onSaved, onCancel }
 
           {/* Satellite */}
           {satUrl && !satFailed ? (
-            <div className="relative border-l border-border">
+            <div
+              className="relative border-l border-border cursor-pointer"
+              onClick={() => {
+                setLightboxUrl(satUrl.replace("size=600x400", "size=1200x800"));
+                setLightboxLabel("Satellite");
+              }}
+            >
               <img
                 src={satUrl}
                 alt="Satellite view"
@@ -429,6 +446,32 @@ const PropertyDetailsForm = ({ homeId, address, initialData, onSaved, onCancel }
           </button>
         </div>
       </div>
+      {/* Lightbox overlay */}
+      {lightboxUrl && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 flex items-center justify-center"
+            onClick={() => setLightboxUrl(null)}
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          {lightboxLabel && (
+            <span className="absolute top-5 left-4 text-white/80 text-sm font-medium">{lightboxLabel}</span>
+          )}
+          <img
+            src={lightboxUrl}
+            alt={lightboxLabel}
+            className="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </motion.div>
+      )}
     </div>
   );
 };
