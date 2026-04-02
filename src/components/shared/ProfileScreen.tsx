@@ -119,7 +119,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
 
       {/* Menu items */}
       <div className="space-y-2">
-        {menuItems.map((item) => {
+        {menuItems.filter(item => !(item.hideFor === "provider" && isProvider)).map((item) => {
           const isOpen = activeSection === item.key;
           return (
             <div key={item.key} className="bg-card border border-border rounded-2xl overflow-hidden">
