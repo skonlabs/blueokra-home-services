@@ -13,7 +13,7 @@ const BottomNav = forwardRef<HTMLDivElement, BottomNavProps>(({ active, onNaviga
     { id: "bookings", icon: ClipboardList, label: "Bookings" },
     { id: "schedule", icon: CalendarDays, label: "Schedule" },
     { id: "payments", icon: Wallet, label: "Payments" },
-    { id: "profile", icon: User, label: "Profile" },
+    { id: "profile", icon: User, label: "Settings" },
   ];
 
   const providerItems = [
