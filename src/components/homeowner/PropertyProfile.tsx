@@ -100,6 +100,10 @@ const PropertyProfile = () => {
   const [streetFailed, setStreetFailed] = useState(false);
   const [satFailed, setSatFailed] = useState(false);
 
+  // Lightbox state for zoomed map images
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxLabel, setLightboxLabel] = useState("");
+
   const completedBookings = (bookings || [])
     .filter((b) => b.booking_status === "completed")
     .slice(0, 10);
