@@ -39,7 +39,7 @@ const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
   const aboveRange = b.amount > b.quoteRange.high;
 
   const handleVenmoPayment = () => {
-    const venmoUsername = b.providerVenmo || "";
+    const venmoUsername = (b as any).providerVenmo || "";
     const note = encodeURIComponent(`${b.service} — ${b.provider}`);
     const amount = b.amount.toFixed(2);
     // Deep link to Venmo app / web
