@@ -154,7 +154,7 @@ function streetViewUrl(address: string) {
 
 function satelliteUrl(address: string) {
   if (!GMAPS_KEY) return null;
-  return `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(address)}&zoom=18&size=600x400&maptype=satellite&markers=color:red%7C${encodeURIComponent(address)}&key=${GMAPS_KEY}`;
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(address)}&zoom=20&size=600x400&maptype=satellite&markers=size:small%7Ccolor:red%7C${encodeURIComponent(address)}&key=${GMAPS_KEY}`;
 }
 
 // ---------------------------------------------------------------------------
