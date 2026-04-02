@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Shield, Star, ChevronRight, Loader2, ExternalLink } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Check, Shield, Star, ChevronRight, ExternalLink } from "lucide-react";
 
 interface PaymentFlowProps {
   onComplete: () => void;
@@ -12,6 +11,7 @@ interface PaymentFlowProps {
     amount: number;
     quoteRange: { low: number; high: number };
     breakdown: { label: string; amount: number }[];
+    providerVenmo?: string;
   };
 }
 
@@ -29,42 +29,25 @@ const DEFAULT_BOOKING = {
   ],
 };
 
-type Step = "review" | "paying" | "done";
+type Step = "review" | "done";
 
 const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
   const [step, setStep] = useState<Step>("review");
   const [rating, setRating] = useState(0);
-  const [payLoading, setPayLoading] = useState(false);
-  const [payError, setPayError] = useState<string | null>(null);
 
   const b = booking ?? DEFAULT_BOOKING;
   const aboveRange = b.amount > b.quoteRange.high;
 
-  const handleStripeCheckout = async () => {
-    setPayLoading(true);
-    setPayError(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-payment", {
-        body: {
-          amount: b.amount,
-          service_id: b.id,
-          description: `${b.service} — ${b.provider}`,
-        },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-        // After redirect, show done state
-        setStep("done");
-      } else {
-        throw new Error("No checkout URL returned");
-      }
-    } catch (err) {
-      console.error("Payment error:", err);
-      setPayError(err instanceof Error ? err.message : "Payment failed. Please try again.");
-    } finally {
-      setPayLoading(false);
-    }
+  const handleVenmoPayment = () => {
+    const venmoUsername = b.providerVenmo || "";
+    const note = encodeURIComponent(`${b.service} — ${b.provider}`);
+    const amount = b.amount.toFixed(2);
+    // Deep link to Venmo app / web
+    const venmoUrl = venmoUsername
+      ? `https://venmo.com/${venmoUsername}?txn=pay&amount=${amount}&note=${note}`
+      : `https://venmo.com/?txn=pay&amount=${amount}&note=${note}`;
+    window.open(venmoUrl, "_blank");
+    setStep("done");
   };
 
   if (step === "done") {
@@ -145,25 +128,15 @@ const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
         </div>
       </div>
 
-      {payError && (
-        <div className="bg-destructive/10 text-destructive rounded-xl p-3 text-xs">
-          {payError}
-        </div>
-      )}
-
-      {/* Pay with Stripe button */}
+      {/* Pay with Venmo button */}
       <button
-        onClick={handleStripeCheckout}
-        disabled={rating === 0 || payLoading}
-        className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        onClick={handleVenmoPayment}
+        disabled={rating === 0}
+        className="w-full bg-[#008CFF] text-white font-semibold py-3.5 rounded-2xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {payLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <ExternalLink className="w-4 h-4" />
-        )}
-        {payLoading ? "Opening Stripe..." : `Pay $${b.amount.toFixed(2)} with Stripe`}
-        {!payLoading && <ChevronRight className="w-4 h-4" />}
+        <ExternalLink className="w-4 h-4" />
+        Pay ${b.amount.toFixed(2)} with Venmo
+        <ChevronRight className="w-4 h-4" />
       </button>
       {rating === 0 && (
         <p className="text-xs text-center text-muted-foreground">Please rate your experience before paying</p>
@@ -171,7 +144,7 @@ const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
 
       <div className="flex items-center gap-2 bg-muted rounded-xl p-3">
         <Shield className="w-4 h-4 text-secondary shrink-0" />
-        <p className="text-xs text-muted-foreground">Payments processed securely via Stripe. Accepts cards, bank transfers, and more.</p>
+        <p className="text-xs text-muted-foreground">You'll be redirected to Venmo to complete payment directly to your service provider.</p>
       </div>
     </motion.div>
   );
