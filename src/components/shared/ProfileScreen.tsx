@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, CreditCard, Bell, HelpCircle, Lock, FileText, ChevronRight, ChevronDown, Loader2, Check, Plus, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import PropertyProfile from "@/components/homeowner/PropertyProfile";
 
 interface ProfileScreenProps {
   isProvider?: boolean;
