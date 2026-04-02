@@ -253,7 +253,13 @@ const PropertyDetailsForm = ({ homeId, address, initialData, onSaved, onCancel }
         <div className="grid grid-cols-2 gap-0 border-b border-border">
           {/* Street View */}
           {svUrl && !streetFailed ? (
-            <div className="relative">
+            <div
+              className="relative cursor-pointer"
+              onClick={() => {
+                setLightboxUrl(svUrl.replace("size=600x400", "size=1200x800"));
+                setLightboxLabel("Street View");
+              }}
+            >
               <img
                 src={svUrl}
                 alt="Street view"
