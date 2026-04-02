@@ -293,6 +293,11 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
                         </div>
                       )}
 
+                      {/* MY PROPERTIES */}
+                      {item.key === "properties" && (
+                        <PropertyProfile />
+                      )}
+
                     </div>
                   </motion.div>
                 )}
