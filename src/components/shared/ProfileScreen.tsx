@@ -14,6 +14,8 @@ type Section = "account" | "payment" | "properties" | "notifications" | "help" |
 const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
   const { profile, user, signOut, refreshProfile } = useAuth();
   const [activeSection, setActiveSection] = useState<Section>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Account Settings
   const [firstName, setFirstName] = useState(profile?.first_name ?? "");
