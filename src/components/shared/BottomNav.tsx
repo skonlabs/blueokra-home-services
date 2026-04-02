@@ -13,7 +13,7 @@ const BottomNav = forwardRef<HTMLDivElement, BottomNavProps>(({ active, onNaviga
     { id: "bookings", icon: ClipboardList, label: "Bookings" },
     { id: "schedule", icon: CalendarDays, label: "Schedule" },
     { id: "payments", icon: Wallet, label: "Payments" },
-    { id: "profile", icon: User, label: "Profile" },
+    { id: "profile", icon: User, label: "Settings" },
   ];
 
   const providerItems = [
@@ -21,7 +21,7 @@ const BottomNav = forwardRef<HTMLDivElement, BottomNavProps>(({ active, onNaviga
     { id: "provider-jobs", icon: Briefcase, label: "Jobs" },
     { id: "provider-schedule", icon: CalendarDays, label: "Schedule" },
     { id: "provider-earnings", icon: Wallet, label: "Earnings" },
-    { id: "provider-profile", icon: User, label: "Profile" },
+    { id: "provider-profile", icon: User, label: "Settings" },
   ];
 
   const items = mode === "provider" ? providerItems : homeownerItems;
