@@ -328,7 +328,14 @@ const PropertyProfile = () => {
 
               {/* Satellite */}
               {satUrl && !satFailed ? (
-                <div className="relative border-l border-border">
+                <div
+                  className="relative border-l border-border cursor-pointer"
+                  onClick={() => {
+                    const hiRes = satUrl.replace("size=600x400", "size=1200x800");
+                    setLightboxUrl(hiRes);
+                    setLightboxLabel("Satellite");
+                  }}
+                >
                   <img
                     src={satUrl}
                     alt="Satellite view"
