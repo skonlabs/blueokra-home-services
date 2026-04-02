@@ -307,13 +307,6 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
         })}
       </div>
 
-      {/* My Properties — homeowners only */}
-      {!isProvider && (
-        <div className="space-y-2">
-          <h3 className="font-display text-sm font-semibold text-foreground">My Properties</h3>
-          <PropertyProfile />
-        </div>
-      )}
 
       <button
         onClick={signOut}
