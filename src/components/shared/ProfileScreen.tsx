@@ -160,15 +160,34 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
     <div className="px-4 py-6 pb-24 space-y-4">
       {/* Avatar + name */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <span className="text-2xl">{isProvider ? "👷" : "👤"}</span>
-        </div>
+        <button
+          onClick={() => photoInputRef.current?.click()}
+          disabled={uploadingPhoto}
+          className="relative w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden group shrink-0"
+        >
+          {profile?.profile_photo_url ? (
+            <img src={profile.profile_photo_url} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-2xl">{isProvider ? "👷" : "👤"}</span>
+          )}
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            {uploadingPhoto ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
+          </div>
+        </button>
+        <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={handlePhotoUpload} />
         <div>
           <h2 className="font-display text-lg font-bold text-foreground">{shownName}</h2>
           <p className="text-sm text-muted-foreground">{user?.phone || ""}</p>
-          {isProvider && (
-            <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Provider</span>
-          )}
+          <div className="flex items-center gap-2">
+            {isProvider && (
+              <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Provider</span>
+            )}
+            {profile?.profile_photo_url && (
+              <button onClick={handleDeletePhoto} disabled={uploadingPhoto} className="text-[11px] text-destructive hover:underline">
+                Remove photo
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
