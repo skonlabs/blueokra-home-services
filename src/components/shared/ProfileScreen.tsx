@@ -93,7 +93,7 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
 
   const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }>; hideFor?: "provider" | "homeowner" }[] = [
     { key: "account", label: "Account Settings", icon: User },
-    { key: "payment", label: "Payment Methods", icon: CreditCard },
+    { key: "payment", label: "Payment Methods", icon: CreditCard, hideFor: "homeowner" },
     { key: "properties", label: "My Properties", icon: Home, hideFor: "provider" },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "help", label: "Help & Support", icon: HelpCircle },
