@@ -300,7 +300,14 @@ const PropertyProfile = () => {
             <div className="grid grid-cols-2 border-b border-border">
               {/* Street View */}
               {svUrl && !streetFailed ? (
-                <div className="relative">
+                <div
+                  className="relative cursor-pointer"
+                  onClick={() => {
+                    const hiRes = svUrl.replace("size=600x400", "size=1200x800");
+                    setLightboxUrl(hiRes);
+                    setLightboxLabel("Street View");
+                  }}
+                >
                   <img
                     src={svUrl}
                     alt="Street view"
