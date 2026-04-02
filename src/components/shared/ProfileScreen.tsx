@@ -91,6 +91,59 @@ const ProfileScreen = ({ isProvider }: ProfileScreenProps) => {
     }
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileError("Photo must be under 5MB.");
+      return;
+    }
+    setUploadingPhoto(true);
+    setProfileError("");
+    try {
+      const path = `${user.id}/avatar.png`;
+      const { error: uploadErr } = await supabase.storage
+        .from("profile-pictures")
+        .upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage
+        .from("profile-pictures")
+        .getPublicUrl(path);
+      const photoUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      const { error: updateErr } = await supabase
+        .from("profiles")
+        .update({ profile_photo_url: photoUrl })
+        .eq("user_id", user.id);
+      if (updateErr) throw updateErr;
+      await refreshProfile();
+    } catch (err: any) {
+      setProfileError(err?.message ?? "Failed to upload photo.");
+    } finally {
+      setUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!user) return;
+    setUploadingPhoto(true);
+    setProfileError("");
+    try {
+      await supabase.storage.from("profile-pictures").remove([`${user.id}/avatar.png`]);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ profile_photo_url: null })
+        .eq("user_id", user.id);
+      if (error) throw error;
+      await refreshProfile();
+    } catch (err: any) {
+      setProfileError(err?.message ?? "Failed to delete photo.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const inputCls = "w-full bg-muted rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent text-foreground";
 
   const menuItems: { key: Section; label: string; icon: React.ComponentType<{ className?: string }>; hideFor?: "provider" | "homeowner" }[] = [
