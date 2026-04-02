@@ -186,6 +186,10 @@ const PropertyDetailsForm = ({ homeId, address, initialData, onSaved, onCancel }
   const [streetFailed, setStreetFailed] = useState(false);
   const [satFailed,    setSatFailed]    = useState(false);
 
+  // Lightbox
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxLabel, setLightboxLabel] = useState("");
+
   const svUrl  = streetViewUrl(address);
   const satUrl = satelliteUrl(address);
 
