@@ -166,7 +166,7 @@ const Index = () => {
       case "payments":
         return { title: "Payments" };
       case "profile":
-        return { title: "Profile" };
+        return { title: "Settings" };
       case "chat":
         return { title: "Messages" };
       case "provider-home":
