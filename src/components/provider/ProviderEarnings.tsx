@@ -127,8 +127,8 @@ const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
           <p className="text-lg font-bold text-foreground">${stats.jobCount > 0 ? Math.round(stats.totalEarned / stats.jobCount) : 0}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-3 text-center">
-          <p className="text-xs text-muted-foreground">Pending</p>
-          <p className="text-lg font-bold text-foreground">${stats.pendingAmount.toFixed(0)}</p>
+          <p className="text-xs text-muted-foreground">Awaiting Approval</p>
+          <p className="text-lg font-bold text-amber-600">${stats.awaitingApproval.toFixed(0)}</p>
         </div>
       </div>
 
