@@ -13,6 +13,7 @@ interface HomeScreenProps {
   onOpenIntake: (context?: string) => void;
   onViewBookings: () => void;
   onViewProperty: () => void;
+  onViewProfile: () => void;
   onBookAgain: () => void;
   onRebook: (serviceId: string, customizations?: any) => void;
   onViewSchedule?: () => void;
