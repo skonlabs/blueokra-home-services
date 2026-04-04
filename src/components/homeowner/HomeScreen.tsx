@@ -49,7 +49,7 @@ function getSeasonalRecs() {
   }
 }
 
-const HomeScreen = ({
+const HomeScreen = forwardRef<HTMLDivElement, HomeScreenProps>(({
   onServiceSelect,
   onOpenIntake,
   onViewBookings,
@@ -57,7 +57,7 @@ const HomeScreen = ({
   onBookAgain,
   onRebook,
   onViewSchedule,
-}: HomeScreenProps) => {
+}, ref) => {
   const { profile } = useAuth();
   const { data: rawBookings } = useBookings();
   const { data: appointments } = useHomeownerAppointments();
