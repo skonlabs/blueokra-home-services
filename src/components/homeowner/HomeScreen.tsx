@@ -55,6 +55,7 @@ const HomeScreen = forwardRef<HTMLDivElement, HomeScreenProps>(({
   onOpenIntake,
   onViewBookings,
   onViewProperty,
+  onViewProfile,
   onBookAgain,
   onRebook,
   onViewSchedule,
