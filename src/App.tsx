@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,15 +14,15 @@ import NotFound from "./pages/NotFound.tsx";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,      // data stays fresh for 5 minutes
-      gcTime: 1000 * 60 * 30,        // cache held for 30 minutes
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
       retry: 2,
-      refetchOnWindowFocus: false,    // don't hammer DB on every tab switch
+      refetchOnWindowFocus: false,
     },
   },
 });
 
-const App = () => (
+const App = forwardRef<HTMLDivElement>((_, ref) => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AppGate>
@@ -31,12 +32,14 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <ErrorBoundary>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/admin" element={<AdminPage />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <div ref={ref}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/admin" element={<AdminPage />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
               </ErrorBoundary>
             </BrowserRouter>
           </TooltipProvider>
@@ -44,6 +47,8 @@ const App = () => (
       </AppGate>
     </QueryClientProvider>
   </ErrorBoundary>
-);
+));
+
+App.displayName = "App";
 
 export default App;
