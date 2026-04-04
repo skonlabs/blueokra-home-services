@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun, Wind, Droplets, Camera, AlertCircle, CalendarClock } from "lucide-react";
 import ServiceGrid from "./ServiceGrid";
