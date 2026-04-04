@@ -7,7 +7,7 @@ import blueokraLogo from "@/assets/blueokra-logo.svg";
 
 const SESSION_KEY = "bo_app_gate";
 
-export const AppGate = ({ children }: { children: React.ReactNode }) => {
+export const AppGate = forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ children }, ref) => {
   const [authenticated, setAuthenticated] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -31,10 +31,10 @@ export const AppGate = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  if (authenticated) return <>{children}</>;
+  if (authenticated) return <div ref={ref}>{children}</div>;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div ref={ref} className="min-h-screen bg-background flex items-center justify-center px-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2">
@@ -62,4 +62,6 @@ export const AppGate = ({ children }: { children: React.ReactNode }) => {
       </form>
     </div>
   );
-};
+});
+
+AppGate.displayName = "AppGate";
