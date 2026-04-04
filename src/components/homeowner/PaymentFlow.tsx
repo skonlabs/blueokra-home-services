@@ -71,6 +71,10 @@ const PaymentFlow = ({ onComplete, booking }: PaymentFlowProps) => {
             <span className="text-foreground font-medium">Receipt saved</span>
           </div>
           <div className="flex items-center gap-2">
+            <span className="text-amber-500">⏳</span>
+            <span className="text-muted-foreground">Payment pending admin approval before release to provider</span>
+          </div>
+          <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-secondary shrink-0" />
             <span className="text-muted-foreground">7-day service warranty starts now</span>
           </div>

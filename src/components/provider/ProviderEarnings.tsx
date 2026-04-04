@@ -179,9 +179,10 @@ const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
       <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
         <h3 className="font-semibold text-sm text-foreground mb-2">How Payouts Work</h3>
         <div className="space-y-1.5 text-xs text-muted-foreground">
-          <p>1. Customer pays BlueOkra directly after service completion</p>
-          <p>2. Admin reviews and approves the payment</p>
-          <p>3. Your earnings are sent to your Venmo ({profile?.venmo_phone || "not set"})</p>
+          <p>1. Customer pays via Venmo after service completion</p>
+          <p>2. <strong className="text-foreground">Admin must review and approve</strong> the payment</p>
+          <p>3. Once approved, your earnings are released to your Venmo ({profile?.venmo_phone || "not set"})</p>
+          <p>4. Payouts are not released until admin approval is granted</p>
         </div>
       </div>
 

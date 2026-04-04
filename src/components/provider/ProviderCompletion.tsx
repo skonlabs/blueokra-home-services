@@ -116,13 +116,22 @@ const ProviderCompletion = ({ job: jobProp, onDone }: ProviderCompletionProps) =
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: "spring" }}
-          className="w-20 h-20 bg-success text-success-foreground rounded-full flex items-center justify-center mx-auto"
+          className="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto"
         >
           <Check className="w-10 h-10" />
         </motion.div>
         <div>
-          <h2 className="font-display text-2xl font-bold text-foreground">Payment Received!</h2>
+          <h2 className="font-display text-2xl font-bold text-foreground">Job Completed!</h2>
           <p className="text-sm text-muted-foreground mt-1">${adjustedPrice} from {job.customer}</p>
+        </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left space-y-2 text-sm">
+          <div className="flex items-center gap-2 text-amber-700 font-medium">
+            <span>⏳</span>
+            <span>Pending Admin Approval</span>
+          </div>
+          <p className="text-xs text-amber-600">
+            Payment must be reviewed and approved by a BlueOkra admin before funds are released to you.
+          </p>
         </div>
         <div className="bg-card rounded-2xl border border-border p-4 text-left space-y-2 text-sm">
           <div className="flex justify-between">
@@ -134,11 +143,11 @@ const ProviderCompletion = ({ job: jobProp, onDone }: ProviderCompletionProps) =
             <span className="font-medium">-${(parseFloat(adjustedPrice) * 0.12).toFixed(2)}</span>
           </div>
           <div className="border-t border-border pt-2 flex justify-between font-semibold">
-            <span>Your earnings</span>
+            <span>Your earnings (after approval)</span>
             <span>${(parseFloat(adjustedPrice) * 0.88).toFixed(2)}</span>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">Payout will arrive within 1–2 business days</p>
+        <p className="text-xs text-muted-foreground">You'll be notified once admin approves the payout.</p>
         <button
           onClick={onDone}
           className="w-full bg-primary text-primary-foreground font-medium py-3 rounded-2xl text-sm active:scale-[0.98] transition-transform"
