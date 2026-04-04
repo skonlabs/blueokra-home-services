@@ -55,7 +55,9 @@ const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
       return { day, amount: dayTotal };
     });
 
-    return { thisWeekEarnings, lastWeekEarnings, thisMonthEarnings, totalEarned, pendingAmount, weekPctChange, weeklyData, jobCount: completedTxns.length };
+    const awaitingApproval = pendingApprovalTxns.reduce((s, t) => s + (t.provider_amount || t.total_amount || 0), 0);
+
+    return { thisWeekEarnings, lastWeekEarnings, thisMonthEarnings, totalEarned, pendingAmount, weekPctChange, weeklyData, jobCount: completedTxns.length, awaitingApproval };
   }, [earnings, thisWeekStart, thisWeekEnd, lastWeekStart, lastWeekEnd, now]);
 
   const recentPayouts = useMemo(() => {
