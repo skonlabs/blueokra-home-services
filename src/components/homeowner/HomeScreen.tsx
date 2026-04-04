@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { Search, ChevronRight, Shield, Calendar, RotateCcw, Leaf, Snowflake, Sun, Wind, Droplets, Camera, AlertCircle, CalendarClock } from "lucide-react";
 import ServiceGrid from "./ServiceGrid";
@@ -48,7 +49,7 @@ function getSeasonalRecs() {
   }
 }
 
-const HomeScreen = ({
+const HomeScreen = forwardRef<HTMLDivElement, HomeScreenProps>(({
   onServiceSelect,
   onOpenIntake,
   onViewBookings,
@@ -56,7 +57,7 @@ const HomeScreen = ({
   onBookAgain,
   onRebook,
   onViewSchedule,
-}: HomeScreenProps) => {
+}, ref) => {
   const { profile } = useAuth();
   const { data: rawBookings } = useBookings();
   const { data: appointments } = useHomeownerAppointments();
@@ -108,7 +109,7 @@ const HomeScreen = ({
   });
 
   return (
-    <div className="px-4 pt-4 pb-24">
+    <div ref={ref} className="px-4 pt-4 pb-24">
       {/* Greeting - compact inline */}
       <div className="mb-4 flex items-baseline gap-1.5">
         <h1 className="font-display text-lg font-bold text-foreground">Hi{userName ? ` ${userName.split(' ')[0]}` : ""} 👋</h1>
@@ -226,6 +227,8 @@ const HomeScreen = ({
       </div>
     </div>
   );
-};
+});
+
+HomeScreen.displayName = "HomeScreen";
 
 export default HomeScreen;
