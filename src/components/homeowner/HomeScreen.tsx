@@ -227,6 +227,8 @@ const HomeScreen = forwardRef<HTMLDivElement, HomeScreenProps>(({
       </div>
     </div>
   );
-};
+});
+
+HomeScreen.displayName = "HomeScreen";
 
 export default HomeScreen;
