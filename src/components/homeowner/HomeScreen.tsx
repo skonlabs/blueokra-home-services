@@ -109,7 +109,7 @@ const HomeScreen = forwardRef<HTMLDivElement, HomeScreenProps>(({
   });
 
   return (
-    <div className="px-4 pt-4 pb-24">
+    <div ref={ref} className="px-4 pt-4 pb-24">
       {/* Greeting - compact inline */}
       <div className="mb-4 flex items-baseline gap-1.5">
         <h1 className="font-display text-lg font-bold text-foreground">Hi{userName ? ` ${userName.split(' ')[0]}` : ""} 👋</h1>
