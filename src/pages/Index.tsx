@@ -249,6 +249,7 @@ const Index = () => {
                 onOpenIntake={() => { setSelectedService(undefined); navigate("intake"); }}
                 onViewBookings={() => navigate("bookings")}
                 onViewProperty={() => navigate("property")}
+                onViewProfile={() => navigate("profile")}
                 onBookAgain={() => navigate("bookings")}
                 onRebook={(id, customizations) => handleServiceSelect(id, customizations as IntakeFormData | undefined)}
                 onViewSchedule={() => navigate("schedule")}
