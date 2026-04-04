@@ -82,7 +82,7 @@ const HomeScreen = forwardRef<HTMLDivElement, HomeScreenProps>(({
     });
   }
   if (!profile?.profile_photo_url) {
-    actionItems.push({ label: "Add profile photo", description: "Personalize your account", icon: <Camera className="w-4 h-4 text-primary" />, action: () => onViewProperty() });
+    actionItems.push({ label: "Add profile photo", description: "Personalize your account", icon: <Camera className="w-4 h-4 text-primary" />, action: () => onViewProfile() });
   }
 
   // Show last 2 bookings from DB, fall back to empty
