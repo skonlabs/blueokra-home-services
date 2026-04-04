@@ -23,7 +23,8 @@ const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
 
   const stats = useMemo(() => {
     const txns = earnings || [];
-    const completedTxns = txns.filter(t => t.payment_status === "completed" || t.payment_status === "paid");
+    const completedTxns = txns.filter(t => (t.payment_status === "completed" || t.payment_status === "paid") && t.is_admin_approved === true);
+    const pendingApprovalTxns = txns.filter(t => t.is_admin_approved !== true);
     const pendingTxns = txns.filter(t => t.payment_status === "pending");
 
     const thisWeekEarnings = completedTxns
