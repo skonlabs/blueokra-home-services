@@ -23,7 +23,8 @@ const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
 
   const stats = useMemo(() => {
     const txns = earnings || [];
-    const completedTxns = txns.filter(t => t.payment_status === "completed" || t.payment_status === "paid");
+    const completedTxns = txns.filter(t => (t.payment_status === "completed" || t.payment_status === "paid") && t.is_admin_approved === true);
+    const pendingApprovalTxns = txns.filter(t => t.is_admin_approved !== true);
     const pendingTxns = txns.filter(t => t.payment_status === "pending");
 
     const thisWeekEarnings = completedTxns
@@ -54,7 +55,9 @@ const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
       return { day, amount: dayTotal };
     });
 
-    return { thisWeekEarnings, lastWeekEarnings, thisMonthEarnings, totalEarned, pendingAmount, weekPctChange, weeklyData, jobCount: completedTxns.length };
+    const awaitingApproval = pendingApprovalTxns.reduce((s, t) => s + (t.provider_amount || t.total_amount || 0), 0);
+
+    return { thisWeekEarnings, lastWeekEarnings, thisMonthEarnings, totalEarned, pendingAmount, weekPctChange, weeklyData, jobCount: completedTxns.length, awaitingApproval };
   }, [earnings, thisWeekStart, thisWeekEnd, lastWeekStart, lastWeekEnd, now]);
 
   const recentPayouts = useMemo(() => {
@@ -124,8 +127,8 @@ const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
           <p className="text-lg font-bold text-foreground">${stats.jobCount > 0 ? Math.round(stats.totalEarned / stats.jobCount) : 0}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-3 text-center">
-          <p className="text-xs text-muted-foreground">Pending</p>
-          <p className="text-lg font-bold text-foreground">${stats.pendingAmount.toFixed(0)}</p>
+          <p className="text-xs text-muted-foreground">Awaiting Approval</p>
+          <p className="text-lg font-bold text-amber-600">${stats.awaitingApproval.toFixed(0)}</p>
         </div>
       </div>
 
@@ -176,9 +179,10 @@ const ProviderEarnings = ({ onViewHistory }: ProviderEarningsProps) => {
       <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
         <h3 className="font-semibold text-sm text-foreground mb-2">How Payouts Work</h3>
         <div className="space-y-1.5 text-xs text-muted-foreground">
-          <p>1. Customer pays BlueOkra directly after service completion</p>
-          <p>2. Admin reviews and approves the payment</p>
-          <p>3. Your earnings are sent to your Venmo ({profile?.venmo_phone || "not set"})</p>
+          <p>1. Customer pays via Venmo after service completion</p>
+          <p>2. <strong className="text-foreground">Admin must review and approve</strong> the payment</p>
+          <p>3. Once approved, your earnings are released to your Venmo ({profile?.venmo_phone || "not set"})</p>
+          <p>4. Payouts are not released until admin approval is granted</p>
         </div>
       </div>
 

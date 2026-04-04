@@ -217,7 +217,7 @@ export const useProviderEarnings = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payment_transaction")
-        .select("id, total_amount, provider_amount, payment_status, payment_method_type, created_at")
+        .select("id, total_amount, provider_amount, payment_status, payment_method_type, created_at, is_admin_approved")
         .eq("provider_user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(100);
